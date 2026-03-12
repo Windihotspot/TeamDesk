@@ -1,4 +1,22 @@
-<script setup lang=""></script>
+<script setup>
+import { authService } from '@/services/authService'
+
+
+
+try {
+  const result = await authService.login({
+    email: 'user@example.com',
+    password: 'password123'
+  })
+  router.push('/dashboard')
+} catch (error) {
+  console.error(error.response?.data?.message || 'Login failed')
+}
+
+
+
+
+</script>
 
 <template>
   <v-container fluid class="d-flex align-center justify-center fill-height bg-gradient">

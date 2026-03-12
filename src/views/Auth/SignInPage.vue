@@ -1,6 +1,7 @@
 <script setup>
 import router from '@/router'
 import { ref } from 'vue'
+import { authService } from '@/services/authService'
 
 const sendtologin = () => {
   router.push('/login')
@@ -8,26 +9,84 @@ const sendtologin = () => {
 
 const show = ref(false)
 
-function toggleVisibility(){
-    show.value = !show.value
+function toggleVisibility() {
+  show.value = !show.value
+}
+
+// const submitPage = async () => {
+//   try {
+//     const result = await authService.signup({
+//       teamName: 'My Team',
+//       email: 'user@example.com',
+//       password: 'password123',
+//       firstName: 'John',
+//       lastName: 'Doe'
+//     })
+//     router.push('/dashboard')
+//   } catch (error) {
+//     console.log(error)
+//   }
+
+// }
+
+const submitPage = async () => {
+  console.log('🚀 Submit function triggered')
+
+  const payload = {
+    teamName: 'My Team',
+    email: 'user@example.com',
+    password: 'password123',
+    firstName: 'John',
+    lastName: 'Doe'
+  }
+
+  console.log('📦 Payload being sent:', payload)
+
+  try {
+    console.log('📡 Calling authService.signup...')
+
+    const result = await authService.signup(payload)
+
+    console.log('✅ Signup success!')
+    console.log('📥 Full response:', result)
+    console.log('📥 Response data:', result?.data)
+    console.log('📥 Status:', result?.status)
+
+    console.log('➡️ Redirecting to /dashboard...')
+    router.push('/dashboard')
+  } catch (error) {
+    console.log('❌ Signup failed!')
+
+    console.log('🔴 Full error object:', error)
+
+    console.log('🔴 Error message:', error.message)
+
+    console.log('🔴 Error response:', error.response)
+
+    console.log('🔴 Error response data:', error.response?.data)
+
+    console.log('🔴 Error status:', error.response?.status)
+
+    console.log('🔴 Error headers:', error.response?.headers)
+  }
 }
 </script>
 
 <template>
   <v-container
     fluid
-    class="flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(135deg,#cfe9f1,#eaf3f7)]  md:flex-row md:p-6 lg:p-8"
+    class="flex flex-col items-center justify-center min-h-screen bg-[linear-gradient(135deg,#cfe9f1,#eaf3f7)] md:flex-row md:p-6 lg:p-8"
   >
     <v-card width="420" class="pa-9 rounded-xl elevation-10 text-center">
       <!-- Icon -->
       <div class="mb-6">
-        <v-avatar size="64" class="mx-auto elevation-2"> 
+        <v-avatar size="64" class="mx-auto elevation-2">
           <v-icon size="32">mdi-login</v-icon>
         </v-avatar>
       </div>
 
       <!-- Title -->
-      <h2 class="text-h5 font-weight-bold mb-2">Sign in with email</h2>
+      <h2 class="text-h5 font-weight-bold mb-2">Sign up with email</h2>
 
       <p class="text-body-2 text-grey mb-6">
         Your workspace for managing tasks and daily operations.
@@ -43,16 +102,43 @@ function toggleVisibility(){
         rounded
       /> -->
 
-      <v-responsive class="mx-auto mb-4 pt-2" max-width="344">
-        <v-text-field
-          hide-details="auto"
-          placeholder="Email"
-          prepend-inner-icon="mdi-email-outline"
-          rounded
-          variant="outlined"
-          density="comfortable"
-        ></v-text-field>
-      </v-responsive>
+      <!-- First Name -->
+      <v-text-field
+        placeholder="First Name"
+        prepend-inner-icon="mdi-account"
+        variant="outlined"
+        density="comfortable"
+        rounded
+      />
+
+      <!-- Last Name -->
+      <v-text-field
+        placeholder="Last Name"
+        prepend-inner-icon="mdi-account"
+        variant="outlined"
+        density="comfortable"
+        rounded
+      />
+
+      <!--TeamName-->
+
+      <v-text-field
+        placeholder="Team Name"
+        prepend-inner-icon="mdi-account-group"
+        variant="outlined"
+        density="comfortable"
+        rounded
+      />
+
+      <!--Email-->
+
+      <v-text-field
+        placeholder="Email"
+        prepend-inner-icon="mdi-email-outline"
+        variant="outlined"
+        density="comfortable"
+        rounded
+      />
 
       <!-- Password -->
       <v-text-field
@@ -66,13 +152,21 @@ function toggleVisibility(){
         rounded
       />
 
-      <!-- Forgot password -->
-      <div class="text-right mb-4">
-        <a href="#" class="text-caption text-grey"> Forgot password? </a>
-      </div>
+      <!--confirm pasword-->
+      <v-text-field
+        placeholder="Confirm Password"
+        prepend-inner-icon="mdi-lock-check-outline"
+        append-inner-icon="mdi-eye-off"
+        type="password"
+        variant="outlined"
+        density="comfortable"
+        rounded
+      />
 
       <!-- Button -->
-      <v-btn block size="large" class="mb-6 text-white bg-black" rounded="lg"> Get Started </v-btn>
+      <v-btn @click="submitPage" block size="large" class="mb-6 text-white bg-black" rounded="lg">
+        Get Started
+      </v-btn>
 
       <!-- Divider -->
       <div class="align-center mb-4">

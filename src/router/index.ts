@@ -1,6 +1,7 @@
 import HomePage from '@/views/HomePage.vue'
 import SignInPage from '@/views/Auth/SignInPage.vue'
 import LoginPage from '@/views/Auth/LoginPage.vue'
+import BrowseProjects from '@/views/BrowseProjects.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -10,6 +11,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomePage
+    },
+    {
+      path: '/browseProjects',
+      name: 'browse',
+      component: BrowseProjects,
     },
     {
       path: '/signin',
