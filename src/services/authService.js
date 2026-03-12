@@ -3,17 +3,24 @@ import api from './api';
 
 export const authService = {
   async signup(payload) {
-    const { data } = await api.post('/register', {
-      teamName: payload.teamName,
-      email: payload.email,
-      password: payload.password,
-      firstName: payload.firstName,
-      lastName: payload.lastName
-    })
+    try {
+      const response = await api.post('/register', payload)
+      console.log(response)
+      
 
-    localStorage.setItem('token', data.token)
-    return data
+      
+
+      
+    } catch (error) {
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message
+
+      throw new Error(message)
+    }
   },
+
 
   async login(payload) {
     const { data } = await api.post('/login', {

@@ -1,11 +1,8 @@
 <script setup>
-import router from '@/router'
-import { ref } from 'vue'
-import { authService } from '@/services/authService'
 
-const sendtologin = () => {
-  router.push('/login')
-}
+import { ref } from 'vue'
+import { authService } from '@/services/authService.js'
+
 
 const show = ref(false)
 
@@ -13,61 +10,30 @@ function toggleVisibility() {
   show.value = !show.value
 }
 
-// const submitPage = async () => {
-//   try {
-//     const result = await authService.signup({
-//       teamName: 'My Team',
-//       email: 'user@example.com',
-//       password: 'password123',
-//       firstName: 'John',
-//       lastName: 'Doe'
-//     })
-//     router.push('/dashboard')
-//   } catch (error) {
-//     console.log(error)
-//   }
+const firstName = ref('')
+const lastName = ref('')
+const email = ref('')
+const teamName = ref('')
+const password = ref('')
 
-// }
+
 
 const submitPage = async () => {
-  console.log('🚀 Submit function triggered')
-
   const payload = {
-    teamName: 'My Team',
-    email: 'user@example.com',
-    password: 'password123',
-    firstName: 'John',
-    lastName: 'Doe'
+    firstName: firstName.value,
+    lastName: lastName.value,
+    email: email.value,
+    teamName: teamName.value,
+    password: password.value
   }
-
-  console.log('📦 Payload being sent:', payload)
+  console.log(payload)
 
   try {
-    console.log('📡 Calling authService.signup...')
+    const data = await authService.signup(payload)
 
-    const result = await authService.signup(payload)
-
-    console.log('✅ Signup success!')
-    console.log('📥 Full response:', result)
-    console.log('📥 Response data:', result?.data)
-    console.log('📥 Status:', result?.status)
-
-    console.log('➡️ Redirecting to /dashboard...')
-    router.push('/dashboard')
-  } catch (error) {
-    console.log('❌ Signup failed!')
-
-    console.log('🔴 Full error object:', error)
-
-    console.log('🔴 Error message:', error.message)
-
-    console.log('🔴 Error response:', error.response)
-
-    console.log('🔴 Error response data:', error.response?.data)
-
-    console.log('🔴 Error status:', error.response?.status)
-
-    console.log('🔴 Error headers:', error.response?.headers)
+    console.log('✅ Success:', data)
+  } catch (err) {
+    console.error(err)
   }
 }
 </script>
@@ -104,6 +70,7 @@ const submitPage = async () => {
 
       <!-- First Name -->
       <v-text-field
+        v-model="firstName"
         placeholder="First Name"
         prepend-inner-icon="mdi-account"
         variant="outlined"
@@ -113,6 +80,7 @@ const submitPage = async () => {
 
       <!-- Last Name -->
       <v-text-field
+        v-model="lastName"
         placeholder="Last Name"
         prepend-inner-icon="mdi-account"
         variant="outlined"
@@ -123,6 +91,7 @@ const submitPage = async () => {
       <!--TeamName-->
 
       <v-text-field
+        v-model="teamName"
         placeholder="Team Name"
         prepend-inner-icon="mdi-account-group"
         variant="outlined"
@@ -133,6 +102,7 @@ const submitPage = async () => {
       <!--Email-->
 
       <v-text-field
+        v-model="email"
         placeholder="Email"
         prepend-inner-icon="mdi-email-outline"
         variant="outlined"
@@ -142,6 +112,7 @@ const submitPage = async () => {
 
       <!-- Password -->
       <v-text-field
+        v-model="password"
         placeholder="Password"
         prepend-inner-icon="mdi-lock-outline"
         :type="show ? 'text' : 'password'"
@@ -154,6 +125,7 @@ const submitPage = async () => {
 
       <!--confirm pasword-->
       <v-text-field
+        v-model="password"
         placeholder="Confirm Password"
         prepend-inner-icon="mdi-lock-check-outline"
         append-inner-icon="mdi-eye-off"
@@ -175,9 +147,9 @@ const submitPage = async () => {
 
       <!-- Social buttons -->
 
-      <button @click="sendtologin" class="align-center border px-4 py-2 rounded-xl">
+      <!-- <button @click="sendtologin" class="align-center border px-4 py-2 rounded-xl">
         <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" />
-      </button>
+      </button> -->
     </v-card>
   </v-container>
 </template>
