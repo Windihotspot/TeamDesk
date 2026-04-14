@@ -1,3 +1,4 @@
+import Dashboard from '@/views/Dashboard.vue'
 import HomePage from '@/views/HomePage.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -8,8 +9,12 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomePage
+    },
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: Dashboard
     }
-    
   ]
 })
 

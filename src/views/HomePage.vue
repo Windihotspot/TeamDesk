@@ -20,10 +20,34 @@ const form = ref({
   remarks: ''
 })
 
-const userTypes = ['student', 'teacher', 'employee']
 const usersList = ref([])
 const loadingUsers = ref(false)
 
+const loadUsers = async () => {
+  loadingUsers.value = true
+
+  try {
+    const res = await fetch('https://rhfmzwpbmicfcifalpiq.supabase.co/functions/v1/users')
+    console.log('res:', res)
+
+    const json = await res.json()
+
+    if (!json.success) throw new Error(json.error)
+
+    usersList.value = json.data.map((u) => ({
+      id: u.id,
+      name: u.name,
+      avatar: u.avatar
+    }))
+  } catch (err) {
+    ElMessage.error(err.message)
+  } finally {
+    loadingUsers.value = false
+  }
+}
+onMounted(() => {
+  loadUsers()
+})
 // ✅ Validation Rules
 const rules = {
   required: (v) => !!v || 'This field is required',
@@ -31,9 +55,9 @@ const rules = {
   userId: (v) => !!v || 'Select a user'
 }
 
-
-const openAddDialog = () => {
+const openAddDialog = async () => {
   showDialog.value = true
+  await loadUsers()
 }
 
 const openEditDialog = async (log) => {
@@ -79,7 +103,6 @@ const closeDialog = () => {
   showDialog.value = false
 }
 
-
 const dayLabels = ref([])
 
 const generateDayLabels = () => {
@@ -124,12 +147,6 @@ startDate.setDate(today.getDate() - 30) // 30 days ago
 
 const todayISO = new Date().toISOString().slice(0, 10)
 
-
-
-
-
-
-
 const getCurrentWorkWeek = () => {
   const today = new Date()
 
@@ -150,15 +167,19 @@ const getCurrentWorkWeek = () => {
   }
 }
 
+const todaySummary = computed(() => {
+  const today = recentLogs.value.filter((l) => l.date === new Date().toISOString().slice(0, 10))
+
+  return {
+    present: today.filter((t) => t.status === 'present').length,
+    late: today.filter((t) => t.status === 'late').length,
+    total: today.length
+  }
+})
+
 const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
-
-
-
-
-
 const isLoading = ref(true)
-
 
 const formattedDate = today.toLocaleDateString('en-GB', {
   day: '2-digit',
@@ -318,7 +339,67 @@ const stackedBarOptions = (title) => {
   }
 }
 
+const submitAttendance = async () => {
+  submitting.value = true
 
+  try {
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const payload = {
+        user_id: form.value.userId,
+        status: form.value.status.toLowerCase(),
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        device: navigator.userAgent,
+        checkInTime: form.value.checkInTime
+      }
+
+      const res = await fetch('https://YOUR_PROJECT.functions.supabase.co/mark-attendance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error)
+
+      ElMessage.success('Attendance marked successfully')
+
+      await fetchAttendanceData()
+      closeDialog()
+    })
+  } catch (err) {
+    ElMessage.error(err.message)
+  } finally {
+    submitting.value = false
+  }
+}
+
+const fetchAttendanceData = async () => {
+  const { data, error } = await supabase
+    .from('attendance_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (!error) recentLogs.value = data
+}
+
+const weeklyChartSeries = computed(() => {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+
+  const present = [5, 8, 6, 10, 7]
+  const late = [1, 2, 1, 0, 1]
+  const absent = [2, 0, 3, 1, 2]
+
+  return [
+    { name: 'Present', data: present },
+    { name: 'Late', data: late },
+    { name: 'Absent', data: absent }
+  ]
+})
 </script>
 
 <template>
@@ -356,8 +437,6 @@ const stackedBarOptions = (title) => {
         <div class="bg-white rounded shadow m-2 p-4 flex flex-col">
           <div class="flex justify-between">
             <h3 class="text-sm text-gray-500 font-bold mb-4">Recent Attendance</h3>
-
-          
           </div>
 
           <!-- Tabs -->
@@ -378,29 +457,25 @@ const stackedBarOptions = (title) => {
           </div>
 
           <!-- Attendance List Scrollable -->
-          
         </div>
 
         <div class="bg-white p-4 rounded shadow m-2">
           <h3 class="text-sm text-gray-500 font-bold mb-1">Today's Attendance</h3>
           <p class="text-xs text-gray-400 mb-4">{{ formattedDate }}</p>
-
-          
         </div>
 
         <div class="bg-white p-4 rounded shadow m-2">
           <div class="flex justify-between">
             <h3 class="text-sm text-gray-500 font-bold mb-2">Staffs Attendance For this week</h3>
-
-      
           </div>
 
-          
+          <Apexchart
+            type="bar"
+            height="300"
+            :options="stackedBarOptions('Weekly Attendance')"
+            :series="weeklyChartSeries"
+          />
         </div>
-
-        
-
-    
       </div>
     </div>
 
@@ -413,7 +488,6 @@ const stackedBarOptions = (title) => {
 
         <v-card-text>
           <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
-            <!-- User Type -->
             <v-select
               v-model="form.userType"
               :items="userTypes"
@@ -424,37 +498,20 @@ const stackedBarOptions = (title) => {
               @update:model-value="onUserTypeChange"
             />
 
-            <!-- User -->
             <v-select
-            
-              
+              v-model="form.userId"
+              :items="usersList"
               item-title="name"
               item-value="id"
               label="User"
-              
               variant="outlined"
               color="green"
               class="mt-3"
+              :loading="loadingUsers"
             />
 
-            <!-- Class (only for students) -->
-            <!-- <v-select
-              v-if="form.userType === 'student'"
-              v-model="form.classId"
-              :items="classesList"
-              item-title="name"
-              item-value="id"
-              label="Class"
-              variant="outlined"
-              color="green"
-              class="mt-3"
-              :rules="[rules.required]"
-              :loading="loadingClasses"
-            /> -->
-
-            <!-- Status -->
             <v-select
-              
+              v-model="form.status"
               :items="['Present', 'Late']"
               label="Status"
               variant="outlined"
@@ -462,9 +519,8 @@ const stackedBarOptions = (title) => {
               class="mt-3"
             />
 
-            <!-- Check-in Time -->
             <v-text-field
-              
+              v-model="form.checkInTime"
               label="Check-in Time"
               type="time"
               variant="outlined"
@@ -472,9 +528,8 @@ const stackedBarOptions = (title) => {
               class="mt-3"
             />
 
-            <!-- Remarks -->
             <v-textarea
-              
+              v-model="form.remarks"
               label="Remarks"
               rows="2"
               variant="outlined"
