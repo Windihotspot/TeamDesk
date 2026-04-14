@@ -1,6 +1,6 @@
 <script setup>
 
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { authService } from '@/services/authService.js'
 
 
@@ -10,31 +10,30 @@ function toggleVisibility() {
   show.value = !show.value
 }
 
-const firstName = ref('')
-const lastName = ref('')
-const email = ref('')
-const teamName = ref('')
-const password = ref('')
+// const firstName = ref('')
+// const lastName = ref('')
+// const email = ref('')
+// const teamName = ref('')
+// const password = ref('')
+
+//use reactive for filing forms instead of calling one by one and using ref()
+const form = reactive({
+  firstName: "",
+  lastName: "",
+  email: "",
+  teamName: "",
+  password: ""
+})
 
 
 
 const submitPage = async () => {
-  const payload = {
-    firstName: firstName.value,
-    lastName: lastName.value,
-    email: email.value,
-    teamName: teamName.value,
-    password: password.value
-  }
-  console.log(payload)
-
   try {
-    const data = await authService.signup(payload)
-    firstName.value = "";
-    lastName.value= "";
+    const data = await authService.signup({...form})
+    resetForm()
     console.log('✅ Success:', data)
   } catch (err) {
-    console.error(err)
+    console.error('Error:', err)
   }
 }
 
