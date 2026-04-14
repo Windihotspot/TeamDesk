@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { authService } from '@/services/authService.js'
 
 
@@ -30,12 +30,14 @@ const submitPage = async () => {
 
   try {
     const data = await authService.signup(payload)
-
+    firstName.value = "";
+    lastName.value= "";
     console.log('✅ Success:', data)
   } catch (err) {
     console.error(err)
   }
 }
+
 </script>
 
 <template>
