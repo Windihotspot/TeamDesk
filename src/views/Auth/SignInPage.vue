@@ -1,6 +1,6 @@
 <script setup>
 
-import { onMounted, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { authService } from '@/services/authService.js'
 
 
@@ -17,6 +17,7 @@ function toggleVisibility() {
 // const password = ref('')
 
 //use reactive for filing forms instead of calling one by one and using ref()
+//in the template v-model= name of object.property
 const form = reactive({
   firstName: "",
   lastName: "",
@@ -24,18 +25,25 @@ const form = reactive({
   teamName: "",
   password: ""
 })
-
-
+// const resetForm = () => {
+//   firstName = "",
+//   lastName = "",
+//   email = "",
+//   teamName = "",
+//   password = ""
+// }
 
 const submitPage = async () => {
   try {
     const data = await authService.signup({...form})
-    resetForm()
+    console.log(form)
+    // resetForm()
     console.log('✅ Success:', data)
   } catch (err) {
     console.error('Error:', err)
   }
 }
+
 
 </script>
 
@@ -71,7 +79,7 @@ const submitPage = async () => {
 
       <!-- First Name -->
       <v-text-field
-        v-model="firstName"
+        v-model="form.firstName"
         placeholder="First Name"
         prepend-inner-icon="mdi-account"
         variant="outlined"
@@ -81,7 +89,7 @@ const submitPage = async () => {
 
       <!-- Last Name -->
       <v-text-field
-        v-model="lastName"
+        v-model="form.lastName"
         placeholder="Last Name"
         prepend-inner-icon="mdi-account"
         variant="outlined"
@@ -92,7 +100,7 @@ const submitPage = async () => {
       <!--TeamName-->
 
       <v-text-field
-        v-model="teamName"
+        v-model="form.teamName"
         placeholder="Team Name"
         prepend-inner-icon="mdi-account-group"
         variant="outlined"
@@ -103,7 +111,7 @@ const submitPage = async () => {
       <!--Email-->
 
       <v-text-field
-        v-model="email"
+        v-model="form.email"
         placeholder="Email"
         prepend-inner-icon="mdi-email-outline"
         variant="outlined"
@@ -113,7 +121,7 @@ const submitPage = async () => {
 
       <!-- Password -->
       <v-text-field
-        v-model="password"
+        v-model="form.password"
         placeholder="Password"
         prepend-inner-icon="mdi-lock-outline"
         :type="show ? 'text' : 'password'"
@@ -126,7 +134,7 @@ const submitPage = async () => {
 
       <!--confirm pasword-->
       <v-text-field
-        v-model="password"
+      
         placeholder="Confirm Password"
         prepend-inner-icon="mdi-lock-check-outline"
         append-inner-icon="mdi-eye-off"
@@ -137,7 +145,7 @@ const submitPage = async () => {
       />
 
       <!-- Button -->
-      <v-btn @click="submitPage" block size="large" class="mb-6 text-white bg-black" rounded="lg">
+      <v-btn type="button" @click="submitPage" block size="large" class="mb-6 text-white bg-black" rounded="lg">
         Get Started
       </v-btn>
 

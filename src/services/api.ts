@@ -41,18 +41,44 @@ const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 120000,
   headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${ANON_KEY}`,
+    "Content-Type": "application/json",       
+    // Authorization: `Bearer ${ANON_KEY}`,
   },
 });
 
 // Request Interceptor
+// apiClient.interceptors.request.use(
+//   (config) => {
+//     const token = localStorage.getItem("token");
+//     if (token) {
+//       config.headers = config.headers || {};
+//       config.headers.Authorization = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
+
+// apiClient.interceptors.request.use((config) => {
+//   const token = localStorage.getItem("token")
+
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`
+//   } else {
+//     // ✅ fallback to anon ONLY if no token
+//     config.headers.Authorization = `Bearer ${ANON_KEY}`
+//   }
+
+//   return config
+// })
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+      // Use a custom header for your app token
+      // Keep Authorization for the anon key
+      config.headers["x-user-token"] = token;
     }
     return config;
   },

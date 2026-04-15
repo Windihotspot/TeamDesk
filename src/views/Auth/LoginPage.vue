@@ -1,12 +1,50 @@
 <script setup>
+import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+import { authService } from '@/services/authService.js'
+
+const form = ref ({
+  email:  "",
+  password: ""
+})
 
 
+const router = useRouter()
 
 
+// const submit = async () => {
+//   try {
+//     const data = await authService.login({ form.value })
+
+//     console.log('FORM:', form)
+//     console.log('✅ Success:', data)
+
+//     router.push('/')
+
+//   } catch (err) {
+//     console.error('Error:', err)
+//   }
+// }
 
 
+const submit = async () => {
+  try {
+    const payload = {
+      email: form.value.email,
+      password: form.value.password
+    }
 
+    const data = await authService.login(payload)
 
+    console.log('Payload:', payload)
+    console.log('✅ Success:', data)
+
+    router.push('/')
+
+  } catch (err) {
+    console.error('Error:', err)
+  }
+}
 </script>
 
 <template>
@@ -22,6 +60,7 @@
 
       <v-responsive class="mx-auto mb-4 pt-2" max-width="344">
         <v-text-field
+          v-model="form.email"
           hide-details="auto"
           placeholder="Email"
           prepend-inner-icon="mdi-email-outline"
@@ -32,6 +71,7 @@
       </v-responsive>
 
       <v-text-field
+        v-model="form.password"
         placeholder="Password"
         prepend-inner-icon="mdi-lock-outline"
         append-inner-icon="mdi-eye-off"
@@ -45,12 +85,12 @@
         <a href="#" class="text-caption text-grey"> Forgot password? </a>
       </div>
 
-      <v-btn block size="large" class="mb-6 text-white bg-black"  rounded="lg"> Welcome Back </v-btn>
+      <v-btn @click="submit" block size="large" class="mb-6 text-white bg-black" rounded="lg">
+        Welcome Back
+      </v-btn>
     </v-card>
   </v-container>
 </template>
-
-
 
 <style scoped>
 .fill-height {
