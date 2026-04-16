@@ -1,7 +1,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
-import { authService } from '@/services/authService.js'
+import { supabase } from '@/services/supabase'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 const form = ref({
   email: '',
@@ -10,34 +13,18 @@ const form = ref({
 
 const router = useRouter()
 
-// const submit = async () => {
-//   try {
-//     const data = await authService.login({ form.value })
-
-//     console.log('FORM:', form)
-//     console.log('✅ Success:', data)
-
-//     router.push('/')
-
-//   } catch (err) {
-//     console.error('Error:', err)
-//   }
-// }
-
 const submit = async () => {
-  const payload = {
-    email: form.value.email,
-    password: form.value.password
-  }
-  console.log('Payload:', payload)
-  try {
-    const data = await authService.login(payload)
+  const { email, password } = form.value
 
-    console.log('✅ Success:', data)
+  try {
+    const data = await auth.login({ email, password })
+
+    console.log('✅ User:', data.user)
+    console.log('✅ Session:', data.session)
 
     router.push('/')
   } catch (err) {
-    console.error('Error:', err)
+    console.error('❌ Login error:', err.message)
   }
 }
 </script>

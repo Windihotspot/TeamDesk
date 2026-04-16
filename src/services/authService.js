@@ -1,42 +1,33 @@
-import api from './api';
-
+import ApiService from '../services/api.ts'
 
 export const authService = {
   async signup(payload) {
     try {
-      const response = await api.post('/register', payload)
+      const response = await ApiService.post('/register', payload)
       console.log(response)
     } catch (error) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message
+      const message = error.response?.data?.error || error.response?.data?.message || error.message
 
       throw new Error(message)
     }
   },
 
-
   async login(payload) {
     try {
-      
-      const response = await api.post('/login', payload)
+      const response = await ApiService.post('/login', payload)
       console.log(response)
       console.log(payload)
       return response
     } catch (error) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message
+      const message = error.response?.data?.error || error.response?.data?.message || error.message
 
       throw new Error(message)
     }
   },
 
-//   logout() {
-//     localStorage.removeItem('token')    window.location.href = '/login'
-//   },
+  //   logout() {
+  //     localStorage.removeItem('token')    window.location.href = '/login'
+  //   },
 
   getToken() {
     return localStorage.getItem('token')

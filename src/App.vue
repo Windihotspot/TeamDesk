@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { onMounted } from 'vue'
 
+const auth = useAuthStore()
+
+onMounted(() => {
+  auth.fetchSession()
+  auth.initAuthListener()
+})
 </script>
 
 <template>
@@ -14,5 +22,3 @@ import { RouterView } from 'vue-router'
   background-color: #27bfa0;
 }
 </style>
-
-
