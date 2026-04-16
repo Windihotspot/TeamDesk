@@ -22,7 +22,7 @@ const submit = async () => {
     console.log('✅ User:', data.user)
     console.log('✅ Session:', data.session)
 
-    router.push('/')
+    router.push('/dashboard')
   } catch (err) {
     console.error('❌ Login error:', err.message)
   }

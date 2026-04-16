@@ -1,5 +1,4 @@
 import Dashboard from '@/views/Dashboard.vue'
-import HomePage from '@/views/HomePage.vue'
 import SignInPage from '@/views/Auth/SignInPage.vue'
 import LoginPage from '@/views/Auth/LoginPage.vue'
 import BrowseProjects from '@/views/BrowseProjects.vue'
@@ -24,37 +23,12 @@ const router = createRouter({
       path: '/signin',
       name: 'SignIn',
       component: SignInPage
-    }
-    // {
-    //   path: '/login',
-    //   name: 'Login',
-    //   component: LoginPage
-    // }
-  ]
-})
-
-import { useAuthStore } from '@/stores/auth'
-
-router.beforeEach((to, from, next) => {
-  const auth = useAuthStore()
-
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return next('/login')
-  }
-
-  next()
-      name: 'home',
-      component: HomePage
     },
     {
       path: '/dashboard',
       name: 'dashboard',
       component: Dashboard
-<<<<<<< HEAD
     }
-=======
-    },
->>>>>>> 3623b08aae478adb4e138207574e23e743b4e369
   ]
 })
 
