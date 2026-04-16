@@ -12,7 +12,7 @@ const sidebarItems = [
   },
   {
     title: 'Attendance',
-    path: '/',
+    path: '/attendance',
     icon: 'mdi-account-check'
   }
 ]
