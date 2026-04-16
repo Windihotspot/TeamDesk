@@ -7,7 +7,7 @@ const sidebarItems = [
   },
   {
     title: 'Projects',
-    path: '/projects',
+    path: '/browseProjects',
     icon: 'mdi-account-check'
   },
   {
