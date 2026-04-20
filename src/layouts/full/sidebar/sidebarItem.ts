@@ -14,6 +14,11 @@ const sidebarItems = [
     title: 'Attendance',
     path: '/attendance',
     icon: 'mdi-account-check'
+  },
+  {
+    title: 'Tasks',
+    path: '/tasks',
+    icon: 'mdi-account-check'
   }
 ]
 
