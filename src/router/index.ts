@@ -6,6 +6,7 @@ import BrowseProjects from '@/views/BrowseProjects.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import Login from '@/views/Auth/Login.vue'
+import Tasks from '@/views/Tasks.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,6 +35,11 @@ const router = createRouter({
       path: '/attendance',
       name: 'attendance',
       component: Attendance
+    },
+    {
+      path: '/tasks',
+      name: 'tasks',
+      component: Tasks
     }
   ]
 })

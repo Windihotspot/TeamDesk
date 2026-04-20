@@ -2,47 +2,47 @@
 import MainLayout from '@/layouts/full/MainLayout.vue'
 
 
-const projects = [
-  { name: "Starlight Initiative", tasks: "2 Tasks due soon", color: "bg-orange-500" },
-  { name: "Project Zenith", tasks: "4 Tasks due soon", color: "bg-blue-500" },
-  { name: "Evergreen Project", tasks: "1 Task due soon", color: "bg-green-500" },
-  { name: "Capstone Initiative", tasks: "8 Tasks due soon", color: "bg-lime-500" },
-  { name: "Project Phoenix", tasks: "3 Tasks due soon", color: "bg-red-500" },
-  { name: "Project Chimera", tasks: "No tasks", color: "bg-gray-800" },
-];
+// const projects = [
+//   { name: "Starlight Initiative", tasks: "2 Tasks due soon", color: "bg-orange-500" },
+//   { name: "Project Zenith", tasks: "4 Tasks due soon", color: "bg-blue-500" },
+//   { name: "Evergreen Project", tasks: "1 Task due soon", color: "bg-green-500" },
+//   { name: "Capstone Initiative", tasks: "8 Tasks due soon", color: "bg-lime-500" },
+//   { name: "Project Phoenix", tasks: "3 Tasks due soon", color: "bg-red-500" },
+//   { name: "Project Chimera", tasks: "No tasks", color: "bg-gray-800" },
+// ];
 
-const members = [
-  {
-    name: "Elowen Frost",
-    email: "elowen.frost@email.com",
-    avatar: "https://i.pravatar.cc/40?img=1",
-  },
-  {
-    name: "Jasper Thorne",
-    email: "jasper.thorne@email.com",
-    avatar: "https://i.pravatar.cc/40?img=2",
-  },
-  {
-    name: "Willow Briar",
-    email: "willow.briar@email.com",
-    avatar: "https://i.pravatar.cc/40?img=3",
-  },
-  {
-    name: "Silas Blackwood",
-    email: "silas.blackwood@email.com",
-    avatar: "https://i.pravatar.cc/40?img=4",
-  },
-  {
-    name: "Luna Sterling",
-    email: "luna.sterling@email.com",
-    avatar: "https://i.pravatar.cc/40?img=5",
-  },
-  {
-    name: "Griffin Wilde",
-    email: "griffin.wilde@email.com",
-    avatar: "https://i.pravatar.cc/40?img=6",
-  },
-];
+// const members = [
+//   {
+//     name: "Elowen Frost",
+//     email: "elowen.frost@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=1",
+//   },
+//   {
+//     name: "Jasper Thorne",
+//     email: "jasper.thorne@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=2",
+//   },
+//   {
+//     name: "Willow Briar",
+//     email: "willow.briar@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=3",
+//   },
+//   {
+//     name: "Silas Blackwood",
+//     email: "silas.blackwood@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=4",
+//   },
+//   {
+//     name: "Luna Sterling",
+//     email: "luna.sterling@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=5",
+//   },
+//   {
+//     name: "Griffin Wilde",
+//     email: "griffin.wilde@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=6",
+//   },
+// ];
 </script>
 
 <template>

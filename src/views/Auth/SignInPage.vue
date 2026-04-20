@@ -138,7 +138,8 @@ const submitPage = async () => {
         placeholder="Confirm Password"
         prepend-inner-icon="mdi-lock-check-outline"
         append-inner-icon="mdi-eye-off"
-        type="password"
+        :type="show ? 'text' : 'password'"
+        :append-inner-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
         variant="outlined"
         density="comfortable"
         rounded
