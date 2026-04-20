@@ -3,6 +3,7 @@ import SignInPage from '@/views/Auth/SignInPage.vue'
 import LoginPage from '@/views/Auth/LoginPage.vue'
 import BrowseProjects from '@/views/BrowseProjects.vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import Attendance from '@/views/Attendance.vue'
 
 import Login from '@/views/Auth/Login.vue'
 
@@ -28,6 +29,12 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: Dashboard
+    }
+    ,
+    {
+      path: '/attendance',
+      name: 'attendance',
+      component: Attendance
     }
   ]
 })

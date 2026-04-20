@@ -1,14 +1,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import SidebarView from './sidebar/SidebarView.vue'
-import HeaderView from './header/HeaderView.vue'
 const drawer = ref()
 const innerW = window.innerWidth
+import { useDisplay } from 'vuetify'
+
+const { mdAndUp } = useDisplay()
 
 onMounted(() => {
-  if (innerW < 950) {
-    drawer.value = !drawer.value
-  }
+  drawer.value = mdAndUp.value // open on desktop, closed on mobile
 })
 </script>
 
@@ -16,49 +16,37 @@ onMounted(() => {
   <v-app>
     <!--- Header -->
     <!-- ---------------------------------------------- -->
-    <v-app-bar app elevation="1" class="pa-2">
-     <v-btn
-  class="hidden-md-and-up"
-  icon
-  @click="drawer = !drawer"
->
-  <v-icon icon="mdi-menu" />
-</v-btn>
-
-
-
-      <div class="logo pa-4 hidden md:flex items-center space-x-2">
-  <!-- <p class="font-semibold text-lg">Workforce</p> -->
-
-</div>
-
-
-      <v-spacer></v-spacer>
-      <HeaderView />
-    </v-app-bar>
+   
     <!-- ---------------------------------------------- -->
     <!--- Sidebar -->
     <!-- ---------------------------------------------- -->
     <v-navigation-drawer
-      left
-      :permanent="$vuetify.display.mdAndUp"
-      elevation="1"
-      app
-      :temporary="$vuetify.display.mdAndDown"
       v-model="drawer"
-      expand-on-hover
+      app
+      :permanent="$vuetify.display.mdAndUp"
+      :temporary="$vuetify.display.smAndDown"
+      location="left"
+      scrim="rgba(0,0,0,0.4)"
       class="side-bar"
     >
-      <SidebarView />
+       <SidebarView />
     </v-navigation-drawer>
 
     <!-- ---------------------------------------------- -->
 
     <!-- ---------------------------------------------- -->
     <!--- Page Wrapper -->
+    <!-- 🔥 Floating Menu Button (Mobile Only) -->
+    <div>
+      <v-icon
+        class="fixed top-4 left-4 z-[2100] text-blue md:hidden"
+        @click="drawer = !drawer"
+        icon="mdi-menu"
+      />
+    </div>
     <!-- ---------------------------------------------- -->
-    <v-main class="mt-4 page-wrapper">
-      <v-container fluid class="page-wrapper">
+    <v-main class="page-wrapper">
+      <v-container fluid class="page-wrapper bg-blue-30">
         <slot />
       </v-container>
     </v-main>
@@ -67,15 +55,16 @@ onMounted(() => {
 
 <style scoped>
 .side-bar {
+  z-index: 2000 !important;
+  background: var(--primary);
+}
+.side-bar {
   overflow: hidden !important;
+  background: var(--primary);
 }
 
 .side-bar::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
-}
-
-.page-wrapper {
-  background-color: #f5f7f9;
 }
 
 .settings-icon {

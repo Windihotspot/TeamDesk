@@ -1,132 +1,155 @@
-<script setup>
-import { ref, computed } from 'vue'
-import sidebarItems from './sidebarItem'
-import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
-const route = useRoute()
-const router = useRouter()
-// Function to check if the current route is active
-const isActive = (path) => {
-  return route.path === path
-}
-
-
-const sidebarMenu = ref(sidebarItems)
-
-</script>
-
 <template>
-  <div class="side-bar mt-4 d-flex flex-column h-full justify-between overflow-hidden">
-    <!-- Logo part -->
-    <!-- <div class="logo pa-4">
-      <img src="/src/assets/images/white.png" class="" />
-    </div> -->
+  <div class="dash-sidebar mt-6">
 
-    <!-- Navigation -->
-    <div class="flex-grow mt-4">
-      <v-list class="pa-4">
-        <template v-for="(item, i) in sidebarMenu" :key="i">
-          <v-list-item
-            @click="router.push(item.path)"
-            class="mb-4 pr-4 custom-btn no-uppercase relative"
-            size="small"
-            rounded="lg"
-            block
-            :class="{ 'custom-active': isActive(item.path) }"
-          >
-            <div class="flex items-center w-full">
-              <v-icon left>{{ item.icon }}</v-icon>
-              <span class="menu-item ml-4" v-text="item.title"></span>
-            </div>
+    <ul class="dash-menu mt-6">
+      <li
+        v-for="item in menuItems"
+        class="mt-4"
+        :key="item.nav"
+        :class="{ active: isActive(item) }"
+        @click="router.push(item.route)"
+      >
+        <i :class="item.icon"></i>
+        {{ item.label }}
+      </li>
 
-            <!-- Active bar INSIDE the v-list-item -->
-          </v-list-item>
-          <!-- <div v-if="isActive(item.path)" class="active-bar"></div> -->
-        </template>
-      </v-list>
-    </div>
-
-    <!-- Footer Logout -->
-    <!-- <div class="pa-4">
-      <v-list-item @click="logout" class="custom-btn logout-btn" rounded="lg" block>
-        <v-icon class="text-lg" left>
-          <i class="fas fa-sign-out-alt"></i>
-        </v-icon>
-        <span class="menu-item ml-4">Logout</span>
-      </v-list-item>
-    </div> -->
+    </ul>
   </div>
 </template>
 
-<style scoped>
-.side-bar {
-  width: 250px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100vh;
-  background: #ffffff;
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
+
+const activeNav = ref('home')
+const isActive = (item) => {
+  return route.path === item.route || route.path.startsWith(item.route + '/')
+}
+
+const setView = (nav: string, e: Event) => {
+  activeNav.value = nav
+  showDashView(nav)
+}
+
+const showDashView = (nav: string) => {
+  // replace with your real view logic
+  console.log('switch view:', nav)
+}
+
+const signOut = () => {
+  router.push('/')
+}
+
+/**
+ * EXACT SVG STRINGS from your original HTML
+ * (kept minimal for clarity but still identical usage)
+ */
+const menuItems = [
+  {
+    nav: 'dashboard',
+    label: 'Dashboard',
+    icon: 'mdi mdi-view-dashboard-outline',
+    route: '/dashboard'
+  },
+  {
+    nav: 'Projects',
+    label: 'Projects',
+    icon: 'mdi mdi-domain',
+    route: '/browseProjects'
+    
+  },
  
-}
+  {
+    nav: 'Attendance',
+    label: 'Attendance',
+    icon: 'mdi mdi-domain',
+    route: '/attendance'
+    
+  },
+ 
+]
 
-/* Default button state */
-.custom-btn {
-  text-align: left;
-  justify-content: flex-start;
-  transition: all 0.2s ease;
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: #1e1e1e;
-}
+</script>
 
-/* Hover state */
-.custom-btn:hover {
-  background-color: rgba(39, 191, 160, 0.08); /* soft teal */
-  color: #27bfa0;
-}
-
-.custom-btn .v-icon {
-  margin-right: 10px;
+<style scoped>
+.dash-menu li i {
   font-size: 18px;
-  color: #6b7280; /* gray-500 */
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dash-sidebar {
+  width: 260px;
+  padding: 18px;
+  background: var(--primary);
 }
 
-.custom-btn .menu-item {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 15px;
-  line-height: 22px;
-  color: #374151; /* gray-700 */
+/* SECTION LABEL */
+.dash-menu-section {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9aa0a6;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 16px 8px 10px;
 }
 
-/* Active state */
-.custom-active {
-  background-color: rgba(39, 191, 160, 0.12);
-  border-left: 4px solid #27bfa0;
-  color: #27bfa0 !important;
+/* MENU LIST */
+
+
+/* MENU ITEM */
+.dash-menu li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+
+  transition: all 0.2s ease;
 }
 
-.custom-active .menu-item {
-  color: #27bfa0 !important;
+/* ICON */
+.dash-menu li svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* HOVER */
+.dash-menu li:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* ACTIVE STATE (THIS IS THE BIG ONE) */
+.dash-menu li.active {
+  background: linear-gradient(135deg, #0f4c81, #2563eb);
+  color: #fff;
   font-weight: 600;
 }
 
-.custom-active .v-icon {
-  color: #27bfa0 !important;
+.dash-menu li.active i {
+  color: #fff;
 }
 
-/* Logout hover */
-.logout-btn:hover {
-  background-color: #ffecec;
-  color: #e63946;
+/* ACTIVE ICON COLOR */
+.dash-menu li.active svg {
+  color: #0b749e;
 }
 
-.active-bar {
-  display: none; /* no need if using border-left highlight */
+/* CREDIT CARD MATCHING IMAGE STYLE */
+.dash-sidebar > div[style*='var(--grad)'] {
+  border-radius: 16px;
+  margin-top: 24px;
 }
-
 </style>
