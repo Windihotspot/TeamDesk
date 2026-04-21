@@ -1,41 +1,37 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
 
-
-
-
-import { ref } from "vue";
+import { ref } from 'vue'
 
 const columns = ref([
   {
     id: 1,
-    title: "Recently assigned",
+    title: 'Recently assigned',
     tasks: [
-      { id: 1, title: "Pop-up notification after submit" },
-      { id: 2, title: "Add type ahead for selecting bank" },
-    ],
+      { id: 1, title: 'Pop-up notification after submit' },
+      { id: 2, title: 'Add type ahead for selecting bank' }
+    ]
   },
   {
     id: 2,
-    title: "Do today",
-    tasks: [],
+    title: 'Do today',
+    tasks: []
   },
   {
     id: 3,
-    title: "Do next week",
-    tasks: [],
+    title: 'Do next week',
+    tasks: []
   },
   {
     id: 4,
-    title: "Do later",
-    tasks: [],
-  },
-]);
+    title: 'Do later',
+    tasks: []
+  }
+])
 </script>
 
 <template>
-    <MainLayout>
-        <v-main>
+  <MainLayout>
     <!-- Top Controls -->
     <v-container fluid class="py-3">
       <div class="d-flex justify-space-between align-center">
@@ -53,7 +49,6 @@ const columns = ref([
     <!-- Kanban Board -->
     <v-container fluid>
       <div class="d-flex ga-4 overflow-x-auto pb-4">
-
         <!-- Column -->
         <v-card
           v-for="column in columns"
@@ -87,9 +82,7 @@ const columns = ref([
           </v-card>
 
           <!-- Add Task -->
-          <v-btn block variant="text" size="small">
-            + Add task
-          </v-btn>
+          <v-btn block variant="text" size="small"> + Add task </v-btn>
         </v-card>
 
         <!-- Add Section -->
@@ -101,9 +94,7 @@ const columns = ref([
         >
           <v-btn variant="text">+ Add section</v-btn>
         </v-card>
-
       </div>
     </v-container>
-  </v-main>
-    </MainLayout>
+  </MainLayout>
 </template>

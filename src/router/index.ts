@@ -1,32 +1,32 @@
 import Dashboard from '@/views/Dashboard.vue'
-import SignInPage from '@/views/Auth/SignInPage.vue'
+// import SignInPage from '@/views/Auth/SignInPage.vue'
 import LoginPage from '@/views/Auth/LoginPage.vue'
 import Attendance from '@/views/Attendance.vue'
 import BrowseProjects from '@/views/BrowseProjects.vue'
 import { createRouter, createWebHistory } from 'vue-router'
-import Attendance from '@/views/Attendance.vue'
 
-import Login from '@/views/Auth/Login.vue'
-import Tasks from '@/views/Tasks.vue'
+
+// import LoginForm from '@/views/Auth/LoginForm.vue'
+import MyTasks from '@/views/MyTasks.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'login',
-      component: Login
+      name: 'loginpage',
+      component: LoginPage
     },
     {
       path: '/browseProjects',
       name: 'browse',
       component: BrowseProjects
     },
-    {
-      path: '/signin',
-      name: 'SignIn',
-      component: SignInPage
-    },
+    // {     
+    //   path: '/signin',
+    //   name: 'SignIn',
+    //   component: SignInPage
+    // },
     {
       path: '/dashboard',
       name: 'dashboard',
@@ -40,13 +40,7 @@ const router = createRouter({
     {
       path: '/tasks',
       name: 'tasks',
-      component: Tasks
-    }
-    ,
-    {
-      path: '/attendance',
-      name: 'attendance',
-      component: Attendance
+      component: MyTasks
     }
   ]
 })

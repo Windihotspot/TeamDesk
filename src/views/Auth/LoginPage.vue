@@ -1,99 +1,64 @@
 <script setup>
-import { useRouter } from 'vue-router'
 import { ref } from 'vue'
-import { authService } from '@/services/authService.js'
+import LoginForm from '@/views/Auth/LoginForm.vue'
+import SignupForm from '@/views/Auth/SignupForm.vue'
 
-const form = ref({
-  email: '',
-  password: ''
-})
-
-const router = useRouter()
-
-// const submit = async () => {
-//   try {
-//     const data = await authService.login({ form.value })
-
-//     console.log('FORM:', form)
-//     console.log('✅ Success:', data)
-
-//     router.push('/')
-
-//   } catch (err) {
-//     console.error('Error:', err)
-//   }
-// }
-
-const submit = async () => {
-  const payload = {
-    email: form.value.email,
-    password: form.value.password
-  }
-  console.log('Payload:', payload)
-  try {
-    const data = await authService.login(payload)
-
-    console.log('✅ Success:', data)
-
-    router.push('/')
-  } catch (err) {
-    console.error('Error:', err)
-  }
-}
+const authMode = ref('login')
 </script>
 
 <template>
-  <v-container fluid class="d-flex align-center justify-center fill-height bg-gradient">
-    <v-card width="420" class="pa-9 rounded-xl elevation-10 text-center">
-      <div class="mb-6">
-        <v-avatar size="64" class="mx-auto elevation-2">
-          <v-icon size="32">mdi-login</v-icon>
-        </v-avatar>
+  <!-- PAGE WRAPPER -->
+  <div class="min-h-screen flex items-center justify-center bg-[linear-gradient(135deg,#e6f2f7,#f4f8fb)] px-4">
+
+    <!-- CARD -->
+    <div class="w-full max-w-md bg-white/90 backdrop-blur rounded-2xl shadow-xl p-6 sm:p-8">
+
+      <!-- LOGO -->
+      <div class="text-center mb-4">
+        <h1 class="text-2xl font-bold text-gray-800">
+          Team<span class="text-orange-500">Desk</span>
+        </h1>
       </div>
 
-      <h2 class="text-h5 font-weight-bold mb-2">Log In</h2>
+      <!-- TOGGLE -->
+      <div class="flex bg-gray-200 rounded-full p-1 mb-6 shadow-inner">
+        <button
+          class="flex-1 py-2 rounded-full text-sm transition-all"
+          :class="authMode === 'login'
+            ? 'bg-blue-900 text-white shadow'
+            : 'text-gray-600'"
+          @click="authMode = 'login'"
+        >
+          Log In
+        </button>
 
-      <v-responsive class="mx-auto mb-4 pt-2" max-width="344">
-        <v-text-field
-          v-model="form.email"
-          hide-details="auto"
-          placeholder="Email"
-          prepend-inner-icon="mdi-email-outline"
-          rounded
-          variant="outlined"
-          density="comfortable"
-        ></v-text-field>
-      </v-responsive>
-
-      <v-text-field
-        v-model="form.password"
-        placeholder="Password"
-        prepend-inner-icon="mdi-lock-outline"
-        append-inner-icon="mdi-eye-off"
-        type="password"
-        variant="outlined"
-        density="comfortable"
-        rounded
-      />
-
-      <div class="text-right mb-4">
-        <a href="#" class="text-caption text-grey"> Forgot password? </a>
+        <button
+          class="flex-1 py-2 rounded-full text-sm transition-all"
+          :class="authMode === 'signup'
+            ? 'bg-blue-900 text-white shadow'
+            : 'text-gray-600'"
+          @click="authMode = 'signup'"
+        >
+          Sign Up
+        </button>
       </div>
 
-      <v-btn @click="submit" block size="large" class="mb-6 text-white bg-black" rounded="lg">
-        Welcome Back
-      </v-btn>
-    </v-card>
-  </v-container>
+      <!-- TRANSITION AREA -->
+      <transition
+        mode="out-in"
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-2 scale-95"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <component
+          :is="authMode === 'login' ? LoginForm : SignupForm"
+          :key="authMode"
+        />
+      </transition>
+
+    </div>
+  </div>
 </template>
-
-<style scoped>
-.fill-height {
-  min-height: 100vh;
-}
-
-/* soft gradient background */
-.bg-gradient {
-  background: linear-gradient(135deg, #cfe9f1, #eaf3f7);
-}
-</style>

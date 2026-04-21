@@ -1,6 +1,6 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-
+import { supabase } from '@/services/supabase.js'
 
 // const projects = [
 //   { name: "Starlight Initiative", tasks: "2 Tasks due soon", color: "bg-orange-500" },
@@ -43,6 +43,49 @@ import MainLayout from '@/layouts/full/MainLayout.vue'
 //     avatar: "https://i.pravatar.cc/40?img=6",
 //   },
 // ];
+
+import { ref, onMounted } from 'vue'
+
+const isEditMode = ref(false)
+const showProjects = ref(false)
+
+const form = ref({
+  projectsName: '',
+  team_id: '',
+  description: ''
+})
+
+const openAddProjects = async () => {
+  showProjects.value = true
+}
+
+const getTeams = async () => {
+  try {
+    const { data, error } = await supabase.from('teams').select('*').eq('owner_id', user.id)
+
+    if (error) throw error
+
+    console.log('teams', data)
+    return data
+  } catch (error) {
+    console.log('error fetching teams: ', error)
+  }
+}
+
+const showTeamMembers = ref(false)
+
+const formTeam = ref({
+  name: '',
+  projects: ''
+})
+
+const openAddTeams = async () => {
+  showTeamMembers.value = true
+}
+
+onMounted(() => {
+  getTeams()
+})
 </script>
 
 <template>
@@ -63,7 +106,7 @@ import MainLayout from '@/layouts/full/MainLayout.vue'
                 :items="['Due Date', 'Name']"
                 model-value="Due Date"
               />
-              <v-btn icon size="small" class="text-black rounded-lg ">
+              <v-btn @click="openAddProjects" icon size="small" class="text-black rounded-lg">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
               <v-btn icon size="small" variant="text">
@@ -98,7 +141,7 @@ import MainLayout from '@/layouts/full/MainLayout.vue'
             <h2 class="font-bold text-md">Team Members</h2>
 
             <div class="flex items-center gap-2">
-              <v-btn icon size="small" class="text-black rounded-lg">
+              <v-btn @click="openAddTeams" icon size="small" class="text-black rounded-lg">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
               <v-btn icon size="small" variant="text">
@@ -130,5 +173,97 @@ import MainLayout from '@/layouts/full/MainLayout.vue'
         </v-card>
       </div>
     </div>
+
+    <!-- ✅ Projects Add Dialog -->
+    <v-dialog v-model="showProjects" max-width="500px" persistent>
+      <v-card class="p-4">
+        <v-card-title class="text-lg font-semibold">
+          {{ isEditMode ? 'Edit Projects Record' : 'Add Projects Record' }}
+        </v-card-title>
+
+        <v-card-text>
+          <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
+            <v-text-field
+              v-model="form.projectsName"
+              :items="projectsName"
+              label="Projects Name"
+              variant="outlined"
+              color="green"
+            />
+
+            <v-select
+              v-model="form.team_id"
+              :items="teams"
+              item-title="name"
+              item-value="id"
+              label="Select Team"
+              variant="outlined"
+              class="mt-3"
+            />
+
+            <v-textarea
+              v-model="form.description"
+              label="Description"
+              rows="2"
+              variant="outlined"
+              color="green"
+              class="mt-3"
+            />
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions class="justify-end space-x-2">
+          <v-btn text color="grey" @click="showProjects = false">Cancel</v-btn>
+          <v-btn
+            :loading="submitting"
+            color="green"
+            @click="getTeams"
+            :disabled="!formValid || submitting"
+            >Save</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showTeamMembers" max-width="500px" persistent>
+      <v-card class="p-4">
+        <v-card-title class="text-lg font-semibold">
+          {{ isEditMode ? 'Edit Teams Record' : 'Add Teams Record' }}
+        </v-card-title>
+
+        <v-card-text>
+          <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
+            <v-text-field
+              v-model="formTeam.name"
+              :items="name"
+              label="Name"
+              variant="outlined"
+              color="green"
+            />
+
+            <v-select
+              v-model="formTeam.projectsName"
+              :items="projectsName"
+              item-title="name"
+              label="Projects Name"
+              variant="outlined"
+              color="green"
+              class="mt-3"
+            />
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions class="justify-end space-x-2">
+          <v-btn text color="grey" @click="showTeamMembers = false">Cancel</v-btn>
+          <v-btn
+            :loading="submitting"
+            color="green"
+            @click="submitAttendance"
+            :disabled="!formValid || submitting"
+            >Save</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </MainLayout>
 </template>

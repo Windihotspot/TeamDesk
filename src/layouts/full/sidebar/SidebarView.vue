@@ -69,6 +69,14 @@ const menuItems = [
     route: '/attendance'
     
   },
+
+  {
+    nav: 'MyTasks',
+    label: 'MyTasks',
+    icon: 'mdi mdi-domain',
+    route: '/tasks'
+    
+  },
  
 ]
 

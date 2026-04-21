@@ -16,7 +16,7 @@ const sidebarItems = [
     icon: 'mdi-account-check'
   },
   {
-    title: 'Tasks',
+    title: 'MyTasks',
     path: '/tasks',
     icon: 'mdi-account-check'
   }
