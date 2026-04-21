@@ -6,6 +6,9 @@ import { useMonthDropdownStore } from '../stores/usemonthstores'
 import { storeToRefs } from 'pinia'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import confetti from 'canvas-confetti'
+import { useAuthStore } from '@/stores/auth'
+import ApiService from '@/services/api'
+import DepartmentSection from '@/composables/DepartmentSection.vue'
 
 /* ---------------- MONTH DROPDOWN ---------------- */
 const monthStore = useMonthDropdownStore()
@@ -39,6 +42,13 @@ const customers = ref([
   }
 ])
 
+const showMembersModal = ref(false)
+const openMembersModal = () => {
+  showMembersModal.value = true
+}
+const closeMembersModal = () => {
+  showMembersModal.value = false
+}
 /* ---------------- NEW TASKS ---------------- */
 const NewTasks = ref([
   {
@@ -257,6 +267,48 @@ const chartOptions = ref({
   },
   yaxis: { show: false }
 })
+// const dashboardData = ref(null)
+// const loading = ref(false)
+
+const authStore = useAuthStore()
+
+const loading = ref(false)
+const error = ref(null)
+const dashboardData = ref(null)
+
+// 🔥 Fetch dashboard
+const fetchDashboard = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const userId = authStore.user?.id || authStore.session?.user?.id
+
+    if (!userId) {
+      throw new Error('User not authenticated')
+    }
+
+    const res = await ApiService.post('dashboard', {
+      user_id: userId
+    })
+    console.log('res:', res)
+    dashboardData.value = res.dashboard
+  } catch (err) {
+    error.value = err?.response?.data?.error || err.message || 'Failed to load dashboard'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  // ensure session is loaded
+  await authStore.fetchSession()
+  await fetchDashboard()
+})
+
+const totalProjects = computed(() => {
+  return dashboardData.value?.totalProjects ?? tasks.value.length
+})
 </script>
 
 <style>
@@ -303,7 +355,9 @@ const chartOptions = ref({
                   <span>Total projects</span>
                 </div>
                 <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">12</span>
+                  <span class="text-4xl font-bold text-gray-900">
+                    {{ totalProjects }}
+                  </span>
                   <div
                     class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1"
                   >
@@ -339,7 +393,7 @@ const chartOptions = ref({
 
           <!-- Active Members -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 class="text-base font-semibold text-gray-800 mb-4">10 active members</h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-4">5 active members</h3>
 
             <div class="flex items-center gap-5">
               <div
@@ -359,6 +413,7 @@ const chartOptions = ref({
 
               <div class="flex flex-col items-center gap-2">
                 <button
+                  @click="openMembersModal"
                   class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-400 hover:bg-gray-50"
                 >
                   <svg
@@ -378,13 +433,50 @@ const chartOptions = ref({
                 <span class="text-xs text-gray-500">View all</span>
               </div>
             </div>
+            <div
+              v-if="showMembersModal"
+              class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+            >
+              <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-sm font-semibold text-gray-800">
+                    Active Members ({{ customers.length }})
+                  </h3>
+
+                  <button @click="closeMembersModal">
+                    <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
+                  </button>
+                </div>
+
+                <!-- Members List -->
+                <div class="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
+                  <div
+                    v-for="member in customers"
+                    :key="member.name"
+                    class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg"
+                  >
+                    <img :src="member.avatar" class="w-10 h-10 rounded-full object-cover" />
+
+                    <span class="text-sm text-gray-700">
+                      {{ member.name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Task Chart -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
             <div class="flex flex-col gap-4">
               <!-- Header -->
-              <h2 class="text-lg font-semibold text-gray-800">All Tasks</h2>
+              <!-- Header -->
+              <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800">All Projects</h2>
+
+                <DepartmentSection class="w-48" />
+              </div>
 
               <!-- Task List -->
               <ul class="flex flex-col gap-3">

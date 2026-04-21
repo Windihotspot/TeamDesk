@@ -1,70 +1,52 @@
-
-// src/services/api.ts
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { supabase } from '@/services/supabase' // ✅ fixed path
 
 const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 120000,
   headers: {
     'Content-Type': 'application/json'
-    // Authorization: `Bearer ${ANON_KEY}`,
   }
 })
 
-// Request Interceptor
-// apiClient.interceptors.request.use(
-//   (config) => {
-//     const token = localStorage.getItem("token");
-//     if (token) {
-//       config.headers = config.headers || {};
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-//   },
-//   (error) => Promise.reject(error)
-// );
-
-// apiClient.interceptors.request.use((config) => {
-//   const token = localStorage.getItem("token")
-
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`
-//   } else {
-//     // ✅ fallback to anon ONLY if no token
-//     config.headers.Authorization = `Bearer ${ANON_KEY}`
-//   }
-
-//   return config
-// })
-
+/* ---------------- REQUEST INTERCEPTOR ---------------- */
 apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      // Use a custom header for your app token
-      // Keep Authorization for the anon key
-      config.headers['x-user-token'] = token
+  async (config) => {
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+
+      if (token) {
+        if (!config.headers) {
+          config.headers = {}
+        }
+
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('Error getting session:', err)
     }
+
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response Interceptor
+/* ---------------- RESPONSE INTERCEPTOR ---------------- */
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+      await supabase.auth.signOut()
     }
     return Promise.reject(error)
   }
 )
 
+/* ---------------- API METHODS ---------------- */
 const ApiService = {
   get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     return apiClient.get(url, config).then((res) => res.data)

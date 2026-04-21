@@ -5,8 +5,8 @@ import { onMounted } from 'vue'
 
 const auth = useAuthStore()
 
-onMounted(() => {
-  auth.fetchSession()
+onMounted(async () => {
+  await auth.fetchSession()   // ✅ WAIT for it
   auth.initAuthListener()
 })
 </script>
