@@ -338,9 +338,9 @@ const chartOptions = ref({
             </div>
           </div>
 
-          <!-- Active Members -->
-          <div class="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 class="text-base font-semibold text-gray-800 mb-4">10 active members</h3>
+          <!-- Active Members. -->
+          <div class="bg-white rounded-2xl p-8 shadow-sm">
+            <h3 class="text-base font-semibold text-gray-800 mb-4"> Active Members</h3>
 
             <div class="flex items-center gap-5">
               <div
