@@ -27,17 +27,16 @@ const loadUsers = async () => {
   loadingUsers.value = true
 
   try {
-    const res = await fetch('https://rhfmzwpbmicfcifalpiq.supabase.co/functions/v1/users')
-    console.log('res:', res)
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, avatar_url, email')
 
-    const json = await res.json()
+    if (error) throw error
 
-    if (!json.success) throw new Error(json.error)
-
-    usersList.value = json.data.map((u) => ({
+    usersList.value = (data || []).map((u) => ({
       id: u.id,
-      name: u.name,
-      avatar: u.avatar
+      name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
+      avatar: u.avatar_url
     }))
   } catch (err) {
     ElMessage.error(err.message)
@@ -67,8 +66,7 @@ const openEditDialog = async (log) => {
   // Set type FIRST
   form.value.userType = log.user_type
 
-  // Load users WITHOUT clearing userId
-  await onUserTypeChange(log.user_type, true)
+  
 
   // Now safely set the user
   form.value.userId = log.user_id
@@ -482,21 +480,13 @@ const weeklyChartSeries = computed(() => {
     <!-- ✅ Attendance Add Dialog -->
     <v-dialog v-model="showDialog" max-width="500px" persistent>
       <v-card class="p-4">
-        <v-card-title class="text-lg font-semibold">
+        <v-card-title class="text-md font-semibold">
           {{ isEditMode ? 'Edit Attendance Record' : 'Add Attendance Record' }}
         </v-card-title>
 
         <v-card-text>
           <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
-            <v-select
-              v-model="form.userType"
-              :items="userTypes"
-              label="User Type"
-              :rules="[rules.userType]"
-              variant="outlined"
-              color="green"
-              @update:model-value="onUserTypeChange"
-            />
+         
 
             <v-select
               v-model="form.userId"
