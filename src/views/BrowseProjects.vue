@@ -44,24 +44,43 @@ import { supabase } from '@/services/supabase.js'
 //   },
 // ];
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import {useAuthStore} from '@/stores/auth.js'
+import {useProjectStore} from '@/stores/project.js'
+
+
+const authStore = useAuthStore()
+const projectStore = useProjectStore()
+
+
+const user = computed(() => authStore.user)
+console.log(user)
+
 
 const isEditMode = ref(false)
 const showProjects = ref(false)
 
 const form = ref({
-  projectsName: '',
-  team_id: '',
-  description: ''
+  name: '',
+  team_id: null,
+  description: '',
+  status: 'active'
 })
 
 const openAddProjects = async () => {
-  showProjects.value = true
+  try {
+    await projectStore.createProject(form.value)
+    console.log('✅ Project created')
+  } catch (err) {
+    console.error('❌ Error:', err.message)
+  }
 }
 
 const getTeams = async () => {
+
+  if (!user.value) return
   try {
-    const { data, error } = await supabase.from('teams').select('*').eq('owner_id', user.id)
+    const { data, error } = await supabase.from('teams').select('*')
 
     if (error) throw error
 
@@ -83,8 +102,11 @@ const openAddTeams = async () => {
   showTeamMembers.value = true
 }
 
-onMounted(() => {
-  getTeams()
+onMounted(async () => {
+  if (!authStore.user) {
+    await authStore.fetchSession()
+  }
+  await getTeams()
 })
 </script>
 
@@ -184,14 +206,14 @@ onMounted(() => {
         <v-card-text>
           <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
             <v-text-field
-              v-model="form.projectsName"
+              v-model="form.name"
               :items="projectsName"
               label="Projects Name"
               variant="outlined"
               color="green"
             />
 
-            <v-select
+            <v-text-field
               v-model="form.team_id"
               :items="teams"
               item-title="name"

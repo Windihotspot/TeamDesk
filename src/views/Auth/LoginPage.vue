@@ -25,7 +25,7 @@ const authMode = ref('login')
         <button
           class="flex-1 py-2 rounded-full text-sm transition-all"
           :class="authMode === 'login'
-            ? 'bg-blue-900 text-white shadow'
+            ? 'bg-[#0B1F3A] text-white shadow'
             : 'text-gray-600'"
           @click="authMode = 'login'"
         >
@@ -35,7 +35,7 @@ const authMode = ref('login')
         <button
           class="flex-1 py-2 rounded-full text-sm transition-all"
           :class="authMode === 'signup'
-            ? 'bg-blue-900 text-white shadow'
+            ? 'bg-[#0B1F3A] text-white shadow'
             : 'text-gray-600'"
           @click="authMode = 'signup'"
         >
