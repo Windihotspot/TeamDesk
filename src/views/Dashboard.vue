@@ -1,4 +1,5 @@
-<script setup>
+<script setup> 
+import { supabase } from '@/services/supabase'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import apexchart from 'vue3-apexcharts'
@@ -6,6 +7,9 @@ import { useMonthDropdownStore } from '../stores/usemonthstores'
 import { storeToRefs } from 'pinia'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import confetti from 'canvas-confetti'
+import { useAuthStore } from '@/stores/auth'
+import ApiService from '@/services/api'
+import DepartmentSection from '@/composables/DepartmentSection.vue'
 
 /* ---------------- MONTH DROPDOWN ---------------- */
 const monthStore = useMonthDropdownStore()
@@ -16,60 +20,19 @@ onMounted(() => monthStore.init())
 onBeforeUnmount(() => monthStore.destroy())
 
 /* ---------------- CUSTOMERS ---------------- */
-const customers = ref([
-  {
-    name: 'ifiok usanga',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Gladyce&backgroundColor=ffd5dc'
-  },
-  {
-    name: 'olaiya Everjoy',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Elbert&backgroundColor=c0aede'
-  },
-  {
-    name: 'Olufemi Emmanuel ',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Dash&backgroundColor=b6e3f4'
-  },
-  {
-    name: 'Ojedele Emmanuel ',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Joyce&backgroundColor=ffdfbf'
-  },
-  {
-    name: 'Ejobu Emmanuel ',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Marina&backgroundColor=d1f4d1'
-  }
-])
+const customers = ref([])
 
+
+const showMembersModal = ref(false)
+const openMembersModal = () => {
+  showMembersModal.value = true
+}
+const closeMembersModal = () => {
+  showMembersModal.value = false
+}
 /* ---------------- NEW TASKS ---------------- */
-const NewTasks = ref([
-  {
-    name: 'everjoy',
-    description: 'Understand async/await',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task1',
-    inProgress: false,
-    showProgress: false
-  },
-  {
-    name: 'dimeji',
-    description: 'Sign up and login team members onto Teamdesk APIs',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task2',
-    inProgress: false,
-    showProgress: false
-  },
-  {
-    name: 'emmanuel',
-    description: 'Create dashboard summary cards using dummy data',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task3',
-    inProgress: false,
-    showProgress: false
-  },
-  {
-    name: 'ojedele',
-    description: 'Create a new ionic vue mobile app project',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task4',
-    inProgress: false,
-    showProgress: false
-  }
-])
+const newTasks = ref([])
+
 
 const deleteNewTask = (index) => {
   NewTasks.value.splice(index, 1)
@@ -81,48 +44,7 @@ const toggleProgress = (task) => {
 }
 
 /* ---------------- TASKS ---------------- */
-const tasks = ref([
-  {
-    title: 'Collaborate in building the Fee calculator',
-    description: 'Work on Quidly landing page calculator',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task1'
-  },
-  {
-    title: 'Create homepage with navbar and footer',
-    description: 'Using Vue.js',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task2'
-  },
-  {
-    title: 'Improve mobile responsiveness',
-    description: 'Optimize Quidly landing page',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task3'
-  },
-  {
-    title: 'Learn TypeScript basics',
-    description: 'From Vanilla JS → TS',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task4'
-  },
-  {
-    title: 'Collaborate in building the Fee calculator',
-    description: 'Work on Quidly landing page calculator',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task1'
-  },
-  {
-    title: 'Create homepage with navbar and footer',
-    description: 'Using Vue.js',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task2'
-  },
-  {
-    title: 'Improve mobile responsiveness',
-    description: 'Optimize Quidly landing page',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task3'
-  },
-  {
-    title: 'Learn TypeScript basics',
-    description: 'From Vanilla JS → TS',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task4'
-  }
-])
+const tasks = ref([])
 
 const showModal = ref(false)
 const selectedTask = ref(null)
@@ -163,9 +85,8 @@ const showAllNewTasks = ref(false)
 const visibleTasks = computed(() => (showAllTasks.value ? tasks.value : tasks.value.slice(0, 5)))
 
 const visibleNewTasks = computed(() =>
-  showAllNewTasks.value ? NewTasks.value : NewTasks.value.slice(0, 3)
+  showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
 )
-
 /* ---------------- COMMENTS ---------------- */
 const comments = ref([
   {
@@ -257,6 +178,163 @@ const chartOptions = ref({
   },
   yaxis: { show: false }
 })
+// const dashboardData = ref(null)
+// const loading = ref(false)
+
+const authStore = useAuthStore()
+
+const loading = ref(false)
+const error = ref(null)
+const dashboardData = ref(null)
+
+
+// fetch customers
+// const fetchCustomers = async () => {
+//   const { data, error } = await supabase
+//     .from('users')
+//     .select('*')
+
+//   if (error) {
+//     console.error('Customers error:', error)
+//     return
+//   }
+
+//   customers.value = data
+// }
+// // fetch projects
+// const fetchProjects = async () => {
+//   const { data, error } = await supabase
+//     .from('projects')
+//     .select('*')
+
+//   if (error) {
+//     console.error('Projects error:', error)
+//     return
+//   }
+
+//   tasks.value = data
+// }
+// // fetch newTasks
+// const fetchNewTasks = async () => {
+//   const { data, error } = await supabase
+//     .from('tasks')
+//     .select('*')
+//     .eq('status', 'new') // or 'in_progress'
+
+//   if (error) {
+//     console.error('Tasks error:', error)
+//     return
+//   }
+
+//   NewTasks.value = data
+// }
+// onMounted(async () => {
+//   await authStore.fetchSession()
+//   await fetchDashboard()
+
+//   // await Promise.all([
+//   //   fetchCustomers(),
+//   //   fetchProjects(),
+//   //   fetchNewTasks()
+//   // ])
+// })
+// const totalProjects = computed(() => tasks.value.length)
+
+// const deleteNewTask = async (id) => {
+//   await supabase.from('tasks').delete().eq('id', id)
+//   await fetchNewTasks()
+// }
+
+
+// 🔥 Fetch dashboard
+/* ---------------- HELPERS ---------------- */
+
+// extract dashboard safely
+const extractDashboard = (res) => {
+  return res?.data?.dashboard || res?.dashboard || null
+}
+
+// map members → customers
+const mapCustomers = (teams) => {
+  return teams.flatMap(team =>
+    (team.members || []).map(member => ({
+      name: `${member.first_name} ${member.last_name}`,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.first_name}`
+    }))
+  )
+}
+
+// map projects → tasks
+const mapTasks = (teams) => {
+  return teams.flatMap(team =>
+    (team.projects || []).flatMap(project =>
+      (project.tasks || []).map(task => ({
+        title: task.title,
+        description: task.status,
+        avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task'
+      }))
+    )
+  )
+}
+
+// filter new/in-progress tasks
+const mapNewTasks = (allTasks) => {
+  return allTasks.filter(
+    task => task.description === 'todo' || task.description === 'in_progress'
+  )
+}
+
+/* ---------------- FETCH ---------------- */
+
+const fetchDashboard = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const userId = authStore.user?.id ?? authStore.session?.user?.id
+
+    if (!userId) throw new Error('User not authenticated')
+
+    const res = await ApiService.post('dashboard', {
+      user_id: userId
+    })
+
+    const data = extractDashboard(res)
+    if (!data) throw new Error('Invalid dashboard response')
+
+    dashboardData.value = data
+
+    const teams = data.teams || []
+
+    customers.value = mapCustomers(teams)
+
+    const allTasks = mapTasks(teams)
+    tasks.value = allTasks
+
+    NewTasks.value = mapNewTasks(allTasks)
+
+  } catch (err) {
+    error.value =
+      err?.response?.data?.error ||
+      err.message ||
+      'Failed to load dashboard'
+  } finally {
+    loading.value = false
+  }
+}
+
+/* ---------------- LIFECYCLE ---------------- */
+
+onMounted(async () => {
+  await authStore.fetchSession()
+  await fetchDashboard()
+})
+
+/* ---------------- COMPUTED ---------------- */
+
+const totalProjects = computed(() => {
+  return dashboardData.value?.stats?.total_projects || 0
+})
 </script>
 
 <style>
@@ -303,7 +381,9 @@ const chartOptions = ref({
                   <span>Total projects</span>
                 </div>
                 <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">12</span>
+                  <span class="text-4xl font-bold text-gray-900">
+                    {{ totalProjects }}
+                  </span>
                   <div
                     class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1"
                   >
@@ -339,7 +419,7 @@ const chartOptions = ref({
 
           <!-- Active Members -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 class="text-base font-semibold text-gray-800 mb-4">10 active members</h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-4"> Active Members</h3>
 
             <div class="flex items-center gap-5">
               <div
@@ -359,6 +439,7 @@ const chartOptions = ref({
 
               <div class="flex flex-col items-center gap-2">
                 <button
+                  @click="openMembersModal"
                   class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-400 hover:bg-gray-50"
                 >
                   <svg
@@ -378,13 +459,50 @@ const chartOptions = ref({
                 <span class="text-xs text-gray-500">View all</span>
               </div>
             </div>
+            <div
+              v-if="showMembersModal"
+              class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+            >
+              <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-sm font-semibold text-gray-800">
+                    Active Members ({{ customers.length }})
+                  </h3>
+
+                  <button @click="closeMembersModal">
+                    <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
+                  </button>
+                </div>
+
+                <!-- Members List -->
+                <div class="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
+                  <div
+                    v-for="member in customers"
+                    :key="member.name"
+                    class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg"
+                  >
+                    <img :src="member.avatar" class="w-10 h-10 rounded-full object-cover" />
+
+                    <span class="text-sm text-gray-700">
+                      {{ member.name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Task Chart -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
             <div class="flex flex-col gap-4">
               <!-- Header -->
-              <h2 class="text-lg font-semibold text-gray-800">All Tasks</h2>
+              <!-- Header -->
+              <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800">All Projects</h2>
+
+                <DepartmentSection class="w-48" />
+              </div>
 
               <!-- Task List -->
               <ul class="flex flex-col gap-3">
@@ -544,3 +662,5 @@ const chartOptions = ref({
     </div>
   </main-layout>
 </template>
+
+
