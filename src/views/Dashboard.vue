@@ -1,4 +1,5 @@
-<script setup>
+<script setup> 
+import { supabase } from '@/services/supabase'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import apexchart from 'vue3-apexcharts'
@@ -19,28 +20,8 @@ onMounted(() => monthStore.init())
 onBeforeUnmount(() => monthStore.destroy())
 
 /* ---------------- CUSTOMERS ---------------- */
-const customers = ref([
-  {
-    name: 'ifiok usanga',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Gladyce&backgroundColor=ffd5dc'
-  },
-  {
-    name: 'olaiya Everjoy',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Elbert&backgroundColor=c0aede'
-  },
-  {
-    name: 'Olufemi Emmanuel ',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Dash&backgroundColor=b6e3f4'
-  },
-  {
-    name: 'Ojedele Emmanuel ',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Joyce&backgroundColor=ffdfbf'
-  },
-  {
-    name: 'Ejobu Emmanuel ',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Marina&backgroundColor=d1f4d1'
-  }
-])
+const customers = ref([])
+
 
 const showMembersModal = ref(false)
 const openMembersModal = () => {
@@ -50,36 +31,8 @@ const closeMembersModal = () => {
   showMembersModal.value = false
 }
 /* ---------------- NEW TASKS ---------------- */
-const NewTasks = ref([
-  {
-    name: 'everjoy',
-    description: 'Understand async/await',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task1',
-    inProgress: false,
-    showProgress: false
-  },
-  {
-    name: 'dimeji',
-    description: 'Sign up and login team members onto Teamdesk APIs',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task2',
-    inProgress: false,
-    showProgress: false
-  },
-  {
-    name: 'emmanuel',
-    description: 'Create dashboard summary cards using dummy data',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task3',
-    inProgress: false,
-    showProgress: false
-  },
-  {
-    name: 'ojedele',
-    description: 'Create a new ionic vue mobile app project',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task4',
-    inProgress: false,
-    showProgress: false
-  }
-])
+const newTasks = ref([])
+
 
 const deleteNewTask = (index) => {
   NewTasks.value.splice(index, 1)
@@ -91,48 +44,7 @@ const toggleProgress = (task) => {
 }
 
 /* ---------------- TASKS ---------------- */
-const tasks = ref([
-  {
-    title: 'Collaborate in building the Fee calculator',
-    description: 'Work on Quidly landing page calculator',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task1'
-  },
-  {
-    title: 'Create homepage with navbar and footer',
-    description: 'Using Vue.js',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task2'
-  },
-  {
-    title: 'Improve mobile responsiveness',
-    description: 'Optimize Quidly landing page',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task3'
-  },
-  {
-    title: 'Learn TypeScript basics',
-    description: 'From Vanilla JS → TS',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task4'
-  },
-  {
-    title: 'Collaborate in building the Fee calculator',
-    description: 'Work on Quidly landing page calculator',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task1'
-  },
-  {
-    title: 'Create homepage with navbar and footer',
-    description: 'Using Vue.js',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task2'
-  },
-  {
-    title: 'Improve mobile responsiveness',
-    description: 'Optimize Quidly landing page',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task3'
-  },
-  {
-    title: 'Learn TypeScript basics',
-    description: 'From Vanilla JS → TS',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Task4'
-  }
-])
+const tasks = ref([])
 
 const showModal = ref(false)
 const selectedTask = ref(null)
@@ -173,9 +85,8 @@ const showAllNewTasks = ref(false)
 const visibleTasks = computed(() => (showAllTasks.value ? tasks.value : tasks.value.slice(0, 5)))
 
 const visibleNewTasks = computed(() =>
-  showAllNewTasks.value ? NewTasks.value : NewTasks.value.slice(0, 3)
+  showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
 )
-
 /* ---------------- COMMENTS ---------------- */
 const comments = ref([
   {
@@ -276,38 +187,153 @@ const loading = ref(false)
 const error = ref(null)
 const dashboardData = ref(null)
 
+
+// fetch customers
+// const fetchCustomers = async () => {
+//   const { data, error } = await supabase
+//     .from('users')
+//     .select('*')
+
+//   if (error) {
+//     console.error('Customers error:', error)
+//     return
+//   }
+
+//   customers.value = data
+// }
+// // fetch projects
+// const fetchProjects = async () => {
+//   const { data, error } = await supabase
+//     .from('projects')
+//     .select('*')
+
+//   if (error) {
+//     console.error('Projects error:', error)
+//     return
+//   }
+
+//   tasks.value = data
+// }
+// // fetch newTasks
+// const fetchNewTasks = async () => {
+//   const { data, error } = await supabase
+//     .from('tasks')
+//     .select('*')
+//     .eq('status', 'new') // or 'in_progress'
+
+//   if (error) {
+//     console.error('Tasks error:', error)
+//     return
+//   }
+
+//   NewTasks.value = data
+// }
+// onMounted(async () => {
+//   await authStore.fetchSession()
+//   await fetchDashboard()
+
+//   // await Promise.all([
+//   //   fetchCustomers(),
+//   //   fetchProjects(),
+//   //   fetchNewTasks()
+//   // ])
+// })
+// const totalProjects = computed(() => tasks.value.length)
+
+// const deleteNewTask = async (id) => {
+//   await supabase.from('tasks').delete().eq('id', id)
+//   await fetchNewTasks()
+// }
+
+
 // 🔥 Fetch dashboard
+/* ---------------- HELPERS ---------------- */
+
+// extract dashboard safely
+const extractDashboard = (res) => {
+  return res?.data?.dashboard || res?.dashboard || null
+}
+
+// map members → customers
+const mapCustomers = (teams) => {
+  return teams.flatMap(team =>
+    (team.members || []).map(member => ({
+      name: `${member.first_name} ${member.last_name}`,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.first_name}`
+    }))
+  )
+}
+
+// map projects → tasks
+const mapTasks = (teams) => {
+  return teams.flatMap(team =>
+    (team.projects || []).flatMap(project =>
+      (project.tasks || []).map(task => ({
+        title: task.title,
+        description: task.status,
+        avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task'
+      }))
+    )
+  )
+}
+
+// filter new/in-progress tasks
+const mapNewTasks = (allTasks) => {
+  return allTasks.filter(
+    task => task.description === 'todo' || task.description === 'in_progress'
+  )
+}
+
+/* ---------------- FETCH ---------------- */
+
 const fetchDashboard = async () => {
   loading.value = true
   error.value = null
 
   try {
-    const userId = authStore.user?.id || authStore.session?.user?.id
+    const userId = authStore.user?.id ?? authStore.session?.user?.id
 
-    if (!userId) {
-      throw new Error('User not authenticated')
-    }
+    if (!userId) throw new Error('User not authenticated')
 
     const res = await ApiService.post('dashboard', {
       user_id: userId
     })
-    console.log('res:', res)
-    dashboardData.value = res.dashboard
+
+    const data = extractDashboard(res)
+    if (!data) throw new Error('Invalid dashboard response')
+
+    dashboardData.value = data
+
+    const teams = data.teams || []
+
+    customers.value = mapCustomers(teams)
+
+    const allTasks = mapTasks(teams)
+    tasks.value = allTasks
+
+    NewTasks.value = mapNewTasks(allTasks)
+
   } catch (err) {
-    error.value = err?.response?.data?.error || err.message || 'Failed to load dashboard'
+    error.value =
+      err?.response?.data?.error ||
+      err.message ||
+      'Failed to load dashboard'
   } finally {
     loading.value = false
   }
 }
 
+/* ---------------- LIFECYCLE ---------------- */
+
 onMounted(async () => {
-  // ensure session is loaded
   await authStore.fetchSession()
   await fetchDashboard()
 })
 
+/* ---------------- COMPUTED ---------------- */
+
 const totalProjects = computed(() => {
-  return dashboardData.value?.totalProjects ?? tasks.value.length
+  return dashboardData.value?.stats?.total_projects || 0
 })
 </script>
 
@@ -393,7 +419,7 @@ const totalProjects = computed(() => {
 
           <!-- Active Members -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 class="text-base font-semibold text-gray-800 mb-4">5 active members</h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-4"> Active Members</h3>
 
             <div class="flex items-center gap-5">
               <div
@@ -636,3 +662,5 @@ const totalProjects = computed(() => {
     </div>
   </main-layout>
 </template>
+
+
