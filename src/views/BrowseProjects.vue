@@ -1,48 +1,113 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
+import { supabase } from '@/services/supabase.js'
+
+// const projects = [
+//   { name: "Starlight Initiative", tasks: "2 Tasks due soon", color: "bg-orange-500" },
+//   { name: "Project Zenith", tasks: "4 Tasks due soon", color: "bg-blue-500" },
+//   { name: "Evergreen Project", tasks: "1 Task due soon", color: "bg-green-500" },
+//   { name: "Capstone Initiative", tasks: "8 Tasks due soon", color: "bg-lime-500" },
+//   { name: "Project Phoenix", tasks: "3 Tasks due soon", color: "bg-red-500" },
+//   { name: "Project Chimera", tasks: "No tasks", color: "bg-gray-800" },
+// ];
+
+// const members = [
+//   {
+//     name: "Elowen Frost",
+//     email: "elowen.frost@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=1",
+//   },
+//   {
+//     name: "Jasper Thorne",
+//     email: "jasper.thorne@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=2",
+//   },
+//   {
+//     name: "Willow Briar",
+//     email: "willow.briar@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=3",
+//   },
+//   {
+//     name: "Silas Blackwood",
+//     email: "silas.blackwood@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=4",
+//   },
+//   {
+//     name: "Luna Sterling",
+//     email: "luna.sterling@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=5",
+//   },
+//   {
+//     name: "Griffin Wilde",
+//     email: "griffin.wilde@email.com",
+//     avatar: "https://i.pravatar.cc/40?img=6",
+//   },
+// ];
+
+import { ref, onMounted, computed } from 'vue'
+import {useAuthStore} from '@/stores/auth.js'
+import {useProjectStore} from '@/stores/project.js'
 
 
-const projects = [
-  { name: "Starlight Initiative", tasks: "2 Tasks due soon", color: "bg-orange-500" },
-  { name: "Project Zenith", tasks: "4 Tasks due soon", color: "bg-blue-500" },
-  { name: "Evergreen Project", tasks: "1 Task due soon", color: "bg-green-500" },
-  { name: "Capstone Initiative", tasks: "8 Tasks due soon", color: "bg-lime-500" },
-  { name: "Project Phoenix", tasks: "3 Tasks due soon", color: "bg-red-500" },
-  { name: "Project Chimera", tasks: "No tasks", color: "bg-gray-800" },
-];
+const authStore = useAuthStore()
+const projectStore = useProjectStore()
 
-const members = [
-  {
-    name: "Elowen Frost",
-    email: "elowen.frost@email.com",
-    avatar: "https://i.pravatar.cc/40?img=1",
-  },
-  {
-    name: "Jasper Thorne",
-    email: "jasper.thorne@email.com",
-    avatar: "https://i.pravatar.cc/40?img=2",
-  },
-  {
-    name: "Willow Briar",
-    email: "willow.briar@email.com",
-    avatar: "https://i.pravatar.cc/40?img=3",
-  },
-  {
-    name: "Silas Blackwood",
-    email: "silas.blackwood@email.com",
-    avatar: "https://i.pravatar.cc/40?img=4",
-  },
-  {
-    name: "Luna Sterling",
-    email: "luna.sterling@email.com",
-    avatar: "https://i.pravatar.cc/40?img=5",
-  },
-  {
-    name: "Griffin Wilde",
-    email: "griffin.wilde@email.com",
-    avatar: "https://i.pravatar.cc/40?img=6",
-  },
-];
+
+const user = computed(() => authStore.user)
+console.log(user)
+
+
+const isEditMode = ref(false)
+const showProjects = ref(false)
+
+const form = ref({
+  name: '',
+  team_id: null,
+  description: '',
+  status: 'active'
+})
+
+const openAddProjects = async () => {
+  try {
+    await projectStore.createProject(form.value)
+    console.log('✅ Project created')
+  } catch (err) {
+    console.error('❌ Error:', err.message)
+  }
+}
+
+const getTeams = async () => {
+
+  if (!user.value) return
+  try {
+    const { data, error } = await supabase.from('teams').select('*')
+
+    if (error) throw error
+
+    console.log('teams', data)
+    return data
+  } catch (error) {
+    console.log('error fetching teams: ', error)
+  }
+}
+
+const showTeamMembers = ref(false)
+
+const formTeam = ref({
+  name: '',
+  projects: ''
+})
+
+const openAddTeams = async () => {
+  showTeamMembers.value = true
+}
+
+onMounted(async () => {
+  if (!authStore.user) {
+    await authStore.fetchSession()
+  }
+  await getTeams()
+})
 </script>
 
 <template>
@@ -63,7 +128,7 @@ const members = [
                 :items="['Due Date', 'Name']"
                 model-value="Due Date"
               />
-              <v-btn icon size="small" class="text-black rounded-lg ">
+              <v-btn @click="openAddProjects" icon size="small" class="text-black rounded-lg">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
               <v-btn icon size="small" variant="text">
@@ -98,7 +163,7 @@ const members = [
             <h2 class="font-bold text-md">Team Members</h2>
 
             <div class="flex items-center gap-2">
-              <v-btn icon size="small" class="text-black rounded-lg">
+              <v-btn @click="openAddTeams" icon size="small" class="text-black rounded-lg">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
               <v-btn icon size="small" variant="text">
@@ -130,5 +195,97 @@ const members = [
         </v-card>
       </div>
     </div>
+
+    <!-- ✅ Projects Add Dialog -->
+    <v-dialog v-model="showProjects" max-width="500px" persistent>
+      <v-card class="p-4">
+        <v-card-title class="text-lg font-semibold">
+          {{ isEditMode ? 'Edit Projects Record' : 'Add Projects Record' }}
+        </v-card-title>
+
+        <v-card-text>
+          <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
+            <v-text-field
+              v-model="form.name"
+              :items="projectsName"
+              label="Projects Name"
+              variant="outlined"
+              color="green"
+            />
+
+            <v-text-field
+              v-model="form.team_id"
+              :items="teams"
+              item-title="name"
+              item-value="id"
+              label="Select Team"
+              variant="outlined"
+              class="mt-3"
+            />
+
+            <v-textarea
+              v-model="form.description"
+              label="Description"
+              rows="2"
+              variant="outlined"
+              color="green"
+              class="mt-3"
+            />
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions class="justify-end space-x-2">
+          <v-btn text color="grey" @click="showProjects = false">Cancel</v-btn>
+          <v-btn
+            :loading="submitting"
+            color="green"
+            @click="getTeams"
+            :disabled="!formValid || submitting"
+            >Save</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showTeamMembers" max-width="500px" persistent>
+      <v-card class="p-4">
+        <v-card-title class="text-lg font-semibold">
+          {{ isEditMode ? 'Edit Teams Record' : 'Add Teams Record' }}
+        </v-card-title>
+
+        <v-card-text>
+          <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
+            <v-text-field
+              v-model="formTeam.name"
+              :items="name"
+              label="Name"
+              variant="outlined"
+              color="green"
+            />
+
+            <v-select
+              v-model="formTeam.projectsName"
+              :items="projectsName"
+              item-title="name"
+              label="Projects Name"
+              variant="outlined"
+              color="green"
+              class="mt-3"
+            />
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions class="justify-end space-x-2">
+          <v-btn text color="grey" @click="showTeamMembers = false">Cancel</v-btn>
+          <v-btn
+            :loading="submitting"
+            color="green"
+            @click="submitAttendance"
+            :disabled="!formValid || submitting"
+            >Save</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </MainLayout>
 </template>

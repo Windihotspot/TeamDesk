@@ -11,6 +11,12 @@ const form = ref({
   password: ''
 })
 
+const show = ref(false)
+
+function toggleVisibility() {
+  show.value = !show.value
+}
+ 
 const router = useRouter()
 
 const submit = async () => {
@@ -56,7 +62,9 @@ const submit = async () => {
         v-model="form.password"
         placeholder="Password"
         prepend-inner-icon="mdi-lock-outline"
-        append-inner-icon="mdi-eye-off"
+        :type="show ? 'text' : 'password'"
+        :append-inner-icon="show ? 'mdi-eye' : 'mdi-eye-off' "
+        @click:append-inner="toggleVisibility"
         type="password"
         variant="outlined"
         density="comfortable"
