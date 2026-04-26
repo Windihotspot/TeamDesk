@@ -291,32 +291,36 @@ const stackedBarOptions = () => ({
   }
 })
 
+const getLocation = () => {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject)
+  })
+}
+
 const submitAttendance = async () => {
   submitting.value = true
 
   try {
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const payload = {
-        status: form.value.status.toLowerCase(),
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        device: navigator.userAgent
-      }
+    // ⏳ wait for location
+    const pos = await getLocation()
 
-      console.log('📡 Attendance payload:', payload)
+    const payload = {
+      status: form.value.status.toLowerCase(),
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      device: navigator.userAgent
+    }
 
-      const res = await AttendanceService.markAttendance(payload)
+    console.log('payload:', payload)
+    const res = await AttendanceService.markAttendance(payload)
+    console.log('attendance response:', res)
+    ElMessage.success('Attendance marked successfully')
 
-      console.log('✅ Attendance response:', res)
-
-      ElMessage.success('Attendance marked successfully')
-
-      await fetchAttendanceData()
-      closeDialog()
-    })
+    await fetchAttendanceData()
+    closeDialog()
   } catch (err) {
-    console.log('❌ Attendance error:', err)
-    ElMessage.error(err.message)
+    console.log(err)
+    ElMessage.error(err.message || 'Something went wrong')
   } finally {
     submitting.value = false
   }
@@ -409,7 +413,7 @@ onMounted(() => {
 
         <v-btn
           @click="openAddDialog"
-          size="medium"
+          size="large"
           class="normal-case custom-btn hover:bg-green-700 text-white text-sm font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-md shadow-md w-full sm:w-auto flex justify-center items-center"
         >
           <span
@@ -590,7 +594,7 @@ onMounted(() => {
 
 <style scoped>
 .custom-btn {
-  background-color: #214ec8;
+  background-color: #0f4c81;
   text-transform: none;
 }
 .v-btn {
