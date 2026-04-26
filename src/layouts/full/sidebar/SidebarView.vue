@@ -1,7 +1,7 @@
 <template>
-  <div class="dash-sidebar mt-6">
-
-    <ul class="dash-menu mt-6">
+  <div class="dash-sidebar flex flex-col h-full">
+    <!-- TOP MENU -->
+    <ul class="dash-menu mt-6 flex-1">
       <li
         v-for="item in menuItems"
         class="mt-4"
@@ -12,8 +12,17 @@
         <i :class="item.icon"></i>
         {{ item.label }}
       </li>
-
     </ul>
+
+    <!-- BOTTOM ACTIONS -->
+    <div class="dash-bottom">
+      <ul class="dash-menu">
+        <li class="logout" @click="signOut">
+          <i class="mdi mdi-logout"></i>
+          Logout
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -55,34 +64,71 @@ const menuItems = [
     route: '/dashboard'
   },
   {
-    nav: 'Projects',
+    nav: 'projects',
     label: 'Projects',
-    icon: 'mdi mdi-domain',
+    icon: 'mdi mdi-briefcase-outline',
     route: '/browseProjects'
-    
   },
- 
   {
-    nav: 'Attendance',
-    label: 'Attendance',
-    icon: 'mdi mdi-domain',
-    route: '/attendance'
-    
-  },
-
-  {
-    nav: 'MyTasks',
-    label: 'MyTasks',
-    icon: 'mdi mdi-domain',
+    nav: 'tasks',
+    label: 'Tasks',
+    icon: 'mdi mdi-format-list-checkbox',
     route: '/tasks'
-    
   },
- 
-]
+  {
+    nav: 'supplies',
+    label: 'Supplies',
+    icon: 'mdi mdi-package-variant',
+    route: '/supplies'
+  },
+  {
+    nav: 'attendance',
+    label: 'Attendance',
+    icon: 'mdi mdi-calendar-check-outline',
+    route: '/attendance'
+  },
 
+  {
+    nav: 'profile',
+    label: 'Profile',
+    icon: 'mdi mdi-account-circle-outline',
+    route: '/profile'
+  },
+  {
+    nav: 'settings',
+    label: 'Settings',
+    icon: 'mdi mdi-cog-outline',
+    route: '/settings'
+  }
+]
 </script>
 
 <style scoped>
+.dash-sidebar {
+  width: 260px;
+  padding: 18px;
+  background: var(--primary);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* pushes logout to bottom */
+.dash-bottom {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+/* logout styling */
+.logout {
+  color: #f87171 !important;
+  font-weight: 500;
+}
+
+.logout:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fff !important;
+}
 .dash-menu li i {
   font-size: 18px;
   width: 18px;
@@ -95,6 +141,11 @@ const menuItems = [
   width: 260px;
   padding: 18px;
   background: var(--primary);
+
+  /* KEY FIX */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* SECTION LABEL */
@@ -108,7 +159,6 @@ const menuItems = [
 }
 
 /* MENU LIST */
-
 
 /* MENU ITEM */
 .dash-menu li {

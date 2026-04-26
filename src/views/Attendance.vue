@@ -372,13 +372,23 @@ const submitAttendance = async () => {
 }
 
 const fetchAttendanceData = async () => {
-  const { data, error } = await supabase
-    .from('attendance_logs')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(10)
-  console.log('attendance data:', data)
-  if (!error) recentLogs.value = data
+  isLoading.value = true
+
+  try {
+    const { data, error } = await supabase
+      .from('attendance_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10)
+    console.log('attendance data:', data)
+    if (!error) {
+      recentLogs.value = data
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const weeklyChartSeries = computed(() => {
@@ -401,123 +411,135 @@ onMounted(() => {
 
 <template>
   <MainLayout>
+    <!-- FULL PAGE LOADER -->
     <div
-      class="bg-white flex flex-col sm:flex-row rounded shadow justify-between items-start sm:items-center border-b p-4 mb-4"
+      v-if="isLoading"
+      class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
     >
-      <div class="mb-4 sm:mb-0">
-        <p class="text-md font-bold">Attendance</p>
-        <p class="text-gray-500 text-sm mt-1">View and Manage your attendance records</p>
-      </div>
+      <v-progress-circular indeterminate color="blue" size="60" width="2" />
 
-      <v-btn
-        @click="openAddDialog"
-        size="medium"
-        class="normal-case custom-btn hover:bg-green-700 text-white text-sm font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-md shadow-md w-full sm:w-auto flex justify-center items-center"
-      >
-        <span
-          class="bg-white text-blue-600 rounded-full p-1 flex items-center justify-center w-4 h-4 mr-2"
-        >
-          <i class="fa-solid fa-plus text-sm text-[#214ec8]"></i>
-        </span>
-        Add new record
-      </v-btn>
+      <p class="mt-4 text-sm text-gray-500 font-medium">Loading attendance data...</p>
     </div>
-    <!-- <div
+
+    <div v-else>
+      <div
+        class="bg-white flex flex-col sm:flex-row rounded shadow justify-between items-start sm:items-center border-b p-4 mb-4"
+      >
+        <div class="mb-4 sm:mb-0">
+          <p class="text-md font-bold">Attendance</p>
+          <p class="text-gray-500 text-sm mt-1">View and Manage your attendance records</p>
+        </div>
+
+        <v-btn
+          @click="openAddDialog"
+          size="medium"
+          class="normal-case custom-btn hover:bg-green-700 text-white text-sm font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-md shadow-md w-full sm:w-auto flex justify-center items-center"
+        >
+          <span
+            class="bg-white text-blue-600 rounded-full p-1 flex items-center justify-center w-4 h-4 mr-2"
+          >
+            <i class="fa-solid fa-plus text-sm text-[#214ec8]"></i>
+          </span>
+          Add new record
+        </v-btn>
+      </div>
+      <!-- <div
       v-if="isLoading"
       class="fill-height d-flex justify-center align-center mx-auto items-center flex my-auto mx-auto"
     >
       <LoadingOverlay :visible="isLoading" message="Loading attendance" />
     </div> -->
 
-    <div>
-      <div class="">
-        <div class="bg-white p-5 rounded-lg m-2 mb-4 border border-gray-100 md:col-span-2">
-          <div class="flex justify-between items-center mb-4">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-700">Today's Attendance</h3>
-              <p class="text-xs text-gray-400">{{ formattedDate }}</p>
+      <div>
+        <div class="">
+          <div class="bg-white p-5 rounded-lg m-2 mb-4 border border-gray-100 md:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h3 class="text-sm font-semibold text-gray-700">Today's Attendance</h3>
+                <p class="text-xs text-gray-400">{{ formattedDate }}</p>
+              </div>
+
+              <div class="text-right">
+                <p class="text-xs text-gray-400">Total</p>
+                <p class="text-lg font-bold text-gray-800">
+                  {{ todaySummary.total }}
+                </p>
+              </div>
             </div>
 
-            <div class="text-right">
-              <p class="text-xs text-gray-400">Total</p>
-              <p class="text-lg font-bold text-gray-800">
-                {{ todaySummary.total }}
-              </p>
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="bg-green-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-gray-500">Present</p>
+                <p class="text-lg font-bold text-green-600">
+                  {{ todaySummary.present }}
+                </p>
+              </div>
+
+              <div class="bg-yellow-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-gray-500">Late</p>
+                <p class="text-lg font-bold text-yellow-600">
+                  {{ todaySummary.late }}
+                </p>
+              </div>
+
+              <div class="bg-red-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-gray-500">Absent</p>
+                <p class="text-lg font-bold text-red-500">
+                  {{ Math.max(todaySummary.total - (todaySummary.present + todaySummary.late), 0) }}
+                </p>
+              </div>
             </div>
           </div>
 
-          <!-- Summary Cards -->
-          <div class="grid grid-cols-3 gap-3 mb-4">
-            <div class="bg-green-50 rounded-lg p-3 text-center">
-              <p class="text-xs text-gray-500">Present</p>
-              <p class="text-lg font-bold text-green-600">
-                {{ todaySummary.present }}
-              </p>
+          <!-- Recent List -->
+          <v-card class="m-2 elevation-1">
+            <v-card-title class="text-xs font-semibold"> Recent Attendance Logs </v-card-title>
+
+            <v-divider />
+
+            <v-data-table
+              :items="recentLogs"
+              :headers="headers"
+              density="compact"
+              class="elevation-0"
+              fixed-header
+              height="260"
+            >
+              <template #item.status="{ item }">
+                <v-chip
+                  size="x-small"
+                  :color="
+                    item.status === 'present' ? 'green' : item.status === 'late' ? 'orange' : 'red'
+                  "
+                  text-color="white"
+                >
+                  {{ item.status }}
+                </v-chip>
+              </template>
+
+              <template #item.check_in_time="{ item }">
+                {{ item.check_in_time?.slice(11, 16) || '--:--' }}
+              </template>
+
+              <template #item.ip_address="{ item }">
+                {{ item.ip_address || 'offline' }}
+              </template>
+            </v-data-table>
+          </v-card>
+
+          <div class="bg-white p-4 rounded-lg mt-4 m-2">
+            <div class="flex justify-between">
+              <h3 class="text-sm text-gray-500 font-bold mb-2">Staffs Attendance For this week</h3>
             </div>
 
-            <div class="bg-yellow-50 rounded-lg p-3 text-center">
-              <p class="text-xs text-gray-500">Late</p>
-              <p class="text-lg font-bold text-yellow-600">
-                {{ todaySummary.late }}
-              </p>
-            </div>
-
-            <div class="bg-red-50 rounded-lg p-3 text-center">
-              <p class="text-xs text-gray-500">Absent</p>
-              <p class="text-lg font-bold text-red-500">
-                {{ Math.max(todaySummary.total - (todaySummary.present + todaySummary.late), 0) }}
-              </p>
-            </div>
+            <Apexchart
+              type="bar"
+              height="300"
+              :options="stackedBarOptions()"
+              :series="weeklyChartSeries"
+            />
           </div>
-        </div>
-
-        <!-- Recent List -->
-        <v-card class="m-2 elevation-1">
-          <v-card-title class="text-xs font-semibold"> Recent Attendance Logs </v-card-title>
-
-          <v-divider />
-
-          <v-data-table
-            :items="recentLogs"
-            :headers="headers"
-            density="compact"
-            class="elevation-0"
-            fixed-header
-            height="260"
-          >
-            <template #item.status="{ item }">
-              <v-chip
-                size="x-small"
-                :color="
-                  item.status === 'present' ? 'green' : item.status === 'late' ? 'orange' : 'red'
-                "
-                text-color="white"
-              >
-                {{ item.status }}
-              </v-chip>
-            </template>
-
-            <template #item.check_in_time="{ item }">
-              {{ item.check_in_time?.slice(11, 16) || '--:--' }}
-            </template>
-
-            <template #item.ip_address="{ item }">
-              {{ item.ip_address || 'offline' }}
-            </template>
-          </v-data-table>
-        </v-card>
-
-        <div class="bg-white p-4 rounded-lg mt-4 m-2">
-          <div class="flex justify-between">
-            <h3 class="text-sm text-gray-500 font-bold mb-2">Staffs Attendance For this week</h3>
-          </div>
-
-          <Apexchart
-            type="bar"
-            height="300"
-            :options="stackedBarOptions()"
-            :series="weeklyChartSeries"
-          />
         </div>
       </div>
     </div>

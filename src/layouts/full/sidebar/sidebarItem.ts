@@ -1,28 +1,28 @@
-
 const sidebarItems = [
   {
     title: 'Dashboard',
     path: '/dashboard',
-    icon: 'mdi-account-check'
+    icon: 'mdi-view-dashboard-outline'
   },
   {
     title: 'Projects',
     path: '/browseProjects',
-    icon: 'mdi-account-check'
+    icon: 'mdi-briefcase-outline'
   },
   {
     title: 'Attendance',
     path: '/attendance',
-    icon: 'mdi-account-check'
+    icon: 'mdi-calendar-check-outline'
   },
   {
-<<<<<<< HEAD
-    title: 'MyTasks',
-=======
     title: 'Tasks',
->>>>>>> 4b3aa9b99549cec9ed735bea740c99dd74294248
     path: '/tasks',
-    icon: 'mdi-account-check'
+    icon: 'mdi-format-list-checkbox'
+  },
+  {
+    title: 'Profile',
+    path: '/profile',
+    icon: 'mdi-account-circle-outline'
   }
 ]
 
