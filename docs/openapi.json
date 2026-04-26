@@ -1,0 +1,280 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Team Management API",
+    "version": "1.0.0",
+    "description": "Team desk Api"
+  },
+  "servers": [
+    {
+      "url": "https://rhfmzwpbmicfcifalpiq.supabase.co/functions/v1"
+    }
+  ],
+  "paths": {
+    "/register": {
+      "post": {
+        "summary": "Register user and create workspace",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Register"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Workspace created"
+          },
+          "400": {
+            "description": "Error"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "summary": "Login user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          }
+        }
+      }
+    },
+    "/invite-member": {
+      "post": {
+        "summary": "Invite member",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Invite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Member invited"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/dashboard": {
+  "post": {
+    "summary": "Get full dashboard data for current user",
+    "description": "Returns team, members, projects, tasks and stats for the authenticated user. In dev mode, a mock user may be used.",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "requestBody": {
+      "required": false,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    },
+    "responses": {
+      "responses": {
+  "200": {
+    "description": "Dashboard data retrieved successfully",
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/DashboardResponse"
+        }
+      }
+    }
+  }
+},
+      "400": {
+        "description": "Bad request (e.g. user not in team)"
+      },
+      "401": {
+        "description": "Unauthorized"
+      },
+      "500": {
+        "description": "Server error"
+      }
+    }
+  }
+}
+  },
+  "components": {
+    "schemas": {
+      "Register": {
+  "type": "object",
+  "required": ["email", "password"],
+  "properties": {
+    "email": { "type": "string" },
+    "password": { "type": "string" },
+    "firstName": { "type": "string" },
+    "lastName": { "type": "string" },
+    "teamName": {
+      "type": "string",
+      "description": "Optional. If not provided, a default workspace will be created."
+    }
+  }
+},
+      "Login": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string" },
+          "password": { "type": "string" }
+        }
+      },
+      "Invite": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "member"]
+          }
+        }
+      },
+      "DashboardResponse": {
+  "type": "object",
+  "properties": {
+    "user": {
+      "$ref": "#/components/schemas/DashboardUser"
+    },
+    "dashboard": {
+      "$ref": "#/components/schemas/DashboardData"
+    }
+  }
+},
+"DashboardUser": {
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "email": { "type": "string" }
+  }
+},
+"DashboardData": {
+  "type": "object",
+  "properties": {
+    "team": {
+      "$ref": "#/components/schemas/Team"
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Member"
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Project"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Task"
+      }
+    },
+    "stats": {
+      "$ref": "#/components/schemas/Stats"
+    }
+  }
+},
+"Team": {
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "created_at": { "type": "string" }
+  }
+},
+"Member": {
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "email": { "type": "string" },
+    "first_name": { "type": "string" },
+    "last_name": { "type": "string" },
+    "role": { "type": "string" }
+  }
+},
+"Project": {
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "created_at": { "type": "string" }
+  }
+},
+"Task": {
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "status": { "type": "string" },
+    "priority": { "type": "string" },
+    "due_date": { "type": "string" },
+    "project_id": { "type": "string" },
+    "assignees": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/TaskAssignee"
+      }
+    }
+  }
+},
+"TaskAssignee": {
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" }
+  }
+},
+"Stats": {
+  "type": "object",
+  "properties": {
+    "total_projects": { "type": "number" },
+    "total_tasks": { "type": "number" },
+    "completed_tasks": { "type": "number" }
+  }
+}
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

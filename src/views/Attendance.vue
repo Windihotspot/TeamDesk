@@ -3,6 +3,10 @@ import { ref, onMounted, computed, watch } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { supabase } from '@/services/supabase.js'
 import Apexchart from 'vue3-apexcharts'
+import AttendanceService from '@/services/attendance.service'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 import { ElMessageBox, ElButton, ElSelect, ElOption, ElMessage } from 'element-plus'
 const showDialog = ref(false)
 const formRef = ref(null)
@@ -22,6 +26,7 @@ const form = ref({
 
 const usersList = ref([])
 const loadingUsers = ref(false)
+const attendance = ref([])
 
 const loadUsers = async () => {
   loadingUsers.value = true
@@ -65,8 +70,6 @@ const openEditDialog = async (log) => {
 
   // Set type FIRST
   form.value.userType = log.user_type
-
-  
 
   // Now safely set the user
   form.value.userId = log.user_id
@@ -343,25 +346,17 @@ const submitAttendance = async () => {
   try {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const payload = {
-        user_id: form.value.userId,
         status: form.value.status.toLowerCase(),
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
-        device: navigator.userAgent,
-        checkInTime: form.value.checkInTime
+        device: navigator.userAgent
       }
 
-      const res = await fetch('https://YOUR_PROJECT.functions.supabase.co/mark-attendance', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
+      console.log('📡 Attendance payload:', payload)
 
-      const data = await res.json()
+      const res = await AttendanceService.markAttendance(payload)
 
-      if (!res.ok) throw new Error(data.error)
+      console.log('✅ Attendance response:', res)
 
       ElMessage.success('Attendance marked successfully')
 
@@ -369,6 +364,7 @@ const submitAttendance = async () => {
       closeDialog()
     })
   } catch (err) {
+    console.log('❌ Attendance error:', err)
     ElMessage.error(err.message)
   } finally {
     submitting.value = false
@@ -381,7 +377,7 @@ const fetchAttendanceData = async () => {
     .select('*')
     .order('created_at', { ascending: false })
     .limit(10)
-
+  console.log('attendance data:', data)
   if (!error) recentLogs.value = data
 }
 
@@ -397,6 +393,9 @@ const weeklyChartSeries = computed(() => {
     { name: 'Late', data: late },
     { name: 'Absent', data: absent }
   ]
+})
+onMounted(() => {
+  fetchAttendanceData()
 })
 </script>
 
@@ -431,38 +430,84 @@ const weeklyChartSeries = computed(() => {
     </div> -->
 
     <div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded shadow m-2 p-4 flex flex-col">
-          <div class="flex justify-between">
-            <h3 class="text-sm text-gray-500 font-bold mb-4">Recent Attendance</h3>
+      <div class="">
+        <div class="bg-white p-5 rounded-lg m-2 mb-4 border border-gray-100 md:col-span-2">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-sm font-semibold text-gray-700">Today's Attendance</h3>
+              <p class="text-xs text-gray-400">{{ formattedDate }}</p>
+            </div>
+
+            <div class="text-right">
+              <p class="text-xs text-gray-400">Total</p>
+              <p class="text-lg font-bold text-gray-800">
+                {{ todaySummary.total }}
+              </p>
+            </div>
           </div>
 
-          <!-- Tabs -->
-          <div class="flex space-x-4 mb-4 border-b pb-2">
-            <button
-              v-for="tab in tabs"
-              :key="tab"
-              @click="activeTab = tab"
-              :class="[
-                'capitalize px-3 py-1 rounded-md text-sm',
-                activeTab === tab
-                  ? 'bg-green-100 text-green-600 font-semibold'
-                  : 'bg-gray-100 text-gray-600'
-              ]"
-            >
-              {{ tab }}
-            </button>
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div class="bg-green-50 rounded-lg p-3 text-center">
+              <p class="text-xs text-gray-500">Present</p>
+              <p class="text-lg font-bold text-green-600">
+                {{ todaySummary.present }}
+              </p>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-3 text-center">
+              <p class="text-xs text-gray-500">Late</p>
+              <p class="text-lg font-bold text-yellow-600">
+                {{ todaySummary.late }}
+              </p>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-3 text-center">
+              <p class="text-xs text-gray-500">Absent</p>
+              <p class="text-lg font-bold text-red-500">
+                {{ Math.max(todaySummary.total - (todaySummary.present + todaySummary.late), 0) }}
+              </p>
+            </div>
           </div>
-
-          <!-- Attendance List Scrollable -->
         </div>
 
-        <div class="bg-white p-4 rounded shadow m-2">
-          <h3 class="text-sm text-gray-500 font-bold mb-1">Today's Attendance</h3>
-          <p class="text-xs text-gray-400 mb-4">{{ formattedDate }}</p>
-        </div>
+        <!-- Recent List -->
+        <v-card class="m-2 elevation-1">
+          <v-card-title class="text-xs font-semibold"> Recent Attendance Logs </v-card-title>
 
-        <div class="bg-white p-4 rounded shadow m-2">
+          <v-divider />
+
+          <v-data-table
+            :items="recentLogs"
+            :headers="headers"
+            density="compact"
+            class="elevation-0"
+            fixed-header
+            height="260"
+          >
+            <template #item.status="{ item }">
+              <v-chip
+                size="x-small"
+                :color="
+                  item.status === 'present' ? 'green' : item.status === 'late' ? 'orange' : 'red'
+                "
+                text-color="white"
+              >
+                {{ item.status }}
+              </v-chip>
+            </template>
+
+            <template #item.check_in_time="{ item }">
+              {{ item.check_in_time?.slice(11, 16) || '--:--' }}
+            </template>
+
+            <template #item.ip_address="{ item }">
+              {{ item.ip_address || 'offline' }}
+            </template>
+          </v-data-table>
+        </v-card>
+
+        <div class="bg-white p-4 rounded-lg mt-4 m-2">
           <div class="flex justify-between">
             <h3 class="text-sm text-gray-500 font-bold mb-2">Staffs Attendance For this week</h3>
           </div>
@@ -470,7 +515,7 @@ const weeklyChartSeries = computed(() => {
           <Apexchart
             type="bar"
             height="300"
-            :options="stackedBarOptions('Weekly Attendance')"
+            :options="stackedBarOptions()"
             :series="weeklyChartSeries"
           />
         </div>
@@ -486,8 +531,6 @@ const weeklyChartSeries = computed(() => {
 
         <v-card-text>
           <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
-         
-
             <v-select
               v-model="form.userId"
               :items="usersList"

@@ -8,7 +8,7 @@ import vuetify from 'vite-plugin-vuetify' // 👈 add this
 export default defineConfig({
   base: '/',
   server: {
-    port: 3001, 
+    port: 3000
   },
   plugins: [
     vue(),
