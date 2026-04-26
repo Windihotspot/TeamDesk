@@ -178,7 +178,7 @@ const todaySummary = computed(() => {
   }
 })
 
-const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+const weekdayLabels = computed(() => weeklyData.value.map((d) => d.day))
 
 const isLoading = ref(true)
 
@@ -229,116 +229,67 @@ const summaryDisplay = computed(() =>
     })
 )
 
-const stackedBarOptions = (title) => {
-  return {
-    chart: {
-      type: 'bar',
-      stacked: true,
-      toolbar: { show: false },
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 600
-      }
-    },
+const stackedBarOptions = () => ({
+  chart: {
+    type: 'bar',
+    stacked: true,
+    toolbar: { show: false },
+    animations: {
+      enabled: true,
+      easing: 'easeinout',
+      speed: 800
+    }
+  },
 
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        borderRadius: 6,
-        columnWidth: '45%',
-        dataLabels: {
-          position: 'top'
-        }
-      }
-    },
+  plotOptions: {
+    bar: {
+      horizontal: false,
+      borderRadius: 8,
+      columnWidth: '40%',
+      endingShape: 'rounded'
+    }
+  },
 
-    // Beautiful modern colors
-    colors: ['#10B981', '#EF4444', '#F59E0B'], // Present, Absent, Late
+  colors: [
+    '#22C55E', // Present (green)
+    '#F59E0B', // Late (amber)
+    '#EF4444' // Absent (red)
+  ],
 
-    dataLabels: {
-      enabled: false
-    },
+  grid: {
+    borderColor: '#f1f5f9',
+    strokeDashArray: 4
+  },
 
-    stroke: {
-      show: false
-    },
-
-    // REMOVE horizontal lines
-    grid: {
-      show: false
-    },
-
-    xaxis: {
-      categories: weekdayLabels,
-      labels: {
-        style: {
-          fontSize: '12px',
-          fontWeight: 500,
-          colors: '#6B7280' // neutral gray
-        }
-      },
-      axisBorder: {
-        show: true,
-        color: '#E5E7EB'
-      },
-      axisTicks: { show: false }
-    },
-
-    yaxis: {
-      show: true,
-      forceNiceScale: true,
-      decimalsInFloat: 0,
-      labels: {
-        formatter: (val) => Math.round(val), // 👈 forces whole numbers
-        style: {
-          fontSize: '12px',
-          fontWeight: 500,
-          colors: '#6B7280'
-        }
-      },
-      axisBorder: { show: false },
-      axisTicks: { show: false }
-    },
-
-    legend: {
-      position: 'top',
-      fontSize: '13px',
-      labels: {
-        colors: '#374151'
-      },
-      markers: {
-        width: 10,
-        height: 10,
-        radius: 12
-      }
-    },
-
-    fill: {
-      opacity: 0.95
-    },
-
-    tooltip: {
-      theme: 'light',
+  xaxis: {
+    categories: weekdayLabels.value,
+    labels: {
       style: {
-        fontSize: '13px'
-      },
-      y: {
-        formatter: (value) => `${value}`
-      }
-    },
-
-    title: {
-      text: title,
-      align: 'left',
-      style: {
-        fontSize: '15px',
-        fontWeight: '600',
-        color: '#111827'
+        fontSize: '13px',
+        fontWeight: 600
       }
     }
+  },
+
+  yaxis: {
+    labels: {
+      formatter: (val) => Math.round(val)
+    }
+  },
+
+  legend: {
+    position: 'top',
+    horizontalAlign: 'right'
+  },
+
+  tooltip: {
+    shared: true,
+    intersect: false,
+    y: {
+      formatter: (val) => `${val} users`
+    }
   }
-}
+})
 
 const submitAttendance = async () => {
   submitting.value = true
@@ -391,21 +342,47 @@ const fetchAttendanceData = async () => {
   }
 }
 
+const weeklyData = ref([])
+const loadingChart = ref(false)
+
+const fetchWeeklyAttendance = async () => {
+  loadingChart.value = true
+
+  try {
+    const { data, error } = await supabase.rpc('get_weekly_attendance')
+
+    if (error) throw error
+
+    weeklyData.value = data || []
+
+    console.log('📊 Weekly attendance:', weeklyData.value)
+  } catch (err) {
+    console.log(err)
+    ElMessage.error('Failed to load weekly attendance')
+  } finally {
+    loadingChart.value = false
+  }
+}
+
 const weeklyChartSeries = computed(() => {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
-
-  const present = [5, 8, 6, 10, 7]
-  const late = [1, 2, 1, 0, 1]
-  const absent = [2, 0, 3, 1, 2]
-
   return [
-    { name: 'Present', data: present },
-    { name: 'Late', data: late },
-    { name: 'Absent', data: absent }
+    {
+      name: 'Present',
+      data: weeklyData.value.map((d) => d.present_count)
+    },
+    {
+      name: 'Late',
+      data: weeklyData.value.map((d) => d.late_count)
+    },
+    {
+      name: 'Absent',
+      data: weeklyData.value.map((d) => d.absent_count)
+    }
   ]
 })
 onMounted(() => {
   fetchAttendanceData()
+  fetchWeeklyAttendance()
 })
 </script>
 
@@ -492,9 +469,24 @@ onMounted(() => {
             </div>
           </div>
 
+          <div class="bg-white p-4 rounded-lg mt-4 m-2">
+            <div class="flex justify-between">
+              <h3 class="text-sm text-gray-500 font-bold mb-2">Staffs Attendance For this week</h3>
+            </div>
+
+            <Apexchart
+              type="bar"
+              height="300"
+              :options="stackedBarOptions()"
+              :series="weeklyChartSeries"
+            />
+          </div>
+
           <!-- Recent List -->
           <v-card class="m-2 elevation-1">
-            <v-card-title class="text-xs font-semibold"> Recent Attendance Logs </v-card-title>
+            <v-card-title class="text-xs font-semibold"
+              ><p>Recent Attendance Logs</p>
+            </v-card-title>
 
             <v-divider />
 
@@ -504,7 +496,7 @@ onMounted(() => {
               density="compact"
               class="elevation-0"
               fixed-header
-              height="260"
+              height="400"
             >
               <template #item.status="{ item }">
                 <v-chip
@@ -527,19 +519,6 @@ onMounted(() => {
               </template>
             </v-data-table>
           </v-card>
-
-          <div class="bg-white p-4 rounded-lg mt-4 m-2">
-            <div class="flex justify-between">
-              <h3 class="text-sm text-gray-500 font-bold mb-2">Staffs Attendance For this week</h3>
-            </div>
-
-            <Apexchart
-              type="bar"
-              height="300"
-              :options="stackedBarOptions()"
-              :series="weeklyChartSeries"
-            />
-          </div>
         </div>
       </div>
     </div>
