@@ -356,10 +356,6 @@ const totalProjects = computed(() => {
 
 <template>
   <main-layout>
-    <!-- ✅ LOADING SPINNER (ONLY ADDITION) -->
-    <v-overlay :model-value="loading" class="align-center justify-center">
-      <v-progress-circular indeterminate size="50" />
-    </v-overlay>
     <div class="min-h-screen bg-[#f5f5f0] p-6 font-['DM_Sans',sans-serif]">
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
         <!-- LEFT COLUMN -->
@@ -410,7 +406,7 @@ const totalProjects = computed(() => {
                   <span>Active tasks</span>
                 </div>
                 <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">0</span>
+                  <span class="text-4xl font-bold text-gray-900">4</span>
                   <div
                     class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1"
                   >
@@ -550,7 +546,7 @@ const totalProjects = computed(() => {
           <!-- NEW TASK -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">
-              Task in progress
+              New/Task in progress
             </h2>
 
             <ul class="flex flex-col gap-2">
