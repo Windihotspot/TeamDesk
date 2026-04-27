@@ -45,22 +45,24 @@ import { supabase } from '@/services/supabase.js'
 // ];
 
 import { ref, onMounted, computed } from 'vue'
-import {useAuthStore} from '@/stores/auth.js'
-import {useProjectStore} from '@/stores/project.js'
-
+import { useAuthStore } from '@/stores/auth.js'
+import { useProjectStore } from '@/stores/project.js'
 
 //declare var for authStore in auth.js
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
 
-
 const user = computed(() => authStore.user)
 console.log(user)
 
-
 const isEditMode = ref(false)
+
+const projects = ref([])
+
 const showProjects = ref(false)
 
+
+//make the form an empty array first
 const form = ref({
   name: '',
   team_id: '',
@@ -68,15 +70,18 @@ const form = ref({
   status: 'active'
 })
 
+
+//@click of add projects
 const openAddProjects = () => {
   showProjects.value = true
 }
 
+//@click submit new projects
 const submitProject = async () => {
   try {
     await projectStore.createProject(form.value)
     console.log('✅ Project created')
-    showProjects.value = false  // close dialog after save
+    showProjects.value = false // close dialog after save
     form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
   } catch (err) {
     console.error('❌ Error:', err.message)
@@ -84,18 +89,51 @@ const submitProject = async () => {
 }
 
 
-const teams = ref([])
-const getTeams = async () => {
+const isLoading = ref(true)
 
+
+
+
+//on load of projects page :added a loading feature to it 
+const fetchProject = async () => {
+  isLoading.value = true
+
+  try {
+    const { data, error } = await supabase.from('projects').select('*')
+    console.log('Projects:', data)
+    if (!error) {
+      projects.value = data
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProject()
+})
+
+//shows teams dropdown as an empty array
+const teams = ref([])
+
+
+//func to get already existing teams from supabase
+const getTeams = async () => {
+  //checks if user is logged in
   if (!user.value) return
   try {
     const { data, error } = await supabase.from('teams').select('*')
+
+    // returns/shows teams from supabase
+    teams.value = data 
 
     if (error) throw error
 
     console.log('teams', data)
     return data
-  } catch (error) {    
+  } catch (error) {
     console.log('error fetching teams: ', error)
   }
 }
@@ -121,8 +159,17 @@ onMounted(async () => {
 
 <template>
   <MainLayout>
-    <div class="">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div
+      v-if="isLoading"
+      class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
+    >
+      <v-progress-circular indeterminate color="blue" size="60" width="2" />
+
+      <p class="mt-4 text-sm text-gray-500 font-medium">Loading Project data...</p>
+    </div>
+
+    <div v-else>
+      <div class="grid grid-cols-1 lg:grid-cols-1 ">
         <!-- Active Projects -->
         <v-card class="rounded-2xl shadow-sm pa-4">
           <div class="flex justify-between items-center mb-4">
@@ -146,55 +193,18 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-1">
             <div
               v-for="project in projects"
-              :key="project.name"
+              :key="project.id"
               class="flex items-center justify-between bg-gray-50 rounded-xl p-3"
             >
               <div class="flex items-center gap-3">
-                <div :class="project.color" class="w-8 h-8 rounded-md"></div>
+                <div class="w-8 h-8 rounded-md"></div>
                 <div>
                   <p class="font-medium text-sm">{{ project.name }}</p>
                   <p class="text-xs text-gray-500">
-                    {{ project.tasks }}
-                  </p>
-                </div>
-              </div>
-              <v-icon size="18">mdi-dots-vertical</v-icon>
-            </div>
-          </div>
-        </v-card>
-
-        <!-- Team Members -->
-        <v-card class="rounded-2xl shadow-sm pa-4">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="font-bold text-md">Team Members</h2>
-
-            <div class="flex items-center gap-2">
-              <v-btn @click="openAddTeams" icon size="small" class="text-black rounded-lg">
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
-              <v-btn icon size="small" variant="text">
-                <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div
-              v-for="member in members"
-              :key="member.email"
-              class="flex items-center justify-between bg-gray-50 rounded-xl p-3"
-            >
-              <div class="flex items-center gap-3">
-                <v-avatar size="36">
-                  <img :src="member.avatar" />
-                </v-avatar>
-                <div>
-                  <p class="font-medium text-sm">{{ member.name }}</p>
-                  <p class="text-xs text-gray-500">
-                    {{ member.email }}
+                    {{ project.description }}
                   </p>
                 </div>
               </div>
@@ -249,48 +259,7 @@ onMounted(async () => {
             :loading="submitting"
             color="green"
             @click="submitProject"
-            :disabled="!formValid || submitting"
-            >Save</v-btn
-          >
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="showTeamMembers" max-width="500px" persistent>
-      <v-card class="p-4">
-        <v-card-title class="text-lg font-semibold">
-          {{ isEditMode ? 'Edit Teams Record' : 'Add Teams Record' }}
-        </v-card-title>
-
-        <v-card-text>
-          <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
-            <v-text-field
-              v-model="formTeam.name"
-              :items="name"
-              label="Name"
-              variant="outlined"
-              color="green"
-            />
-
-            <v-select
-              v-model="formTeam.projectsName"
-              :items="projectsName"
-              item-title="name"
-              label="Projects Name"
-              variant="outlined"
-              color="green"
-              class="mt-3"
-            />
-          </v-form>
-        </v-card-text>
-
-        <v-card-actions class="justify-end space-x-2">
-          <v-btn text color="grey" @click="showTeamMembers = false">Cancel</v-btn>
-          <v-btn
-            :loading="submitting"
-            color="green"
-            @click="submitAttendance"
-            :disabled="!formValid || submitting"
+            
             >Save</v-btn
           >
         </v-card-actions>
