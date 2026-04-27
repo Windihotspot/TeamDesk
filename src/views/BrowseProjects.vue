@@ -49,6 +49,7 @@ import {useAuthStore} from '@/stores/auth.js'
 import {useProjectStore} from '@/stores/project.js'
 
 
+//declare var for authStore in auth.js
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
 
@@ -62,20 +63,28 @@ const showProjects = ref(false)
 
 const form = ref({
   name: '',
-  team_id: null,
+  team_id: '',
   description: '',
   status: 'active'
 })
 
-const openAddProjects = async () => {
+const openAddProjects = () => {
+  showProjects.value = true
+}
+
+const submitProject = async () => {
   try {
     await projectStore.createProject(form.value)
     console.log('✅ Project created')
+    showProjects.value = false  // close dialog after save
+    form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
   } catch (err) {
     console.error('❌ Error:', err.message)
   }
 }
 
+
+const teams = ref([])
 const getTeams = async () => {
 
   if (!user.value) return
@@ -213,7 +222,7 @@ onMounted(async () => {
               color="green"
             />
 
-            <v-text-field
+            <v-select
               v-model="form.team_id"
               :items="teams"
               item-title="name"
@@ -239,7 +248,7 @@ onMounted(async () => {
           <v-btn
             :loading="submitting"
             color="green"
-            @click="getTeams"
+            @click="submitProject"
             :disabled="!formValid || submitting"
             >Save</v-btn
           >
