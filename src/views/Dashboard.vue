@@ -258,6 +258,163 @@ const chartOptions = ref({
   },
   yaxis: { show: false }
 })
+// const dashboardData = ref(null)
+// const loading = ref(false)
+
+const authStore = useAuthStore()
+
+const loading = ref(false)
+const error = ref(null)
+const dashboardData = ref(null)
+
+
+// fetch customers
+// const fetchCustomers = async () => {
+//   const { data, error } = await supabase
+//     .from('users')
+//     .select('*')
+
+//   if (error) {
+//     console.error('Customers error:', error)
+//     return
+//   }
+
+//   customers.value = data
+// }
+// // fetch projects
+// const fetchProjects = async () => {
+//   const { data, error } = await supabase
+//     .from('projects')
+//     .select('*')
+
+//   if (error) {
+//     console.error('Projects error:', error)
+//     return
+//   }
+
+//   tasks.value = data
+// }
+// // fetch newTasks
+// const fetchNewTasks = async () => {
+//   const { data, error } = await supabase
+//     .from('tasks')
+//     .select('*')
+//     .eq('status', 'new') // or 'in_progress'
+
+//   if (error) {
+//     console.error('Tasks error:', error)
+//     return
+//   }
+
+//   NewTasks.value = data
+// }
+// onMounted(async () => {
+//   await authStore.fetchSession()
+//   await fetchDashboard()
+
+//   // await Promise.all([
+//   //   fetchCustomers(),
+//   //   fetchProjects(),
+//   //   fetchNewTasks()
+//   // ])
+// })
+// const totalProjects = computed(() => tasks.value.length)
+
+// const deleteNewTask = async (id) => {
+//   await supabase.from('tasks').delete().eq('id', id)
+//   await fetchNewTasks()
+// }
+
+
+// 🔥 Fetch dashboard
+/* ---------------- HELPERS ---------------- */
+
+// extract dashboard safely
+const extractDashboard = (res) => {
+  return res?.data?.dashboard || res?.dashboard || null
+}
+
+// map members → customers
+const mapCustomers = (teams) => {
+  return teams.flatMap(team =>
+    (team.members || []).map(member => ({
+      name: `${member.first_name} ${member.last_name}`,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.first_name}`
+    }))
+  )
+}
+
+// map projects → tasks
+const mapTasks = (teams) => {
+  return teams.flatMap(team =>
+    (team.projects || []).flatMap(project =>
+      (project.tasks || []).map(task => ({
+        title: task.title,
+        description: task.status,
+        avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task'
+      }))
+    )
+  )
+}
+
+// filter new/in-progress tasks
+const mapNewTasks = (allTasks) => {
+  return allTasks.filter(
+    task => task.description === 'todo' || task.description === 'in_progress'
+  )
+}
+
+/* ---------------- FETCH ---------------- */
+
+const fetchDashboard = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const userId = authStore.user?.id ?? authStore.session?.user?.id
+
+    if (!userId) throw new Error('User not authenticated')
+
+    const res = await ApiService.post('dashboard', {
+      user_id: userId
+    })
+
+    const data = extractDashboard(res)
+    if (!data) throw new Error('Invalid dashboard response')
+
+    dashboardData.value = data
+
+    const teams = data.teams || []
+
+    customers.value = mapCustomers(teams)
+
+    const allTasks = mapTasks(teams)
+    tasks.value = allTasks
+
+    NewTasks.value = mapNewTasks(allTasks)
+
+  } catch (err) {
+    error.value =
+      err?.response?.data?.error ||
+      err.message ||
+      'Failed to load dashboard'
+  } finally {
+    loading.value = false
+  }
+}
+
+/* ---------------- LIFECYCLE ---------------- */
+
+onMounted(async () => {
+  await authStore.fetchSession()
+  await fetchDashboard()
+})
+
+/* ---------------- COMPUTED ---------------- */
+
+const totalProjects = computed(() => {
+  return dashboardData.value?.stats?.total_projects || 0
+})
 </script>
 
 <style>
@@ -279,6 +436,10 @@ const chartOptions = ref({
 
 <template>
   <main-layout>
+    <!-- ✅ LOADING SPINNER (ONLY ADDITION) -->
+    <v-overlay :model-value="loading" class="align-center justify-center">
+      <v-progress-circular indeterminate size="50" />
+    </v-overlay>
     <div class="min-h-screen bg-[#f5f5f0] p-6 font-['DM_Sans',sans-serif]">
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
         <!-- LEFT COLUMN -->
@@ -327,7 +488,7 @@ const chartOptions = ref({
                   <span>Active tasks</span>
                 </div>
                 <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">4</span>
+                  <span class="text-4xl font-bold text-gray-900">0</span>
                   <div
                     class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1"
                   >
@@ -429,7 +590,7 @@ const chartOptions = ref({
           <!-- NEW TASK -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">
-              New/Task in progress
+              Task in progress
             </h2>
 
             <ul class="flex flex-col gap-2">
