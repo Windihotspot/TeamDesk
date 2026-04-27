@@ -300,32 +300,116 @@ const getLocation = () => {
 const submitAttendance = async () => {
   submitting.value = true
 
+  const DEBUG = true
+
+  // 🔥 Change this to test different scenarios
+  const TEST_MODE = 'NONE'
+  // OPTIONS:
+  // 'NONE'
+  // 'OUTSIDE_RADIUS'
+  // 'INVALID_STATUS'
+  // 'MISSING_FIELDS'
+  // 'INVALID_COORDS'
+  // 'EMPTY'
+  // 'NO_LOCATION'
+
   try {
-    // ⏳ wait for location
+    if (DEBUG) console.log('🚀 Starting attendance submission...')
+
+    // ⛔ simulate location denial
+    if (TEST_MODE === 'NO_LOCATION') {
+      throw new Error('User denied location access')
+    }
+
+    // 📍 get real location
     const pos = await getLocation()
 
-    const payload = {
+    let payload = {
       status: form.value.status.toLowerCase(),
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
       device: navigator.userAgent
     }
 
-    console.log('payload:', payload)
+    // =========================
+    // 🧪 TEST CASE SWITCH
+    // =========================
+    switch (TEST_MODE) {
+      case 'OUTSIDE_RADIUS':
+        payload.lat = 6.6
+        payload.lng = 3.2
+        break
+
+      case 'INVALID_STATUS':
+        payload.status = 'flying'
+        break
+
+      case 'MISSING_FIELDS':
+        delete payload.status
+        break
+
+      case 'INVALID_COORDS':
+        payload.lat = 999
+        payload.lng = 999
+        break
+
+      case 'EMPTY':
+        payload = {}
+        break
+    }
+
+    // =========================
+    // 🧾 DEBUG LOGGING
+    // =========================
+    if (DEBUG) {
+      console.group('📤 ATTENDANCE REQUEST')
+      console.log('Mode:', TEST_MODE)
+      console.log('Payload:', payload)
+      console.log('Time:', new Date().toISOString())
+      console.log('User:', auth?.user?.id)
+      console.groupEnd()
+    }
+
+    // 🚀 API CALL
     const res = await AttendanceService.markAttendance(payload)
-    console.log('attendance response:', res)
-    ElMessage.success('Attendance marked successfully')
+
+    if (DEBUG) {
+      console.group('📥 ATTENDANCE RESPONSE')
+      console.log('Response:', res)
+      console.groupEnd()
+    }
+
+    ElMessage.success('✅ Attendance marked successfully')
 
     fetchAttendanceData()
     fetchWeeklyAttendance()
     closeDialog()
   } catch (err) {
-    console.log(err)
-    ElMessage.error(err.message || 'Something went wrong')
+    console.group('❌ ATTENDANCE ERROR')
+
+    console.error('Raw error:', err)
+
+    const backendError =
+      err?.response?.data?.error || err?.data?.error || err?.message || 'Something went wrong'
+
+    console.log('Parsed error:', backendError)
+
+    if (err?.response) {
+      console.log('Status:', err.response.status)
+      console.log('Full response:', err.response.data)
+    }
+
+    console.groupEnd()
+
+    ElMessage.error(`${backendError}`)
   } finally {
     submitting.value = false
+
+    if (DEBUG) console.log('🏁 Attendance request finished')
   }
 }
+
+const TEST_MODE = 'OUTSIDE_RADIUS'
 
 const fetchAttendanceData = async () => {
   isLoading.value = true
