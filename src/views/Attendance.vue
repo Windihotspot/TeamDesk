@@ -316,7 +316,8 @@ const submitAttendance = async () => {
     console.log('attendance response:', res)
     ElMessage.success('Attendance marked successfully')
 
-    await fetchAttendanceData()
+    fetchAttendanceData()
+    fetchWeeklyAttendance()
     closeDialog()
   } catch (err) {
     console.log(err)
