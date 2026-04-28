@@ -60,13 +60,11 @@ const projectStore = useProjectStore()
 
 const isEditMode = ref(false)
 
-const projects = ref([])
-
+// const projects = ref([])
 
 const projects = ref([])
 
 const showProjects = ref(false)
-
 
 //make the form an empty array first
 
@@ -79,7 +77,6 @@ const form = ref({
   status: 'active'
 })
 
-
 //@click of add projects
 const openAddProjects = () => {
   showProjects.value = true
@@ -87,93 +84,88 @@ const openAddProjects = () => {
 
 //@click submit new projects
 const submitProject = async () => {
-
-//@click of add projects
-const openAddProjects = () => {
-  showProjects.value = true
-}
-
-//@click submit new projects
-const submitProject = async () => {
-  try {
-    await projectStore.createProject(form.value)
-    console.log('✅ Project created')
-    showProjects.value = false // close dialog after save
-    form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
-    showProjects.value = false // close dialog after save
-    form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
-  } catch (err) {
-    console.error('❌ Error:', err.message)
+  //@click of add projects
+  const openAddProjects = () => {
+    showProjects.value = true
   }
-}
 
-
-const isLoading = ref(true)
-
-
-
-
-//on load of projects page :added a loading feature to it 
-const fetchProject = async () => {
-  isLoading.value = true
-
-  try {
-    const { data, error } = await supabase.from('projects').select('*')
-    console.log('Projects:', data)
-    if (!error) {
-      projects.value = data
+  //@click submit new projects
+  const submitProject = async () => {
+    try {
+      await projectStore.createProject(form.value)
+      console.log('✅ Project created')
+      showProjects.value = false // close dialog after save
+      form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
+      showProjects.value = false // close dialog after save
+      form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
+    } catch (err) {
+      console.error('❌ Error:', err.message)
     }
-  } catch (err) {
-    console.error(err)
-  } finally {
-    isLoading.value = false
   }
+
+  const isLoading = ref(true)
+
+  //on load of projects page :added a loading feature to it
+  const fetchProject = async () => {
+    isLoading.value = true
+
+    try {
+      const { data, error } = await supabase.from('projects').select('*')
+      console.log('Projects:', data)
+      if (!error) {
+        projects.value = data
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  onMounted(() => {
+    fetchProject()
+  })
+
+  // shows teams dropdown as an empty array
+  // const teams = ref([])
+
+  //func to get already existing teams from supabase
+  // const getTeams = async () => {
+  //   //checks if user is logged in
+  //   if (!user.value) return
+  //   try {
+  //     const { data, error } = await supabase.from('teams').select('*')
+
+  //     // returns/shows teams from supabase
+  //     teams.value = data
+
+  //     if (error) throw error
+
+  //     console.log('teams', data)
+  //     return data
+  //   } catch (error) {
+  //     console.log('error fetching teams: ', error)
+  //   }
+  // }
+
+  const showTeamMembers = ref(false)
+
+  const formTeam = ref({
+    name: '',
+    projects: ''
+  })
+
+  const openAddTeams = async () => {
+    showTeamMembers.value = true
+  }
+
+  // onMounted(async () => {
+  //   if (!authStore.user) {
+  //     await authStore.fetchSession()
+  //   }
+  //   await getTeams()
+  // })
 }
-
-onMounted(() => {
-  fetchProject()
-})
-
-// shows teams dropdown as an empty array
-// const teams = ref([])
-
-
-//func to get already existing teams from supabase
-// const getTeams = async () => {
-//   //checks if user is logged in
-//   if (!user.value) return
-//   try {
-//     const { data, error } = await supabase.from('teams').select('*')
-
-//     // returns/shows teams from supabase
-//     teams.value = data 
-
-//     if (error) throw error
-
-//     console.log('teams', data)
-//     return data
-//   } catch (error) {
-//     console.log('error fetching teams: ', error)
-//   }
-// }
-
-const showTeamMembers = ref(false)
-
-const formTeam = ref({
-  name: '',
-  projects: ''
-})
-
-const openAddTeams = async () => {
-  showTeamMembers.value = true
-}
-
-// onMounted(async () => {
-//   if (!authStore.user) {
-//     await authStore.fetchSession()
-//   }
-//   await getTeams()
-// })
 </script>
 
 <template>
@@ -188,18 +180,7 @@ const openAddTeams = async () => {
     </div>
 
     <div v-else>
-      <div class="grid grid-cols-1 lg:grid-cols-1 ">
-    <div
-      v-if="isLoading"
-      class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
-    >
-      <v-progress-circular indeterminate color="blue" size="60" width="2" />
-
-      <p class="mt-4 text-sm text-gray-500 font-medium">Loading Project data...</p>
-    </div>
-
-    <div v-else>
-      <div class="grid grid-cols-1 lg:grid-cols-1 ">
+      <div class="grid grid-cols-1 lg:grid-cols-1">
         <!-- Active Projects -->
         <v-card class="rounded-2xl shadow-sm pa-4">
           <div class="flex justify-between items-center mb-4">
@@ -224,10 +205,8 @@ const openAddTeams = async () => {
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-1">
-          <div class="grid grid-cols-1 sm:grid-cols-1">
             <div
               v-for="project in projects"
-              :key="project.id"
               :key="project.id"
               class="flex items-center justify-between bg-gray-50 rounded-xl p-3"
             >
@@ -291,15 +270,7 @@ const openAddTeams = async () => {
 
         <v-card-actions class="justify-end space-x-2">
           <v-btn text color="grey" @click="showProjects = false">Cancel</v-btn>
-          <v-btn
-            :loading="submitting"
-            color="green"
-            @click="submitProject"
-            
-            @click="submitProject"
-            
-            >Save</v-btn
-          >
+          <v-btn :loading="submitting" color="green" @click="submitProject">Save</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
