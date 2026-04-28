@@ -62,12 +62,18 @@ const isEditMode = ref(false)
 
 const projects = ref([])
 
+
+const projects = ref([])
+
 const showProjects = ref(false)
 
 
 //make the form an empty array first
+
+//make the form an empty array first
 const form = ref({
   name: '',
+  team_id: '',
   team_id: '',
   description: '',
   status: 'active'
@@ -81,9 +87,19 @@ const openAddProjects = () => {
 
 //@click submit new projects
 const submitProject = async () => {
+
+//@click of add projects
+const openAddProjects = () => {
+  showProjects.value = true
+}
+
+//@click submit new projects
+const submitProject = async () => {
   try {
     await projectStore.createProject(form.value)
     console.log('✅ Project created')
+    showProjects.value = false // close dialog after save
+    form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
     showProjects.value = false // close dialog after save
     form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
   } catch (err) {
@@ -173,6 +189,17 @@ const openAddTeams = async () => {
 
     <div v-else>
       <div class="grid grid-cols-1 lg:grid-cols-1 ">
+    <div
+      v-if="isLoading"
+      class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
+    >
+      <v-progress-circular indeterminate color="blue" size="60" width="2" />
+
+      <p class="mt-4 text-sm text-gray-500 font-medium">Loading Project data...</p>
+    </div>
+
+    <div v-else>
+      <div class="grid grid-cols-1 lg:grid-cols-1 ">
         <!-- Active Projects -->
         <v-card class="rounded-2xl shadow-sm pa-4">
           <div class="flex justify-between items-center mb-4">
@@ -197,16 +224,20 @@ const openAddTeams = async () => {
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-1">
+          <div class="grid grid-cols-1 sm:grid-cols-1">
             <div
               v-for="project in projects"
+              :key="project.id"
               :key="project.id"
               class="flex items-center justify-between bg-gray-50 rounded-xl p-3"
             >
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-md"></div>
+                <div class="w-8 h-8 rounded-md"></div>
                 <div>
                   <p class="font-medium text-sm">{{ project.name }}</p>
                   <p class="text-xs text-gray-500">
+                    {{ project.description }}
                     {{ project.description }}
                   </p>
                 </div>
@@ -263,6 +294,8 @@ const openAddTeams = async () => {
           <v-btn
             :loading="submitting"
             color="green"
+            @click="submitProject"
+            
             @click="submitProject"
             
             >Save</v-btn
