@@ -1,4 +1,4 @@
-<script setup> 
+<script setup>
 import { supabase } from '@/services/supabase'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
@@ -9,7 +9,8 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 import confetti from 'canvas-confetti'
 import { useAuthStore } from '@/stores/auth'
 import ApiService from '@/services/api'
-import DepartmentSection from '@/composables/DepartmentSection.vue'
+import DepartmentSection from '@/components/DepartmentSection.vue'
+import taskCard from '@/components/taskCard.vue'
 
 /* ---------------- MONTH DROPDOWN ---------------- */
 const monthStore = useMonthDropdownStore()
@@ -22,7 +23,6 @@ onBeforeUnmount(() => monthStore.destroy())
 /* ---------------- CUSTOMERS ---------------- */
 const customers = ref([])
 
-
 const showMembersModal = ref(false)
 const openMembersModal = () => {
   showMembersModal.value = true
@@ -32,7 +32,6 @@ const closeMembersModal = () => {
 }
 /* ---------------- NEW TASKS ---------------- */
 const newTasks = ref([])
-
 
 const deleteNewTask = (index) => {
   NewTasks.value.splice(index, 1)
@@ -187,65 +186,6 @@ const loading = ref(false)
 const error = ref(null)
 const dashboardData = ref(null)
 
-
-// fetch customers
-// const fetchCustomers = async () => {
-//   const { data, error } = await supabase
-//     .from('users')
-//     .select('*')
-
-//   if (error) {
-//     console.error('Customers error:', error)
-//     return
-//   }
-
-//   customers.value = data
-// }
-// // fetch projects
-// const fetchProjects = async () => {
-//   const { data, error } = await supabase
-//     .from('projects')
-//     .select('*')
-
-//   if (error) {
-//     console.error('Projects error:', error)
-//     return
-//   }
-
-//   tasks.value = data
-// }
-// // fetch newTasks
-// const fetchNewTasks = async () => {
-//   const { data, error } = await supabase
-//     .from('tasks')
-//     .select('*')
-//     .eq('status', 'new') // or 'in_progress'
-
-//   if (error) {
-//     console.error('Tasks error:', error)
-//     return
-//   }
-
-//   NewTasks.value = data
-// }
-// onMounted(async () => {
-//   await authStore.fetchSession()
-//   await fetchDashboard()
-
-//   // await Promise.all([
-//   //   fetchCustomers(),
-//   //   fetchProjects(),
-//   //   fetchNewTasks()
-//   // ])
-// })
-// const totalProjects = computed(() => tasks.value.length)
-
-// const deleteNewTask = async (id) => {
-//   await supabase.from('tasks').delete().eq('id', id)
-//   await fetchNewTasks()
-// }
-
-
 // 🔥 Fetch dashboard
 /* ---------------- HELPERS ---------------- */
 
@@ -256,8 +196,8 @@ const extractDashboard = (res) => {
 
 // map members → customers
 const mapCustomers = (teams) => {
-  return teams.flatMap(team =>
-    (team.members || []).map(member => ({
+  return teams.flatMap((team) =>
+    (team.members || []).map((member) => ({
       name: `${member.first_name} ${member.last_name}`,
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.first_name}`
     }))
@@ -266,9 +206,9 @@ const mapCustomers = (teams) => {
 
 // map projects → tasks
 const mapTasks = (teams) => {
-  return teams.flatMap(team =>
-    (team.projects || []).flatMap(project =>
-      (project.tasks || []).map(task => ({
+  return teams.flatMap((team) =>
+    (team.projects || []).flatMap((project) =>
+      (project.tasks || []).map((task) => ({
         title: task.title,
         description: task.status,
         avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task'
@@ -277,10 +217,22 @@ const mapTasks = (teams) => {
   )
 }
 
+const projects = ref([])
+
+const mapProjects = (teams) => {
+  return teams.flatMap((team) =>
+    (team.projects || []).map((project) => ({
+      name: project.name,
+      id: project.id,
+      status: project.status
+    }))
+  )
+}
+
 // filter new/in-progress tasks
 const mapNewTasks = (allTasks) => {
   return allTasks.filter(
-    task => task.description === 'todo' || task.description === 'in_progress'
+    (task) => task.description === 'todo' || task.description === 'in_progress'
   )
 }
 
@@ -299,6 +251,7 @@ const fetchDashboard = async () => {
       user_id: userId
     })
 
+    console.log(res)
     const data = extractDashboard(res)
     if (!data) throw new Error('Invalid dashboard response')
 
@@ -312,12 +265,10 @@ const fetchDashboard = async () => {
     tasks.value = allTasks
 
     NewTasks.value = mapNewTasks(allTasks)
-
+    projects.value = mapProjects(teams)
+    console.log(projects.value)
   } catch (err) {
-    error.value =
-      err?.response?.data?.error ||
-      err.message ||
-      'Failed to load dashboard'
+    error.value = err?.response?.data?.error || err.message || 'Failed to load dashboard'
   } finally {
     loading.value = false
   }
@@ -358,35 +309,25 @@ const totalProjects = computed(() => {
   <main-layout>
     <div class="min-h-screen bg-[#f5f5f0] p-6 font-['DM_Sans',sans-serif]">
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
-        <!-- LEFT COLUMN -->
+        
+        <!-- LEFT COLUMN - Main Content -->
         <div class="flex flex-col gap-5">
           <!-- Overview Card -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-lg font-semibold text-gray-800">Overview</h2>
-            </div>
-
+            <!-- ... your overview content ... -->
             <div class="grid grid-cols-2 gap-8">
               <!-- Total Projects -->
               <div>
                 <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <span>Total projects</span>
                 </div>
                 <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">
-                    {{ totalProjects }}
-                  </span>
-                  <div
-                    class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1"
-                  >
+                  <span class="text-4xl font-bold text-gray-900">{{ totalProjects }}</span>
+                  <div class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1">
                     36.8%
                   </div>
                 </div>
@@ -396,20 +337,14 @@ const totalProjects = computed(() => {
               <div>
                 <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                    />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                   <span>Active tasks</span>
                 </div>
                 <div class="flex items-end gap-3">
                   <span class="text-4xl font-bold text-gray-900">4</span>
-                  <div
-                    class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1"
-                  >
+                  <div class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1">
                     36.8%
                   </div>
                 </div>
@@ -417,9 +352,10 @@ const totalProjects = computed(() => {
             </div>
           </div>
 
-          <!-- Active Members. -->
+          <!-- Active Members -->
           <div class="bg-white rounded-2xl p-8 shadow-sm">
-            <h3 class="text-base font-semibold text-gray-800 mb-4"> Active Members</h3>
+            <!-- ... your active members content ... -->
+             <h3 class="text-base font-semibold text-gray-800 mb-4">Active Members</h3>
 
             <div class="flex items-center gap-5">
               <div
@@ -493,57 +429,13 @@ const totalProjects = computed(() => {
             </div>
           </div>
 
-          <!-- Task Chart -->
-          <div class="bg-white rounded-2xl p-6 shadow-sm">
-            <div class="flex flex-col gap-4">
-              <!-- Header -->
-              <!-- Header -->
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-800">All Projects</h2>
-
-                <DepartmentSection class="w-48" />
-              </div>
-
-              <!-- Task List -->
-              <ul class="flex flex-col gap-3">
-                <li v-for="task in visibleTasks" :key="task.title" class="border-b pb-2 flex gap-3">
-                  <!-- Task Avatar -->
-                  <img
-                    :src="task.avatar"
-                    :alt="task.title"
-                    class="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                  />
-
-                  <!-- Task Content -->
-                  <details class="cursor-pointer flex-1">
-                    <summary class="text-sm text-gray-700 truncate">
-                      {{ task.title }}
-                      <button
-                        @click.stop="openTaskModal(task)"
-                        class="text-gray-400 hover:text-blue-500 ml-2"
-                      >
-                        <i class="fas fa-eye text-xs"></i>
-                      </button>
-                    </summary>
-                    <p class="mt-2 text-sm text-gray-600">
-                      {{ task.description }}
-                    </p>
-                  </details>
-                </li>
-              </ul>
-              <button
-                @click="showAllTasks = !showAllTasks"
-                class="mt-3 text-xs text-blue-600 hover:underline self-start"
-              >
-                {{ showAllTasks ? 'Show Less' : 'See More' }}
-              </button>
-            </div>
-          </div>
+          <!-- Task Card -->
+          <taskCard />
         </div>
 
-        <!-- RIGHT COLUMN -->
+        <!-- RIGHT COLUMN - Sidebar (New Tasks + Comments) -->
         <div class="flex flex-col gap-5">
-          <!-- NEW TASK -->
+          <!-- NEW TASK / IN PROGRESS -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">
               New/Task in progress
@@ -557,29 +449,22 @@ const totalProjects = computed(() => {
               >
                 <div class="flex gap-2 flex-1">
                   <img :src="task.avatar" class="w-6 h-6 rounded-full mt-1" />
-
                   <details class="flex-1 cursor-pointer">
                     <summary class="text-xs text-gray-700 flex items-center justify-between">
                       <span>{{ task.name }}</span>
-
                       <button
                         @click.stop="openTaskModal(task)"
-                        class="text-gray-400 hover:text-blue-500 transition"
-                        title="View task"
+                        class="text-gray-400 hover:text-blue-500"
                       >
                         <i class="fas fa-eye text-xs"></i>
                       </button>
                     </summary>
-
-                    <p class="text-xs text-gray-600 mt-1">
-                      {{ task.description }}
-                    </p>
+                    <p class="text-xs text-gray-600 mt-1">{{ task.description }}</p>
                   </details>
                 </div>
               </li>
             </ul>
 
-            <!-- BUTTON -->
             <button
               @click="showAllNewTasks = !showAllNewTasks"
               class="mt-3 text-xs text-blue-600 hover:underline"
@@ -591,73 +476,56 @@ const totalProjects = computed(() => {
           <!-- COMMENTS -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">Comments</h2>
-
             <div class="flex flex-col gap-4">
               <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
                 <img :src="comment.avatar" class="w-9 h-9 rounded-full object-cover" />
-
                 <div>
                   <div class="flex gap-2">
-                    <span class="text-sm font-semibold">
-                      {{ comment.author }}
-                    </span>
+                    <span class="text-sm font-semibold">{{ comment.author }}</span>
                     <span class="text-xs text-gray-400">on</span>
-                    <span class="text-xs text-gray-600">
-                      {{ comment.product }}
-                    </span>
+                    <span class="text-xs text-gray-600">{{ comment.product }}</span>
                   </div>
-
-                  <p class="text-xs text-gray-400">
-                    {{ comment.time }}
-                  </p>
-
-                  <p class="text-sm text-gray-600">
-                    {{ comment.text }}
-                  </p>
+                  <p class="text-xs text-gray-400">{{ comment.time }}</p>
+                  <p class="text-sm text-gray-600">{{ comment.text }}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div v-if="showModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
-        <!-- HEADER -->
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-sm font-semibold text-gray-800">
-            {{ selectedTask?.name }}
-          </h3>
 
-          <button @click="showModal = false">
-            <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
+      <!-- TASK MODAL -->
+      <div v-if="showModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="text-sm font-semibold text-gray-800">{{ selectedTask?.name }}</h3>
+            <button @click="showModal = false">
+              <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
+            </button>
+          </div>
+
+          <label class="text-xs text-gray-500">Description</label>
+          <textarea
+            v-model="editableDescription"
+            class="w-full mt-1 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
+            rows="3"
+          ></textarea>
+
+          <label class="text-xs text-gray-500 mt-3 block">Tag / Assign</label>
+          <input
+            v-model="tagInput"
+            type="text"
+            placeholder="Enter email or name"
+            class="w-full mt-1 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
+          />
+
+          <button
+            @click="submitTaskUpdate"
+            class="w-full mt-4 bg-blue-600 text-white text-sm py-2 rounded-lg hover:bg-blue-700"
+          >
+            Submit
           </button>
         </div>
-
-        <!-- DESCRIPTION INPUT -->
-        <label class="text-xs text-gray-500">Description</label>
-        <textarea
-          v-model="editableDescription"
-          class="w-full mt-1 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
-          rows="3"
-        ></textarea>
-
-        <!-- TAG / EMAIL INPUT -->
-        <label class="text-xs text-gray-500 mt-3 block"> Tag / Assign </label>
-        <input
-          v-model="tagInput"
-          type="text"
-          placeholder="Enter email or name"
-          class="w-full mt-1 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
-        />
-
-        <!-- SUBMIT -->
-        <button
-          @click="submitTaskUpdate"
-          class="w-full mt-4 bg-blue-600 text-white text-sm py-2 rounded-lg hover:bg-blue-700"
-        >
-          Submit
-        </button>
       </div>
     </div>
   </main-layout>
