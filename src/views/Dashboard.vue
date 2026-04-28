@@ -44,6 +44,7 @@ const toggleProgress = (task) => {
 
 /* ---------------- TASKS ---------------- */
 const tasks = ref([])
+const tasks = ref([])
 
 const showModal = ref(false)
 const selectedTask = ref(null)
@@ -84,6 +85,7 @@ const showAllNewTasks = ref(false)
 const visibleTasks = computed(() => (showAllTasks.value ? tasks.value : tasks.value.slice(0, 5)))
 
 const visibleNewTasks = computed(() =>
+  showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
   showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
 )
 /* ---------------- COMMENTS ---------------- */
@@ -375,6 +377,7 @@ const totalProjects = computed(() => {
 
               <div class="flex flex-col items-center gap-2">
                 <button
+                  @click="openMembersModal"
                   @click="openMembersModal"
                   class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-400 hover:bg-gray-50"
                 >
