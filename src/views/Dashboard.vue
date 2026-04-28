@@ -402,9 +402,23 @@ const totalProjects = computed(() => {
               <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
                 <!-- Header -->
                 <div class="flex justify-between items-center mb-4">
+                   <div class="flex items-center justify-between mb-4">
                   <h3 class="text-sm font-semibold text-gray-800">
                     Active Members ({{ customers.length }})
                   </h3>
+                   <v-select
+      v-model="selectedCategory"
+      :items="categoryOptions"
+      label="Category"
+      variant="outlined"
+      density="compact"
+      hide-details
+      rounded="lg"
+      class="ml-4"
+      style="min-width: 160px; max-width: 200px"
+      bg-color="white"
+    />
+    </div>
 
                   <button @click="closeMembersModal">
                     <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
@@ -437,9 +451,23 @@ const totalProjects = computed(() => {
         <div class="flex flex-col gap-5">
           <!-- NEW TASK / IN PROGRESS -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
+             <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">
-              New/Task in progress
+              Task in progress
             </h2>
+            <v-select
+      v-model="selectedCategory"
+      :items="categoryOptions"
+      label="Category"
+      variant="outlined"
+      density="compact"
+      hide-details
+      rounded="lg"
+      class="ml-4"
+      style="min-width: 160px; max-width: 200px"
+      bg-color="white"
+    />
+            </div>
 
             <ul class="flex flex-col gap-2">
               <li

@@ -101,51 +101,85 @@ onMounted(async () => {
    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
     
   <!-- TASKS CARD -->
-  <div class="bg-white rounded-2xl p-4 shadow-sm">
-    <h2 class=""> all Task </h2>
-    <ul class="flex flex-col gap-3">
-      <li
-        v-for="task in visibleTasks"
-        :key="task.title"
-        class="border-b pb-2 flex gap-3"
-      >
-        <img
-          :src="task.avatar"
-          :alt="task.title"
-          class="w-10 h-10 rounded-full object-cover flex-shrink-0"
-        />
+ <div class="bg-white rounded-2xl p-4 shadow-sm">
+  
+  <!-- HEADER (Title + Dropdown) -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-gray-800">
+      All Task
+    </h2>
 
-        <details class="cursor-pointer flex-1">
-          <summary class="text-sm text-gray-700 truncate">
-            {{ task.title }}
-            <button
-              @click.stop="openTaskModal(task)"
-              class="text-gray-400 hover:text-blue-500 ml-2"
-            >
-              <i class="fas fa-eye text-xs"></i>
-            </button>
-          </summary>
-          <p class="mt-2 text-sm text-gray-600">
-            {{ task.description }}
-          </p>
-        </details>
-      </li>
-    </ul>
-
-    <button
-      @click="showAllTasks = !showAllTasks"
-      class="mt-3 text-xs text-blue-600 hover:underline"
-    >
-      {{ showAllTasks ? 'Show Less' : 'See More' }}
-    </button>
+    <v-select
+      v-model="selectedCategory"
+      :items="categoryOptions"
+      label="Category"
+      variant="outlined"
+      density="compact"
+      hide-details
+      rounded="lg"
+      class="ml-4"
+      style="min-width: 160px; max-width: 200px"
+      bg-color="white"
+    />
   </div>
+
+  <!-- TASK LIST -->
+  <ul class="flex flex-col gap-3">
+    <li
+      v-for="task in visibleTasks"
+      :key="task.title"
+      class="border-b pb-2 flex gap-3"
+    >
+      <img
+        :src="task.avatar"
+        :alt="task.title"
+        class="w-10 h-10 rounded-full object-cover flex-shrink-0"
+      />
+
+      <details class="cursor-pointer flex-1">
+        <summary class="text-sm text-gray-700 truncate">
+          {{ task.title }}
+          <button
+            @click.stop="openTaskModal(task)"
+            class="text-gray-400 hover:text-blue-500 ml-2"
+          >
+            <i class="fas fa-eye text-xs"></i>
+          </button>
+        </summary>
+        <p class="mt-2 text-sm text-gray-600">
+          {{ task.description }}
+        </p>
+      </details>
+    </li>
+  </ul>
+
+  <button
+    @click="showAllTasks = !showAllTasks"
+    class="mt-3 text-xs text-blue-600 hover:underline"
+  >
+    {{ showAllTasks ? 'Show Less' : 'See More' }}
+  </button>
+</div>
 
   <!-- PROJECTS CARD -->
   <div class="bg-white rounded-2xl p-6 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">
       Projects
     </h2>
-
+     <v-select
+      v-model="selectedCategory"
+      :items="categoryOptions"
+      label="Category"
+      variant="outlined"
+      density="compact"
+      hide-details
+      rounded="lg"
+      class="ml-4"
+      style="min-width: 160px; max-width: 200px"
+      bg-color="white"
+    />
+    </div>
     <ul class="flex flex-col gap-2">
       <li
         v-for="(project, index) in projects"
