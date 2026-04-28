@@ -70,40 +70,24 @@ const form = ref({
   status: 'active'
 })
 
-<<<<<<< HEAD
 
 //@click of add projects
-=======
->>>>>>> abcb2ee3416ada303ded85359f32dcc9b5a271f3
 const openAddProjects = () => {
   showProjects.value = true
 }
 
-<<<<<<< HEAD
 //@click submit new projects
-=======
->>>>>>> abcb2ee3416ada303ded85359f32dcc9b5a271f3
 const submitProject = async () => {
   try {
     await projectStore.createProject(form.value)
     console.log('✅ Project created')
-<<<<<<< HEAD
     showProjects.value = false // close dialog after save
-=======
-    showProjects.value = false  // close dialog after save
->>>>>>> abcb2ee3416ada303ded85359f32dcc9b5a271f3
     form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
   } catch (err) {
     console.error('❌ Error:', err.message)
   }
 }
 
-<<<<<<< HEAD
-=======
-
-const teams = ref([])
-const getTeams = async () => {
->>>>>>> abcb2ee3416ada303ded85359f32dcc9b5a271f3
 
 const isLoading = ref(true)
 
@@ -275,52 +259,7 @@ onMounted(async () => {
             :loading="submitting"
             color="green"
             @click="submitProject"
-<<<<<<< HEAD
             
-=======
-            :disabled="!formValid || submitting"
-            >Save</v-btn
-          >
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="showTeamMembers" max-width="500px" persistent>
-      <v-card class="p-4">
-        <v-card-title class="text-lg font-semibold">
-          {{ isEditMode ? 'Edit Teams Record' : 'Add Teams Record' }}
-        </v-card-title>
-
-        <v-card-text>
-          <v-form ref="formRef" v-model="formValid" lazy-validation :disabled="submitting">
-            <v-text-field
-              v-model="formTeam.name"
-              :items="name"
-              label="Name"
-              variant="outlined"
-              color="green"
-            />
-
-            <v-select
-              v-model="formTeam.projectsName"
-              :items="projectsName"
-              item-title="name"
-              label="Projects Name"
-              variant="outlined"
-              color="green"
-              class="mt-3"
-            />
-          </v-form>
-        </v-card-text>
-
-        <v-card-actions class="justify-end space-x-2">
-          <v-btn text color="grey" @click="showTeamMembers = false">Cancel</v-btn>
-          <v-btn
-            :loading="submitting"
-            color="green"
-            @click="submitAttendance"
-            :disabled="!formValid || submitting"
->>>>>>> abcb2ee3416ada303ded85359f32dcc9b5a271f3
             >Save</v-btn
           >
         </v-card-actions>
