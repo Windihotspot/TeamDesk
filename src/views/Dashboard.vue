@@ -43,7 +43,7 @@ const toggleProgress = (task) => {
 }
 
 /* ---------------- TASKS ---------------- */
-const tasks = ref([])
+
 const tasks = ref([])
 
 const showModal = ref(false)
@@ -86,7 +86,7 @@ const visibleTasks = computed(() => (showAllTasks.value ? tasks.value : tasks.va
 
 const visibleNewTasks = computed(() =>
   showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
-  showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
+  
 )
 /* ---------------- COMMENTS ---------------- */
 const comments = ref([
@@ -316,6 +316,21 @@ const totalProjects = computed(() => {
         <div class="flex flex-col gap-5">
           <!-- Overview Card -->
           <div class="bg-white rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">overview card</h2>
+            <v-select
+      v-model="selectedCategory"
+      :items="categoryOptions"
+      label="Category"
+      variant="outlined"
+      density="compact"
+      hide-details
+      rounded="lg"
+      class="ml-4"
+      style="max-width: 180px"
+      bg-color="white"
+    />
+    </div>
             <!-- ... your overview content ... -->
             <div class="grid grid-cols-2 gap-8">
               <!-- Total Projects -->
@@ -377,7 +392,6 @@ const totalProjects = computed(() => {
 
               <div class="flex flex-col items-center gap-2">
                 <button
-                  @click="openMembersModal"
                   @click="openMembersModal"
                   class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-400 hover:bg-gray-50"
                 >
