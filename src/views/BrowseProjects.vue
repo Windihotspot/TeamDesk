@@ -47,13 +47,16 @@ import { supabase } from '@/services/supabase.js'
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth.js'
 import { useProjectStore } from '@/stores/project.js'
+import GetTeams from '@/components/GetTeams.vue'
+// import TeamSelect from '@/components/GetTeams.vue'
 
-//declare var for authStore in auth.js
-const authStore = useAuthStore()
+// declare var for authStore in auth.js
+// const authStore = useAuthStore()
+
 const projectStore = useProjectStore()
 
-const user = computed(() => authStore.user)
-console.log(user)
+// const user = computed(() => authStore.user)
+// console.log(user)
 
 const isEditMode = ref(false)
 
@@ -115,28 +118,28 @@ onMounted(() => {
   fetchProject()
 })
 
-//shows teams dropdown as an empty array
-const teams = ref([])
+// shows teams dropdown as an empty array
+// const teams = ref([])
 
 
 //func to get already existing teams from supabase
-const getTeams = async () => {
-  //checks if user is logged in
-  if (!user.value) return
-  try {
-    const { data, error } = await supabase.from('teams').select('*')
+// const getTeams = async () => {
+//   //checks if user is logged in
+//   if (!user.value) return
+//   try {
+//     const { data, error } = await supabase.from('teams').select('*')
 
-    // returns/shows teams from supabase
-    teams.value = data 
+//     // returns/shows teams from supabase
+//     teams.value = data 
 
-    if (error) throw error
+//     if (error) throw error
 
-    console.log('teams', data)
-    return data
-  } catch (error) {
-    console.log('error fetching teams: ', error)
-  }
-}
+//     console.log('teams', data)
+//     return data
+//   } catch (error) {
+//     console.log('error fetching teams: ', error)
+//   }
+// }
 
 const showTeamMembers = ref(false)
 
@@ -149,12 +152,12 @@ const openAddTeams = async () => {
   showTeamMembers.value = true
 }
 
-onMounted(async () => {
-  if (!authStore.user) {
-    await authStore.fetchSession()
-  }
-  await getTeams()
-})
+// onMounted(async () => {
+//   if (!authStore.user) {
+//     await authStore.fetchSession()
+//   }
+//   await getTeams()
+// })
 </script>
 
 <template>
@@ -232,7 +235,7 @@ onMounted(async () => {
               color="green"
             />
 
-            <v-select
+            <!-- <v-select
               v-model="form.team_id"
               :items="teams"
               item-title="name"
@@ -240,7 +243,9 @@ onMounted(async () => {
               label="Select Team"
               variant="outlined"
               class="mt-3"
-            />
+            /> -->
+
+            <GetTeams />
 
             <v-textarea
               v-model="form.description"

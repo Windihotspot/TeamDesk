@@ -22,8 +22,11 @@ const form = ref({
   password: ''
 })
 
+const loading = ref(false)
+
 // 🔹 login
 const submit = async () => {
+  loading.value = true
   const { email, password } = form.value
   console.log(form.value)
   try {
@@ -31,14 +34,13 @@ const submit = async () => {
 
     console.log('✅ User:', data.user)
     console.log('✅ Session:', data.session)
-    
 
     router.push('/dashboard')
   } catch (err) {
     console.error('❌ Login error:', err.message)
+  } finally {
+    loading.value = false
   }
-
-  
 }
 </script>
 
@@ -91,12 +93,16 @@ const submit = async () => {
               <!-- Email -->
               <v-text-field
                 v-model="form.email"
-                placeholder="First Name"
+                placeholder="Email"
                 prepend-inner-icon="mdi-email-outline"
                 class="[&_.v-field__prepend-inner_.v-icon]:!text-[#0B1F3A]"
                 variant="outlined"
                 density="comfortable"
                 rounded-md
+                :rules="[
+                  (v) => !!v || 'Email is required',
+                  (v) => /.+@.+\..+/.test(v) || 'Email must be valid'
+                ]"
               />
 
               <!-- Password -->
@@ -110,13 +116,25 @@ const submit = async () => {
                 variant="outlined"
                 density="comfortable"
                 rounded-md
+                :rules="[
+                  (v) => !!v || 'Password is required',
+                  (v) => /.+@.+\..+/.test(v) || 'Password must be valid'
+                ]"
               />
 
               <div class="text-right">
                 <button class="text-sm text-gray-600 hover:underline">Forget Password ?</button>
               </div>
 
-              <v-btn block size="large" rounded="lg" class="bg-blue-900 text-black" @click="submit">
+              <v-btn
+                block
+                size="large"
+                rounded="lg"
+                color="#0B1F3A"
+                :loading="loading"
+                class="text-white"
+                @click="submit"
+              >
                 <v-icon start>mdi-login</v-icon>
                 Log In
               </v-btn>

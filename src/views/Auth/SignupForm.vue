@@ -17,14 +17,25 @@ const form = reactive({
   password: ''
 })
 
+
+const loading = ref(false)
+
+
 const submitPage = async () => {
+  loading.value = true
   try {
     const data = await authService.signup({ ...form })
     console.log('✅ Success:', data)
   } catch (err) {
     console.error('Error:', err)
+  } finally {
+    loading.value = false
   }
 }
+
+
+
+
 </script>
 
 <template>
@@ -88,7 +99,6 @@ const submitPage = async () => {
                 v-model="form.firstName"
                 placeholder="First Name"
                 prepend-inner-icon="mdi-account"
-                class="[&_.v-field__prepend-inner_.v-icon]:!text-[#0B1F3A]"
                 variant="outlined"
                 density="comfortable"
                 rounded-md
@@ -109,6 +119,7 @@ const submitPage = async () => {
                 prepend-inner-icon="mdi-account-group"
                 variant="outlined"
                 density="comfortable"
+                :rules="[v => !!v || 'TeamName is required', v => /.+@.+\..+/.test(v) || 'TeamName must be valid']"
                 rounded-md
               />
 
@@ -118,6 +129,7 @@ const submitPage = async () => {
                 prepend-inner-icon="mdi-email-outline"
                 variant="outlined"
                 density="comfortable"
+                :rules="[v => !!v || 'Email is required', v => /.+@.+\..+/.test(v) || 'Email must be valid']"
                 rounded-md
               />
 
@@ -130,6 +142,7 @@ const submitPage = async () => {
                 @click:append-inner="toggleVisibility"
                 variant="outlined"
                 density="comfortable"
+                :rules="[v => !!v || 'Password is required', v => /.+@.+\..+/.test(v) || 'Password must be valid']"
                 rounded-md
               />
 
@@ -140,6 +153,7 @@ const submitPage = async () => {
                 :append-inner-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
                 variant="outlined"
                 density="comfortable"
+                :rules="[v => !!v || 'Password is required', v => /.+@.+\..+/.test(v) || 'Password must be valid']"
                 rounded-md
               />
 
@@ -149,7 +163,9 @@ const submitPage = async () => {
                 block
                 size="large"
                 rounded="lg"
-                class="bg-blue-900 text-black"
+                color="#0B1F3A"
+                class="text-white"
+                :loading="loading"
                 @click="submitPage"
               >
                 Sign Up
@@ -181,7 +197,7 @@ const submitPage = async () => {
                 rounded
               />
 
-              <v-btn block size="large" rounded="lg" class="bg-blue-900 text-white"> Log In </v-btn>
+              <v-btn block size="large" rounded="lg" color="#0B1F3A" class="text-white"> Log In </v-btn>
 
               <p class="text-sm text-gray-500 mt-4">Don’t have an account?</p>
             </div>
