@@ -281,6 +281,10 @@ const fetchDashboard = async () => {
 onMounted(async () => {
   await authStore.fetchSession()
   await fetchDashboard()
+   setTimeout(() => {
+    tasks.value = ['Task 1', 'Task 2']
+    loading.value = false
+  }, 2000)
 })
 
 /* ---------------- COMPUTED ---------------- */
@@ -315,7 +319,13 @@ const totalProjects = computed(() => {
         <!-- LEFT COLUMN - Main Content -->
         <div class="flex flex-col gap-5">
           <!-- Overview Card -->
+
           <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <div>
+    <div v-if="loading" class="flex justify-center py-6">
+      <v-progress-circular indeterminate size="40" />
+    </div>
+  </div>
             <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">overview card</h2>
             <v-select
