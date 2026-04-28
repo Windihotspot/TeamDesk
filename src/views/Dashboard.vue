@@ -1,4 +1,4 @@
-<script setup> 
+<script setup>
 import { supabase } from '@/services/supabase'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
@@ -22,7 +22,6 @@ onBeforeUnmount(() => monthStore.destroy())
 /* ---------------- CUSTOMERS ---------------- */
 const customers = ref([])
 
-
 const showMembersModal = ref(false)
 const openMembersModal = () => {
   showMembersModal.value = true
@@ -32,7 +31,6 @@ const closeMembersModal = () => {
 }
 /* ---------------- NEW TASKS ---------------- */
 const newTasks = ref([])
-
 
 const deleteNewTask = (index) => {
   NewTasks.value.splice(index, 1)
@@ -187,7 +185,6 @@ const loading = ref(false)
 const error = ref(null)
 const dashboardData = ref(null)
 
-
 // fetch customers
 // const fetchCustomers = async () => {
 //   const { data, error } = await supabase
@@ -245,7 +242,6 @@ const dashboardData = ref(null)
 //   await fetchNewTasks()
 // }
 
-
 // 🔥 Fetch dashboard
 /* ---------------- HELPERS ---------------- */
 
@@ -256,8 +252,8 @@ const extractDashboard = (res) => {
 
 // map members → customers
 const mapCustomers = (teams) => {
-  return teams.flatMap(team =>
-    (team.members || []).map(member => ({
+  return teams.flatMap((team) =>
+    (team.members || []).map((member) => ({
       name: `${member.first_name} ${member.last_name}`,
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.first_name}`
     }))
@@ -266,9 +262,9 @@ const mapCustomers = (teams) => {
 
 // map projects → tasks
 const mapTasks = (teams) => {
-  return teams.flatMap(team =>
-    (team.projects || []).flatMap(project =>
-      (project.tasks || []).map(task => ({
+  return teams.flatMap((team) =>
+    (team.projects || []).flatMap((project) =>
+      (project.tasks || []).map((task) => ({
         title: task.title,
         description: task.status,
         avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task'
@@ -280,7 +276,7 @@ const mapTasks = (teams) => {
 // filter new/in-progress tasks
 const mapNewTasks = (allTasks) => {
   return allTasks.filter(
-    task => task.description === 'todo' || task.description === 'in_progress'
+    (task) => task.description === 'todo' || task.description === 'in_progress'
   )
 }
 
@@ -298,7 +294,7 @@ const fetchDashboard = async () => {
     const res = await ApiService.post('dashboard', {
       user_id: userId
     })
-
+    console.log('dashboard response:', res)
     const data = extractDashboard(res)
     if (!data) throw new Error('Invalid dashboard response')
 
@@ -312,12 +308,8 @@ const fetchDashboard = async () => {
     tasks.value = allTasks
 
     NewTasks.value = mapNewTasks(allTasks)
-
   } catch (err) {
-    error.value =
-      err?.response?.data?.error ||
-      err.message ||
-      'Failed to load dashboard'
+    error.value = err?.response?.data?.error || err.message || 'Failed to load dashboard'
   } finally {
     loading.value = false
   }
@@ -419,7 +411,7 @@ const totalProjects = computed(() => {
 
           <!-- Active Members. -->
           <div class="bg-white rounded-2xl p-8 shadow-sm">
-            <h3 class="text-base font-semibold text-gray-800 mb-4"> Active Members</h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-4">Active Members</h3>
 
             <div class="flex items-center gap-5">
               <div
