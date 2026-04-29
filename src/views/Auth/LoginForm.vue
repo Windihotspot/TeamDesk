@@ -118,7 +118,7 @@ const submit = async () => {
                 rounded-md
                 :rules="[
                   (v) => !!v || 'Password is required',
-                  (v) => /.+@.+\..+/.test(v) || 'Password must be valid'
+                  
                 ]"
               />
 

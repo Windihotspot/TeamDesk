@@ -2,47 +2,7 @@
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { supabase } from '@/services/supabase.js'
 
-// const projects = [
-//   { name: "Starlight Initiative", tasks: "2 Tasks due soon", color: "bg-orange-500" },
-//   { name: "Project Zenith", tasks: "4 Tasks due soon", color: "bg-blue-500" },
-//   { name: "Evergreen Project", tasks: "1 Task due soon", color: "bg-green-500" },
-//   { name: "Capstone Initiative", tasks: "8 Tasks due soon", color: "bg-lime-500" },
-//   { name: "Project Phoenix", tasks: "3 Tasks due soon", color: "bg-red-500" },
-//   { name: "Project Chimera", tasks: "No tasks", color: "bg-gray-800" },
-// ];
 
-// const members = [
-//   {
-//     name: "Elowen Frost",
-//     email: "elowen.frost@email.com",
-//     avatar: "https://i.pravatar.cc/40?img=1",
-//   },
-//   {
-//     name: "Jasper Thorne",
-//     email: "jasper.thorne@email.com",
-//     avatar: "https://i.pravatar.cc/40?img=2",
-//   },
-//   {
-//     name: "Willow Briar",
-//     email: "willow.briar@email.com",
-//     avatar: "https://i.pravatar.cc/40?img=3",
-//   },
-//   {
-//     name: "Silas Blackwood",
-//     email: "silas.blackwood@email.com",
-//     avatar: "https://i.pravatar.cc/40?img=4",
-//   },
-//   {
-//     name: "Luna Sterling",
-//     email: "luna.sterling@email.com",
-//     avatar: "https://i.pravatar.cc/40?img=5",
-//   },
-//   {
-//     name: "Griffin Wilde",
-//     email: "griffin.wilde@email.com",
-//     avatar: "https://i.pravatar.cc/40?img=6",
-//   },
-// ];
 
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth.js'
@@ -60,19 +20,19 @@ const projectStore = useProjectStore()
 
 const isEditMode = ref(false)
 
-// const projects = ref([])
+
 
 const projects = ref([])
 
 const showProjects = ref(false)
 
-//make the form an empty array first
+
 
 //make the form an empty array first
+//the syntax in sql editor must match with your form field 
 const form = ref({
   name: '',
-  team_id: '',
-  team_id: '',
+  team_id: null,
   description: '',
   status: 'active'
 })
@@ -82,90 +42,81 @@ const openAddProjects = () => {
   showProjects.value = true
 }
 
+
 //@click submit new projects
 const submitProject = async () => {
-  //@click of add projects
-  const openAddProjects = () => {
-    showProjects.value = true
+  try {
+    await projectStore.createProject(form.value)
+    console.log('✅ Project created:', showProjects)
+    showProjects.value = false // close dialog after save
+    form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
+  } catch (err) {
+    console.error('❌ Error:', err.message)
   }
-
-  //@click submit new projects
-  const submitProject = async () => {
-    try {
-      await projectStore.createProject(form.value)
-      console.log('✅ Project created')
-      showProjects.value = false // close dialog after save
-      form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
-      showProjects.value = false // close dialog after save
-      form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
-    } catch (err) {
-      console.error('❌ Error:', err.message)
-    }
-  }
-
-  const isLoading = ref(true)
-
-  //on load of projects page :added a loading feature to it
-  const fetchProject = async () => {
-    isLoading.value = true
-
-    try {
-      const { data, error } = await supabase.from('projects').select('*')
-      console.log('Projects:', data)
-      if (!error) {
-        projects.value = data
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  onMounted(() => {
-    fetchProject()
-  })
-
-  // shows teams dropdown as an empty array
-  // const teams = ref([])
-
-  //func to get already existing teams from supabase
-  // const getTeams = async () => {
-  //   //checks if user is logged in
-  //   if (!user.value) return
-  //   try {
-  //     const { data, error } = await supabase.from('teams').select('*')
-
-  //     // returns/shows teams from supabase
-  //     teams.value = data
-
-  //     if (error) throw error
-
-  //     console.log('teams', data)
-  //     return data
-  //   } catch (error) {
-  //     console.log('error fetching teams: ', error)
-  //   }
-  // }
-
-  const showTeamMembers = ref(false)
-
-  const formTeam = ref({
-    name: '',
-    projects: ''
-  })
-
-  const openAddTeams = async () => {
-    showTeamMembers.value = true
-  }
-
-  // onMounted(async () => {
-  //   if (!authStore.user) {
-  //     await authStore.fetchSession()
-  //   }
-  //   await getTeams()
-  // })
 }
+
+const isLoading = ref(true)    
+
+//on load of projects page :added a loading feature to it
+const fetchProject = async () => {
+  isLoading.value = true
+
+  try {
+    const { data, error } = await supabase.from('projects').select('*')
+    console.log('Projects:', data)
+    if (!error) {
+      projects.value = data
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProject()
+})
+
+// shows teams dropdown as an empty array
+// const teams = ref([])
+
+//func to get already existing teams from supabase
+// const getTeams = async () => {
+//   //checks if user is logged in
+//   if (!user.value) return
+//   try {
+//     const { data, error } = await supabase.from('teams').select('*')
+
+//     // returns/shows teams from supabase
+//     teams.value = data
+
+//     if (error) throw error
+
+//     console.log('teams', data)
+//     return data
+//   } catch (error) {
+//     console.log('error fetching teams: ', error)
+//   }
+// }
+
+const showTeamMembers = ref(false)
+
+const formTeam = ref({
+  name: '',
+  projects: ''
+})
+
+const openAddTeams = async () => {
+  showTeamMembers.value = true
+}
+
+// onMounted(async () => {
+//   if (!authStore.user) {
+//     await authStore.fetchSession()
+//   }
+//   await getTeams()
+// })
 </script>
 
 <template>
@@ -198,9 +149,9 @@ const submitProject = async () => {
               <v-btn @click="openAddProjects" icon size="small" class="text-black rounded-lg">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
-              <v-btn icon size="small" variant="text">
+              <!-- <v-btn icon size="small" variant="text">
                 <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn>
+              </v-btn> -->
             </div>
           </div>
 
@@ -208,7 +159,7 @@ const submitProject = async () => {
             <div
               v-for="project in projects"
               :key="project.id"
-              class="flex items-center justify-between bg-gray-50 rounded-xl p-3"
+              class="flex items-center justify-between bg-gray-100 rounded-sm p-3 mb-5"
             >
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-md"></div>
