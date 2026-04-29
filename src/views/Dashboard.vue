@@ -1,7 +1,7 @@
 <script setup>
 import { supabase } from '@/services/supabase'
 import MainLayout from '@/layouts/full/MainLayout.vue'
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import apexchart from 'vue3-apexcharts'
 import { useMonthDropdownStore } from '../stores/usemonthstores'
 import { storeToRefs } from 'pinia'
@@ -11,6 +11,18 @@ import { useAuthStore } from '@/stores/auth'
 import ApiService from '@/services/api'
 import DepartmentSection from '@/components/DepartmentSection.vue'
 import taskCard from '@/components/taskCard.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import Filtericon from '@/components/Filtericon.vue'
+
+const showFilterModal = ref(false)
+
+const openFilterModal = () => {
+  showFilterModal.value = true
+}
+
+const closeFilterModal = () => {
+  showFilterModal.value = false
+}
 
 /* ---------------- MONTH DROPDOWN ---------------- */
 const monthStore = useMonthDropdownStore()
@@ -34,7 +46,7 @@ const closeMembersModal = () => {
 const newTasks = ref([])
 
 const deleteNewTask = (index) => {
-  NewTasks.value.splice(index, 1)
+  newTasks.value.splice(index, 1)
 }
 
 const toggleProgress = (task) => {
@@ -86,7 +98,6 @@ const visibleTasks = computed(() => (showAllTasks.value ? tasks.value : tasks.va
 
 const visibleNewTasks = computed(() =>
   showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
-  
 )
 /* ---------------- COMMENTS ---------------- */
 const comments = ref([
@@ -182,6 +193,16 @@ const chartOptions = ref({
 // const dashboardData = ref(null)
 // const loading = ref(false)
 
+// const showFilterModal = ref(false)
+
+// const openFilterModal = () => {
+//   showFilterModal.value = true
+// }
+
+// const closeFilterModal = () => {
+//   showFilterModal.value = false
+// }
+
 const authStore = useAuthStore()
 
 const loading = ref(false)
@@ -238,6 +259,36 @@ const mapNewTasks = (allTasks) => {
   )
 }
 
+const activeTasks = computed(() => {
+  const projects = selectedTeam.value?.projects || []
+
+  return projects.flatMap((p) => p.tasks || [])
+    .filter((t) => t.status === 'todo' || t.status === 'in_progress')
+})
+
+const activeTasksCount = computed(() => activeTasks.value.length)
+
+const selectedCategory = ref(null)
+
+const categoryOptions = computed(() => {
+  return (dashboardData.value?.teams || []).map((team) => ({
+    title: team.name,
+    value: team.id
+  }))
+})
+
+watch(selectedCategory, (newTeamId) => {
+  const team = (dashboardData.value?.teams || []).find((t) => t.id === newTeamId)
+
+  if (!team) return
+
+  const allTasks = mapTasks([team]) // ✅ FIRST
+
+  projects.value = mapProjects([team])
+  tasks.value = allTasks // ✅ THEN use
+  newTasks.value = mapNewTasks(allTasks)
+})
+
 /* ---------------- FETCH ---------------- */
 
 const fetchDashboard = async () => {
@@ -266,7 +317,7 @@ const fetchDashboard = async () => {
     const allTasks = mapTasks(teams)
     tasks.value = allTasks
 
-    NewTasks.value = mapNewTasks(allTasks)
+    newTasks.value = mapNewTasks(allTasks)
     projects.value = mapProjects(teams)
     console.log(projects.value)
   } catch (err) {
@@ -281,16 +332,23 @@ const fetchDashboard = async () => {
 onMounted(async () => {
   await authStore.fetchSession()
   await fetchDashboard()
-   setTimeout(() => {
+  setTimeout(() => {
     tasks.value = ['Task 1', 'Task 2']
     loading.value = false
   }, 2000)
+
+  if (dashboardData.value?.teams?.length) {
+    selectedCategory.value = dashboardData.value.teams[0].id
+  }
 })
 
 /* ---------------- COMPUTED ---------------- */
 
 const totalProjects = computed(() => {
-  return dashboardData.value?.stats?.total_projects || 0
+   return selectedTeam.value?.projects?.length || 0
+})
+const selectedTeam = computed(() => {
+  return (dashboardData.value?.teams || []).find((team) => team.id === selectedCategory.value)
 })
 </script>
 
@@ -313,48 +371,63 @@ const totalProjects = computed(() => {
 
 <template>
   <main-layout>
-    <div class="min-h-screen bg-[#f5f5f0] p-6 font-['DM_Sans',sans-serif]">
+    <div class="min-h-screen p-6 font-['DM_Sans',sans-serif]">
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
-        
         <!-- LEFT COLUMN - Main Content -->
         <div class="flex flex-col gap-5">
           <!-- Overview Card -->
-
-          <div class="bg-white rounded-2xl p-6 shadow-sm">
-          <div>
-    <div v-if="loading" class="flex justify-center py-6">
-      <v-progress-circular indeterminate size="40" />
-    </div>
-  </div>
+          <div class="bg-white rounded-2xl border-gray-600 p-6 shadow-lg">
+            <div>
+              <div v-if="loading" class="flex justify-center py-6">
+                <v-progress-circular indeterminate size="40" />
+              </div>
+            </div>
             <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">overview card</h2>
-            <v-select
-      v-model="selectedCategory"
-      :items="categoryOptions"
-      label="Category"
-      variant="outlined"
-      density="compact"
-      hide-details
-      rounded="lg"
-      class="ml-4"
-      style="max-width: 180px"
-      bg-color="white"
-    />
-    </div>
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">overview card</h2>
+              <font-awesome-icon
+                icon="sliders"
+                class="mr-7 hover:bg-gray-200"
+                @click="openFilterModal"
+              />
+              <!-- Modal -->
+              <div
+                v-if="showFilterModal"
+                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              >
+                <div class="bg-white p-5 rounded-lg w-[400px] relative">
+                  <!-- close button -->
+                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
+                    ✕
+                  </button>
+
+                  <!-- your component -->
+                  <Filtericon
+                    :teams="dashboardData?.teams"
+                    v-model:selectedCategory="selectedCategory"
+                  />
+                </div>
+              </div>
+            </div>
             <!-- ... your overview content ... -->
             <div class="grid grid-cols-2 gap-8">
               <!-- Total Projects -->
               <div>
                 <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                   <span>Total projects</span>
                 </div>
                 <div class="flex items-end gap-3">
                   <span class="text-4xl font-bold text-gray-900">{{ totalProjects }}</span>
-                  <div class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1">
+                  <div
+                    class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1"
+                  >
                     36.8%
                   </div>
                 </div>
@@ -364,14 +437,20 @@ const totalProjects = computed(() => {
               <div>
                 <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                    />
                   </svg>
                   <span>Active tasks</span>
                 </div>
                 <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">4</span>
-                  <div class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1">
+                  <span class="text-4xl font-bold text-gray-900">{{ activeTasksCount }}</span>
+                  <div
+                    class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1"
+                  >
                     36.8%
                   </div>
                 </div>
@@ -380,9 +459,34 @@ const totalProjects = computed(() => {
           </div>
 
           <!-- Active Members -->
-          <div class="bg-white rounded-2xl p-8 shadow-sm">
+          <div class="bg-white rounded-2xl border-gray-400 p-8 shadow-lg">
             <!-- ... your active members content ... -->
-             <h3 class="text-base font-semibold text-gray-800 mb-4">Active Members</h3>
+             <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-gray-800 mb-4">Active Members</h3>
+            <font-awesome-icon
+                icon="sliders"
+                class="mr-7 hover:bg-gray-200"
+                @click="openFilterModal"
+              />
+              <!-- Modal -->
+              <div
+                v-if="showFilterModal"
+                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              >
+                <div class="bg-white p-5 rounded-lg w-[400px] relative">
+                  <!-- close button -->
+                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
+                    ✕
+                  </button>
+
+                  <!-- your component -->
+                  <Filtericon
+                    :teams="dashboardData?.teams"
+                    v-model:selectedCategory="selectedCategory"
+                  />
+                </div>
+              </div>
+              </div>
 
             <div class="flex items-center gap-5">
               <div
@@ -429,23 +533,11 @@ const totalProjects = computed(() => {
               <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
                 <!-- Header -->
                 <div class="flex justify-between items-center mb-4">
-                   <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-sm font-semibold text-gray-800">
-                    Active Members ({{ customers.length }})
-                  </h3>
-                   <v-select
-      v-model="selectedCategory"
-      :items="categoryOptions"
-      label="Category"
-      variant="outlined"
-      density="compact"
-      hide-details
-      rounded="lg"
-      class="ml-4"
-      style="min-width: 160px; max-width: 200px"
-      bg-color="white"
-    />
-    </div>
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-gray-800">
+                      Active Members ({{ customers.length }})
+                    </h3>
+                  </div>
 
                   <button @click="closeMembersModal">
                     <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
@@ -471,29 +563,38 @@ const totalProjects = computed(() => {
           </div>
 
           <!-- Task Card -->
-          <taskCard />
+          <taskCard :tasks="tasks" :projects="projects" />
         </div>
 
         <!-- RIGHT COLUMN - Sidebar (New Tasks + Comments) -->
         <div class="flex flex-col gap-5">
           <!-- NEW TASK / IN PROGRESS -->
-          <div class="bg-white rounded-2xl p-6 shadow-sm">
-             <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">
-              Task in progress
-            </h2>
-            <v-select
-      v-model="selectedCategory"
-      :items="categoryOptions"
-      label="Category"
-      variant="outlined"
-      density="compact"
-      hide-details
-      rounded="lg"
-      class="ml-4"
-      style="min-width: 160px; max-width: 200px"
-      bg-color="white"
-    />
+          <div class="bg-white rounded-2xl border-gray-400 p-6 shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">Task in progress</h2>
+            <font-awesome-icon
+                icon="sliders"
+                class="mr-7 hover:bg-gray-200"
+                @click="openFilterModal"
+              />
+              <!-- Modal -->
+              <div
+                v-if="showFilterModal"
+                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              >
+                <div class="bg-white p-5 rounded-lg w-[400px] relative">
+                  <!-- close button -->
+                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
+                    ✕
+                  </button>
+
+                  <!-- your component -->
+                  <Filtericon
+                    :teams="dashboardData?.teams"
+                    v-model:selectedCategory="selectedCategory"
+                  />
+                </div>
+              </div>
             </div>
 
             <ul class="flex flex-col gap-2">
@@ -529,8 +630,33 @@ const totalProjects = computed(() => {
           </div>
 
           <!-- COMMENTS -->
-          <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <div class="bg-white border-gray-400 rounded-2xl p-6 shadow-lg">
+            <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">Comments</h2>
+            <font-awesome-icon
+                icon="sliders"
+                class="mr-7 hover:bg-gray-200"
+                @click="openFilterModal"
+              />
+              <!-- Modal -->
+              <div
+                v-if="showFilterModal"
+                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+              >
+                <div class="bg-white p-5 rounded-lg w-[400px] relative">
+                  <!-- close button -->
+                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
+                    ✕
+                  </button>
+
+                  <!-- your component -->
+                  <Filtericon
+                    :teams="dashboardData?.teams"
+                    v-model:selectedCategory="selectedCategory"
+                  />
+                </div>
+              </div>
+              </div>
             <div class="flex flex-col gap-4">
               <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
                 <img :src="comment.avatar" class="w-9 h-9 rounded-full object-cover" />

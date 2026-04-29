@@ -1,195 +1,121 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import ApiService from '@/services/api'
+import { ref, computed } from 'vue'
 
-/* ---------------- STATE ---------------- */
-const tasks = ref([])
-const projects = ref([])
+const props = defineProps({
+  tasks: Array,
+  projects: Array
+})
+
 const showAllTasks = ref(false)
 
 const showModal = ref(false)
 const selectedTask = ref(null)
 const editableDescription = ref('')
 
-/* ---------------- TASK MODAL ---------------- */
 const openTaskModal = (task) => {
   showModal.value = true
-
   selectedTask.value = {
     name: task.title,
     description: task.description
   }
-
   editableDescription.value = task.description
 }
 
-/* ---------------- COMPUTED ---------------- */
 const visibleTasks = computed(() => {
-  return showAllTasks.value
-    ? tasks.value
-    : tasks.value.slice(0, 5)
-})
-
-/* ---------------- HELPERS ---------------- */
-const mapTasks = (teams) => {
-  return teams.flatMap(team =>
-    (team.projects || []).flatMap(project =>
-      (project.tasks || []).map(task => ({
-        title: task.title,
-        description: task.status,
-        avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task'
-      }))
-    )
-  )
-}
-
-const mapProjects = (teams) => {
-  return teams.flatMap(team =>
-    (team.projects || []).map(project => ({
-      name: project.name,
-      id: project.id,
-      status: project.status
-    }))
-  )
-}
-
-const mapNewTasks = (allTasks) => {
-  return allTasks.filter(
-    task =>
-      task.description === 'todo' ||
-      task.description === 'in_progress'
-  )
-}
-
-const extractDashboard = (res) => {
-  return res?.data?.dashboard || res?.dashboard || null
-}
-
-/* ---------------- FETCH ---------------- */
-const authStore = useAuthStore()
-
-const fetchDashboard = async () => {
-  try {
-    const userId =
-      authStore.user?.id ?? authStore.session?.user?.id
-
-    const res = await ApiService.post('dashboard', {
-      user_id: userId
-    })
-
-    const data = extractDashboard(res)
-    const teams = data?.teams || []
-
-    const allTasks = mapTasks(teams)
-
-    tasks.value = allTasks
-    projects.value = mapProjects(teams)
-
-  } catch (err) {
-    console.error(err)
-  }
-}
-
-/* ---------------- LIFECYCLE ---------------- */
-onMounted(async () => {
-  await authStore.fetchSession()
-  await fetchDashboard()
+  return showAllTasks.value ? props.tasks : props.tasks.slice(0, 5)
 })
 </script>
 <template>
-   <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-    
-  <!-- TASKS CARD -->
- <div class="bg-white rounded-2xl p-4 shadow-sm">
-  
-  <!-- HEADER (Title + Dropdown) -->
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-lg font-semibold text-gray-800">
-      All Task
-    </h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <!-- TASKS CARD -->
+    <div class="bg-white rounded-2xl border-gray-400 p-4 shadow-lg">
+      <!-- HEADER (Title + Dropdown) -->
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-800">All Task</h2>
+        <font-awesome-icon icon="sliders" class="mr-7 hover:bg-gray-200" @click="openFilterModal" />
+        <!-- Modal -->
+        <div
+          v-if="showFilterModal"
+          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        >
+          <div class="bg-white p-5 rounded-lg w-[400px] relative">
+            <!-- close button -->
+            <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
+              ✕
+            </button>
 
-    <v-select
-      v-model="selectedCategory"
-      :items="categoryOptions"
-      label="Category"
-      variant="outlined"
-      density="compact"
-      hide-details
-      rounded="lg"
-      class="ml-4"
-      style="min-width: 160px; max-width: 200px"
-      bg-color="white"
-    />
-  </div>
+            <!-- your component -->
+            <Filtericon :teams="dashboardData?.teams" v-model:selectedCategory="selectedCategory" />
+          </div>
+        </div>
+      </div>
 
-  <!-- TASK LIST -->
-  <ul class="flex flex-col gap-3">
-    <li
-      v-for="task in visibleTasks"
-      :key="task.title"
-      class="border-b pb-2 flex gap-3"
-    >
-      <img
-        :src="task.avatar"
-        :alt="task.title"
-        class="w-10 h-10 rounded-full object-cover flex-shrink-0"
-      />
+      <!-- TASK LIST -->
+      <ul class="flex flex-col gap-3">
+        <li v-for="task in visibleTasks" :key="task.title" class="border-b pb-2 flex gap-3">
+          <img
+            :src="task.avatar"
+            :alt="task.title"
+            class="w-10 h-10 rounded-full object-cover flex-shrink-0"
+          />
 
-      <details class="cursor-pointer flex-1">
-        <summary class="text-sm text-gray-700 truncate">
-          {{ task.title }}
-          <button
-            @click.stop="openTaskModal(task)"
-            class="text-gray-400 hover:text-blue-500 ml-2"
-          >
-            <i class="fas fa-eye text-xs"></i>
-          </button>
-        </summary>
-        <p class="mt-2 text-sm text-gray-600">
-          {{ task.description }}
-        </p>
-      </details>
-    </li>
-  </ul>
+          <details class="cursor-pointer flex-1">
+            <summary class="text-sm text-gray-700 truncate flex items-center justify-between">
+              <span>{{ task.title }}</span>
 
-  <button
-    @click="showAllTasks = !showAllTasks"
-    class="mt-3 text-xs text-blue-600 hover:underline"
-  >
-    {{ showAllTasks ? 'Show Less' : 'See More' }}
-  </button>
-</div>
+              <button
+                @click.stop.prevent="openTaskModal(task)"
+                class="text-gray-400 hover:text-blue-500 ml-2"
+              >
+                <i class="fas fa-eye text-xs"></i>
+              </button>
+            </summary>
 
-  <!-- PROJECTS CARD -->
-  <div class="bg-white rounded-2xl p-6 shadow-sm">
-    <div class="flex items-center justify-between mb-4">
-    <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">
-      Projects
-    </h2>
-     <v-select
-      v-model="selectedCategory"
-      :items="categoryOptions"
-      label="Category"
-      variant="outlined"
-      density="compact"
-      hide-details
-      rounded="lg"
-      class="ml-4"
-      style="min-width: 160px; max-width: 200px"
-      bg-color="white"
-    />
-    </div>
-    <ul class="flex flex-col gap-2">
-      <li
-        v-for="(project, index) in projects"
-        :key="index"
-        class="border-b pb-2 text-xs text-gray-700"
+            <p class="mt-2 text-sm text-gray-600">
+              {{ task.description }}
+            </p>
+          </details>
+        </li>
+      </ul>
+
+      <button
+        @click="showAllTasks = !showAllTasks"
+        class="mt-3 text-xs text-blue-600 hover:underline"
       >
-        {{ project.name }}
-      </li>
-    </ul>
-  </div>
+        {{ showAllTasks ? 'Show Less' : 'See More' }}
+      </button>
+    </div>
 
-</div>
+    <!-- PROJECTS CARD -->
+    <div class="bg-white border-gray-400 rounded-2xl p-6 shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">Projects</h2>
+        <font-awesome-icon icon="sliders" class="mr-7 hover:bg-gray-200" @click="openFilterModal" />
+        <!-- Modal -->
+        <div
+          v-if="showFilterModal"
+          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        >
+          <div class="bg-white p-5 rounded-lg w-[400px] relative">
+            <!-- close button -->
+            <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
+              ✕
+            </button>
+
+            <!-- your component -->
+            <Filtericon :teams="dashboardData?.teams" v-model:selectedCategory="selectedCategory" />
+          </div>
+        </div>
+      </div>
+      <ul class="flex flex-col gap-2">
+        <li
+          v-for="(project, index) in projects"
+          :key="index"
+          class="border-b pb-2 text-xs text-gray-700"
+        >
+          {{ project.name }}
+        </li>
+      </ul>
+    </div>
+  </div>
 </template>
