@@ -407,6 +407,7 @@ const submitAttendance = async () => {
 
     if (DEBUG) console.log('🏁 Attendance request finished')
   }
+
 }
 
 const TEST_MODE = 'OUTSIDE_RADIUS'
