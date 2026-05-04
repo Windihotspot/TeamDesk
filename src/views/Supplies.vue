@@ -639,8 +639,11 @@
                   class="col-span-2"
                 />
                 <v-select
-                  v-model="supplyForm.category"
+                  v-model="supplyForm.category_id"
+                  color="blue"
                   :items="categories"
+                  item-title="name"
+                  item-value="id"
                   label="Category"
                   variant="outlined"
                   density="comfortable"
@@ -824,6 +827,9 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
+import { useSupplyCategories } from '@/composables/useSupplyCategories'
+
+const { categories, categoryOptions, loading, error } = useSupplyCategories()
 // ─── VIEW MODE ───────────────────────────────────────────
 const viewMode = ref('grid')
 
@@ -833,16 +839,6 @@ const selectedCategory = ref('All')
 const selectedStatus = ref('All')
 const datepickerMenu = ref(false)
 
-const categories = [
-  'Stationery',
-  'Electronics',
-  'Cleaning',
-  'Furniture',
-  'Printing',
-  'Pantry',
-  'Safety'
-]
-const categoryOptions = ['All', ...categories]
 const statusOptions = ['All', 'In Stock', 'Low Stock', 'Out of Stock']
 
 const activeFilters = computed(() => {
@@ -1223,7 +1219,7 @@ const savingSupply = ref(false)
 const supplyForm = reactive({
   id: null,
   name: '',
-  category: '',
+  category_id: null,
   sku: '',
   description: '',
   price: 0,
@@ -1234,6 +1230,76 @@ const supplyForm = reactive({
   location: '',
   supplier: ''
 })
+function openAddSupplyDialog() {
+  editMode.value = false
+  Object.assign(supplyForm, {
+    id: null,
+    name: '',
+    category: '',
+    sku: '',
+    description: '',
+    price: 0,
+    unit: '',
+    stock: 0,
+    maxStock: 0,
+    reorderLevel: 0,
+    location: '',
+    supplier: ''
+  })
+  addEditDialog.value = true
+}
+
+async function saveSupply() {
+  if (!supplyFormValid.value) return
+
+  try {
+    savingSupply.value = true
+
+    console.log('💾 Saving supply...', supplyForm)
+
+    const payload = {
+      name: supplyForm.name,
+      description: supplyForm.description,
+      sku: supplyForm.sku,
+
+      // 🔑 important mappings
+      category_id: supplyForm.category_id,
+      supplier_id: supplyForm.supplier || null,
+
+      unit: supplyForm.unit,
+      unit_price: supplyForm.price,
+      current_stock: supplyForm.stock,
+      max_stock: supplyForm.maxStock,
+      reorder_level: supplyForm.reorderLevel,
+      storage_location: supplyForm.location
+    }
+
+    let response
+
+    if (editMode.value) {
+      // ✏️ UPDATE
+      response = await ApiService.put('/supplies', {
+        id: supplyForm.id,
+        ...payload
+      })
+      console.log('✏️ Updated supply:', response)
+    } else {
+      // ➕ CREATE
+      response = await ApiService.post('/supplies', payload)
+      console.log('✅ Created supply:', response)
+    }
+
+    // ✅ close dialog
+    addEditDialog.value = false
+
+    // 🔄 refresh list (you should already have this)
+    await fetchSupplies?.()
+  } catch (err) {
+    console.log('❌ Save supply error:', err)
+  } finally {
+    savingSupply.value = false
+  }
+}
 
 const deleteDialog = ref(false)
 const supplyToDelete = ref(null)
@@ -1267,28 +1333,30 @@ function openRequestDialog(supply) {
   requestDialog.value = true
 }
 
-function openAddSupplyDialog() {
-  editMode.value = false
-  Object.assign(supplyForm, {
-    id: null,
-    name: '',
-    category: '',
-    sku: '',
-    description: '',
-    price: 0,
-    unit: '',
-    stock: 0,
-    maxStock: 0,
-    reorderLevel: 0,
-    location: '',
-    supplier: ''
-  })
-  addEditDialog.value = true
-}
+// function openEditDialog(supply) {
+//   editMode.value = true
+//   Object.assign(supplyForm, { ...supply })
+//   addEditDialog.value = true
+// }
 
-function openEditDialog(supply) {
+function openEditDialog(item) {
   editMode.value = true
-  Object.assign(supplyForm, { ...supply })
+
+  Object.assign(supplyForm, {
+    id: item.id,
+    name: item.name,
+    category: item.category_id,
+    sku: item.sku,
+    description: item.description,
+    price: item.unit_price,
+    unit: item.unit,
+    stock: item.current_stock,
+    maxStock: item.max_stock,
+    reorderLevel: item.reorder_level,
+    location: item.storage_location,
+    supplier: item.supplier_id
+  })
+
   addEditDialog.value = true
 }
 
@@ -1327,27 +1395,6 @@ async function submitRequest() {
   )
   const s = supplies.value.find((x) => x.id === requestSupply.value.id)
   if (s) s.requests++
-}
-
-async function saveSupply() {
-  savingSupply.value = true
-  await new Promise((r) => setTimeout(r, 1200))
-  savingSupply.value = false
-  if (editMode.value) {
-    const idx = supplies.value.findIndex((s) => s.id === supplyForm.id)
-    if (idx !== -1) supplies.value[idx] = { ...supplies.value[idx], ...supplyForm }
-    showSnack(`${supplyForm.name} updated successfully.`)
-  } else {
-    supplies.value.push({
-      ...supplyForm,
-      id: Date.now(),
-      icon: 'mdi-package-variant',
-      requests: 0,
-      lastRestocked: 'Not yet'
-    })
-    showSnack(`${supplyForm.name} added to catalog.`)
-  }
-  addEditDialog.value = false
 }
 
 function deleteSupply() {

@@ -9,7 +9,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 import confetti from 'canvas-confetti'
 import { useAuthStore } from '@/stores/auth'
 import ApiService from '@/services/api'
-import DepartmentSection from '@/composables/DepartmentSection.vue'
+import DepartmentSection from '@/components/DepartmentSection.vue'
 
 /* ---------------- MONTH DROPDOWN ---------------- */
 const monthStore = useMonthDropdownStore()
