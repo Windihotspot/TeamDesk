@@ -11,7 +11,7 @@ import { useAuthStore } from '@/stores/auth'
 import ApiService from '@/services/api'
 import taskCard from '@/components/taskCard.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import Filtericon from '@/components/Filtericon.vue'
+import FilterIcon from '@/components/FilterIcon.vue'
 
 const showFilterModal = ref(false)
 
@@ -189,18 +189,7 @@ const chartOptions = ref({
   },
   yaxis: { show: false }
 })
-// const dashboardData = ref(null)
-// const loading = ref(false)
 
-// const showFilterModal = ref(false)
-
-// const openFilterModal = () => {
-//   showFilterModal.value = true
-// }
-
-// const closeFilterModal = () => {
-//   showFilterModal.value = false
-// }
 
 const authStore = useAuthStore()
 
@@ -208,64 +197,7 @@ const loading = ref(false)
 const error = ref(null)
 const dashboardData = ref(null)
 
-// fetch customers
-// const fetchCustomers = async () => {
-//   const { data, error } = await supabase
-//     .from('users')
-//     .select('*')
 
-//   if (error) {
-//     console.error('Customers error:', error)
-//     return
-//   }
-
-//   customers.value = data
-// }
-// // fetch projects
-// const fetchProjects = async () => {
-//   const { data, error } = await supabase
-//     .from('projects')
-//     .select('*')
-
-//   if (error) {
-//     console.error('Projects error:', error)
-//     return
-//   }
-
-//   tasks.value = data
-// }
-// // fetch newTasks
-// const fetchNewTasks = async () => {
-//   const { data, error } = await supabase
-//     .from('tasks')
-//     .select('*')
-//     .eq('status', 'new') // or 'in_progress'
-
-//   if (error) {
-//     console.error('Tasks error:', error)
-//     return
-//   }
-
-//   NewTasks.value = data
-// }
-// onMounted(async () => {
-//   await authStore.fetchSession()
-//   await fetchDashboard()
-
-//   // await Promise.all([
-//   //   fetchCustomers(),
-//   //   fetchProjects(),
-//   //   fetchNewTasks()
-//   // ])
-// })
-// const totalProjects = computed(() => tasks.value.length)
-
-// const deleteNewTask = async (id) => {
-//   await supabase.from('tasks').delete().eq('id', id)
-//   await fetchNewTasks()
-// }
-
-// 🔥 Fetch dashboard
 /* ---------------- HELPERS ---------------- */
 
 // extract dashboard safely
@@ -323,14 +255,14 @@ const categoryOptions = computed(() => {
 })
 
 watch(selectedCategory, (newTeamId) => {
-  const team = (dashboardData.value?.teams || []).find((t) => t.id === newTeamId)
+  const team = (dashboardData.value?.teams || [])
+    .find((t) => t.id === newTeamId)
 
   if (!team) return
 
-  const allTasks = mapTasks([team]) // ✅ FIRST
+  const allTasks = mapTasks([team])
 
-  projects.value = mapProjects([team])
-  tasks.value = allTasks // ✅ THEN use
+  tasks.value = allTasks
   newTasks.value = mapNewTasks(allTasks)
 })
 
@@ -362,7 +294,7 @@ const fetchDashboard = async () => {
     tasks.value = allTasks
 
     newTasks.value = mapNewTasks(allTasks)
-    projects.value = mapProjects(teams)
+    // projects.value = mapProjects(teams)
     console.log(projects.value)
   } catch (err) {
     error.value = err?.response?.data?.error || err.message || 'Failed to load dashboard'
@@ -387,7 +319,12 @@ onMounted(async () => {
 })
 
 /* ---------------- COMPUTED ---------------- */
-
+const projects = computed(() => {
+  return selectedTeam.value?.projects || []
+})
+const mapProjects = (teams) => {
+  return teams.flatMap(team => team.projects || [])
+}
 const totalProjects = computed(() => {
   return selectedTeam.value?.projects?.length || 0
 })
@@ -419,8 +356,10 @@ const selectedTeam = computed(() => {
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
         <!-- LEFT COLUMN - Main Content -->
         <div class="flex flex-col gap-5">
+
+
           <!-- Overview Card -->
-          <div class="bg-white rounded-2xl border-gray-600 p-6 shadow-lg">
+          <div class="bg-blue-50 rounded-2xl border-gray-600 p-6 shadow-lg">
             <div>
               <div v-if="loading" class="flex justify-center py-6">
                 <v-progress-circular indeterminate size="40" />
@@ -445,13 +384,13 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <Filtericon
-                    :teams="dashboardData?.teams"
-                    v-model:selectedCategory="selectedCategory"
+                  <FilterIcon
+                    
                   />
                 </div>
               </div>
             </div>
+            
             <!-- ... your overview content ... -->
             <div class="grid grid-cols-2 gap-8">
               <!-- Total Projects -->
@@ -503,7 +442,7 @@ const selectedTeam = computed(() => {
           </div>
 
           <!-- Active Members -->
-          <div class="bg-white rounded-2xl border-gray-400 p-8 shadow-lg">
+          <div class="bg-blue-50 rounded-2xl border-gray-400 p-8 shadow-lg">
             <!-- ... your active members content ... -->
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-base font-semibold text-gray-800 mb-4">Active Members</h3>
@@ -524,7 +463,7 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <Filtericon
+                  <FilterIcon
                     :teams="dashboardData?.teams"
                     v-model:selectedCategory="selectedCategory"
                   />
@@ -613,7 +552,7 @@ const selectedTeam = computed(() => {
         <!-- RIGHT COLUMN -->
         <div class="flex flex-col gap-5">
           <!-- NEW TASK / IN PROGRESS -->
-          <div class="bg-white rounded-2xl border-gray-400 p-6 shadow-lg">
+          <div class="bg-blue-50 rounded-2xl border-gray-400 p-6 shadow-lg">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">Task in progress</h2>
               <font-awesome-icon
@@ -633,7 +572,7 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <Filtericon
+                  <FilterIcon
                     :teams="dashboardData?.teams"
                     v-model:selectedCategory="selectedCategory"
                   />
@@ -681,7 +620,7 @@ const selectedTeam = computed(() => {
           </div>
 
           <!-- COMMENTS -->
-          <div class="bg-white border-gray-400 rounded-2xl p-6 shadow-lg">
+          <div class="bg-blue-50 border-gray-400 rounded-2xl p-6 shadow-lg">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-semibold text-gray-800 mb-4">Comments</h2>
               <font-awesome-icon
@@ -701,7 +640,7 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <Filtericon
+                  <FilterIcon
                     :teams="dashboardData?.teams"
                     v-model:selectedCategory="selectedCategory"
                   />

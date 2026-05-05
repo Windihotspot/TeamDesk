@@ -1,11 +1,8 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { supabase } from '@/services/supabase'
 
 const props = defineProps({
-  teams: {
-    type: Array,
-    default: () => []
-  },
   selectedCategory: String
 })
 
@@ -16,8 +13,28 @@ const selectedCategory = computed({
   set: (val) => emit('update:selectedCategory', val)
 })
 
+const teams = ref([])
+const loading = ref(false)
+
+const getTeams = async () => {
+  loading.value = true
+  try {
+    const { data, error } = await supabase.from('teams').select('*')
+    if (error) throw error
+    teams.value = data || []
+  } catch (err) {
+    console.error('Error fetching teams:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  getTeams()
+})
+
 const categoryOptions = computed(() =>
-  (props.teams || []).map((team) => ({
+  teams.value.map(team => ({
     title: team.name,
     value: team.id
   }))
@@ -35,18 +52,19 @@ const categoryOptions = computed(() =>
   <!-- Right: Select -->
   <div class="mt-7 items-center">
     <v-select
-      v-model="selectedCategory"
-      :items="categoryOptions"
-      item-title="title"
-      item-value="value"
-      label="Select Team"
-      variant="outlined"
-      density="compact"
-      hide-details
-      rounded="lg"
-      style="max-width: 200px"
-      bg-color="white"
-    />
+  v-model="selectedCategory"
+  :items="categoryOptions"
+  item-title="title"
+  item-value="value"
+  label="Select Team"
+  :loading="loading"
+  variant="outlined"
+  density="compact"
+  hide-details
+  rounded="lg"
+  style="max-width: 200px"
+  bg-color="white"
+/>
   </div>
 
 </div>
