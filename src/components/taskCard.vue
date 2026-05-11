@@ -99,35 +99,56 @@ const visibleTasks = computed(() => {
       <!-- TASK MODAL -->
 <div
   v-if="showModal"
-  class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+  class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
 >
-  <div class="bg-white p-6 rounded-xl w-[400px] relative">
-    
-    <!-- Close -->
+  <div class="bg-[#f4f4f4] w-full max-w-[500px] rounded-3xl shadow-2xl p-6 relative">
+
+    <!-- CLOSE BUTTON -->
     <button
-      class="absolute top-2 right-2 text-gray-600"
       @click="showModal = false"
+      class="absolute top-5 right-5 text-gray-400 hover:text-gray-600"
     >
-      ✕
+      <i class="fas fa-times text-lg"></i>
     </button>
 
-    <!-- Content -->
-    <h2 class="text-lg font-semibold mb-3">
-      {{ selectedTask?.name }}
+    <!-- TITLE -->
+    <h2 class="text-2xl font-semibold text-[#2f3443] mb-6">
+      {{ selectedTask?.name || selectedTask?.title }}
     </h2>
 
-    <textarea
-      v-model="editableDescription"
-      class="w-full border rounded-lg p-2 text-sm"
-      rows="4"
-    ></textarea>
+    <!-- DESCRIPTION -->
+    <div class="mb-5">
+      <label class="block text-gray-500 text-sm mb-2">
+        Description
+      </label>
 
+      <textarea
+        v-model="editableDescription"
+        rows="4"
+        class="w-full rounded-xl border border-gray-300 bg-[#f1f1f1] p-4 text-gray-700 outline-none resize-none focus:ring-2 focus:ring-blue-400"
+      ></textarea>
+    </div>
+
+    <!-- TAG / ASSIGN -->
+    <div class="mb-6">
+      <label class="block text-gray-500 text-sm mb-2">
+        Tag / Assign
+      </label>
+
+      <input
+        type="text"
+        placeholder="Enter email or name"
+        class="w-full rounded-xl border border-gray-300 bg-[#f1f1f1] px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
+      />
+    </div>
+
+    <!-- BUTTON -->
     <button
-      class="mt-3 bg-blue-500 text-white px-4 py-2 rounded-lg"
-      @click="showModal = false"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
     >
-      Close
+      Submit
     </button>
+
   </div>
 </div>
     </div>
