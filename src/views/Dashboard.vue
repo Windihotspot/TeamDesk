@@ -11,7 +11,7 @@ import { useAuthStore } from '@/stores/auth'
 import ApiService from '@/services/api'
 import taskCard from '@/components/taskCard.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import FilterIcon from '@/components/FilterIcon.vue'
+import Filtericon from '@/components/Filtericon.vue'
 
 const showFilterModal = ref(false)
 
@@ -190,13 +190,11 @@ const chartOptions = ref({
   yaxis: { show: false }
 })
 
-
 const authStore = useAuthStore()
 
 const loading = ref(false)
 const error = ref(null)
 const dashboardData = ref(null)
-
 
 /* ---------------- HELPERS ---------------- */
 
@@ -255,8 +253,7 @@ const categoryOptions = computed(() => {
 })
 
 watch(selectedCategory, (newTeamId) => {
-  const team = (dashboardData.value?.teams || [])
-    .find((t) => t.id === newTeamId)
+  const team = (dashboardData.value?.teams || []).find((t) => t.id === newTeamId)
 
   if (!team) return
 
@@ -323,7 +320,7 @@ const projects = computed(() => {
   return selectedTeam.value?.projects || []
 })
 const mapProjects = (teams) => {
-  return teams.flatMap(team => team.projects || [])
+  return teams.flatMap((team) => team.projects || [])
 }
 const totalProjects = computed(() => {
   return selectedTeam.value?.projects?.length || 0
@@ -356,8 +353,6 @@ const selectedTeam = computed(() => {
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
         <!-- LEFT COLUMN - Main Content -->
         <div class="flex flex-col gap-5">
-
-
           <!-- Overview Card -->
           <div class="bg-blue-50 rounded-2xl border-gray-600 p-6 shadow-lg">
             <div>
@@ -384,13 +379,11 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <FilterIcon
-                    
-                  />
+                  <Filtericon />
                 </div>
               </div>
             </div>
-            
+
             <!-- ... your overview content ... -->
             <div class="grid grid-cols-2 gap-8">
               <!-- Total Projects -->
@@ -463,7 +456,7 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <FilterIcon
+                  <Filtericon
                     :teams="dashboardData?.teams"
                     v-model:selectedCategory="selectedCategory"
                   />
@@ -572,7 +565,7 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <FilterIcon
+                  <Filtericon
                     :teams="dashboardData?.teams"
                     v-model:selectedCategory="selectedCategory"
                   />
@@ -640,7 +633,7 @@ const selectedTeam = computed(() => {
                   </button>
 
                   <!-- your component -->
-                  <FilterIcon
+                  <Filtericon
                     :teams="dashboardData?.teams"
                     v-model:selectedCategory="selectedCategory"
                   />
