@@ -41,7 +41,7 @@
               <v-icon :color="stat.color" size="20">{{ stat.icon }}</v-icon>
             </div>
             <div>
-              <p class="stat-value">{{ stat.value }}</p>
+              <p class="stat-value">0</p>
               <p class="stat-label">{{ stat.label }}</p>
             </div>
           </div>
@@ -615,135 +615,14 @@
       </v-dialog>
 
       <!-- ============ ADD / EDIT SUPPLY DIALOG ============ -->
-      <v-dialog v-model="addEditDialog" max-width="600" scrollable>
-        <v-card rounded="xl" elevation="0">
-          <v-card-title class="pa-5 pb-2 flex items-center gap-3">
-            <div class="dialog-title-icon">
-              <v-icon color="#0f4c81" size="20">{{
-                editMode ? 'mdi-pencil-outline' : 'mdi-plus'
-              }}</v-icon>
-            </div>
-            <span class="font-bold text-lg">{{ editMode ? 'Edit Supply' : 'Add New Supply' }}</span>
-          </v-card-title>
-          <v-divider />
-          <v-card-text class="pa-5">
-            <v-form ref="supplyForm" v-model="supplyFormValid">
-              <div class="grid grid-cols-2 gap-4">
-                <v-text-field
-                  v-model="supplyForm.name"
-                  label="Supply Name"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  :rules="[(v) => !!v || 'Required']"
-                  class="col-span-2"
-                />
-                <v-select
-                  v-model="supplyForm.category_id"
-                  color="blue"
-                  :items="categories"
-                  item-title="name"
-                  item-value="id"
-                  label="Category"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  :rules="[(v) => !!v || 'Required']"
-                />
-                <v-text-field
-                  v-model="supplyForm.sku"
-                  label="SKU / Code"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                />
-                <v-text-field
-                  v-model="supplyForm.description"
-                  label="Description"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  class="col-span-2"
-                />
-                <v-text-field
-                  v-model.number="supplyForm.price"
-                  label="Unit Price (₦)"
-                  type="number"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-currency-usd"
-                  :rules="[(v) => !!v || 'Required']"
-                />
-                <v-text-field
-                  v-model="supplyForm.unit"
-                  label="Unit (e.g., Box, Piece)"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  :rules="[(v) => !!v || 'Required']"
-                />
-                <v-text-field
-                  v-model.number="supplyForm.stock"
-                  label="Current Stock"
-                  type="number"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  :rules="[(v) => v >= 0 || 'Cannot be negative']"
-                />
-                <v-text-field
-                  v-model.number="supplyForm.maxStock"
-                  label="Maximum Stock"
-                  type="number"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                />
-                <v-text-field
-                  v-model.number="supplyForm.reorderLevel"
-                  label="Reorder Level"
-                  type="number"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                />
-                <v-text-field
-                  v-model="supplyForm.location"
-                  label="Storage Location"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                />
-                <v-text-field
-                  v-model="supplyForm.supplier"
-                  label="Supplier Name"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  class="col-span-2"
-                />
-              </div>
-            </v-form>
-          </v-card-text>
-          <v-card-actions class="pa-5 pt-0">
-            <v-btn variant="text" color="grey" rounded="lg" @click="addEditDialog = false"
-              >Cancel</v-btn
-            >
-            <v-spacer />
-            <v-btn
-              color="#0f4c81"
-              rounded="lg"
-              elevation="0"
-              :prepend-icon="editMode ? 'mdi-content-save-outline' : 'mdi-plus'"
-              :loading="savingSupply"
-              @click="saveSupply"
-            >
-              {{ editMode ? 'Save Changes' : 'Add Supply' }}
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <AddEditSupplyDialog
+        v-model="addEditDialog"
+        :model="supplyForm"
+        :isEdit="editMode"
+        :loading="savingSupply"
+        @save="saveSupply"
+        @close="addEditDialog = false"
+      />
 
       <!-- ============ DELETE CONFIRM ============ -->
       <v-dialog v-model="deleteDialog" max-width="380">
@@ -825,12 +704,16 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch, onMounted } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { useSupplyCategories } from '@/composables/useSupplyCategories'
-
+import AddEditSupplyDialog from '@/components/AddEditSupplyDialog.vue'
+import ApiService from '@/services/api'
+import { supabase } from '@/services/supabase.js'
 const { categories, categoryOptions, loading, error } = useSupplyCategories()
+
 // ─── VIEW MODE ───────────────────────────────────────────
+
 const viewMode = ref('grid')
 
 // ─── FILTERS ─────────────────────────────────────────────
@@ -911,215 +794,274 @@ function getStockProgressColor(stock, max) {
   if (pct < 50) return '#eab308'
   return '#22c55e'
 }
-
+const supplies = ref([])
 // ─── SUPPLIES DATA ───────────────────────────────────────
-const supplies = ref([
-  {
-    id: 1,
-    name: 'A4 Copy Paper',
-    category: 'Stationery',
-    icon: 'mdi-file-document-outline',
-    description: '80gsm premium copy paper, 500 sheets/ream',
-    sku: 'STN-001',
-    price: 3500,
-    unit: 'Ream',
-    stock: 45,
-    maxStock: 100,
-    reorderLevel: 15,
-    location: 'Store A - Shelf 2',
-    supplier: 'Leventis Office',
-    lastRestocked: 'Apr 10, 2026',
-    requests: 12
-  },
-  {
-    id: 2,
-    name: 'Ballpoint Pens (Blue)',
-    category: 'Stationery',
-    icon: 'mdi-pen',
-    description: 'Medium point, smooth ink flow, box of 50',
-    sku: 'STN-002',
-    price: 1800,
-    unit: 'Box',
-    stock: 8,
-    maxStock: 50,
-    reorderLevel: 10,
-    location: 'Store A - Shelf 3',
-    supplier: 'Bic Nigeria',
-    lastRestocked: 'Mar 28, 2026',
-    requests: 24
-  },
-  {
-    id: 3,
-    name: 'HP LaserJet Toner',
-    category: 'Printing',
-    icon: 'mdi-printer-outline',
-    description: 'Compatible with HP LJ Pro M404/M428 series',
-    sku: 'PRT-001',
-    price: 45000,
-    unit: 'Cartridge',
-    stock: 0,
-    maxStock: 20,
-    reorderLevel: 3,
-    location: 'IT Store - Cabinet 1',
-    supplier: 'HP Nigeria',
-    lastRestocked: 'Feb 15, 2026',
-    requests: 7
-  },
-  {
-    id: 4,
-    name: 'Hand Sanitizer',
-    category: 'Safety',
-    icon: 'mdi-hand-wash-outline',
-    description: '70% alcohol gel, 500ml pump bottle',
-    sku: 'SFT-001',
-    price: 2500,
-    unit: 'Bottle',
-    stock: 30,
-    maxStock: 60,
-    reorderLevel: 10,
-    location: 'Store B - Shelf 1',
-    supplier: 'Dettol Nigeria',
-    lastRestocked: 'Apr 18, 2026',
-    requests: 18
-  },
-  {
-    id: 5,
-    name: 'USB-C Charging Cable',
-    category: 'Electronics',
-    icon: 'mdi-usb-c-port',
-    description: '2m braided cable, 65W fast charge',
-    sku: 'ELC-001',
-    price: 8500,
-    unit: 'Piece',
-    stock: 15,
-    maxStock: 30,
-    reorderLevel: 5,
-    location: 'IT Store - Drawer 3',
-    supplier: 'Anker Nigeria',
-    lastRestocked: 'Apr 5, 2026',
-    requests: 9
-  },
-  {
-    id: 6,
-    name: 'Floor Cleaner Concentrate',
-    category: 'Cleaning',
-    icon: 'mdi-broom',
-    description: 'Lemon scented, 5L can, dilutes 1:20',
-    sku: 'CLN-001',
-    price: 6000,
-    unit: 'Can',
-    stock: 6,
-    maxStock: 24,
-    reorderLevel: 6,
-    location: 'Cleaning Supplies Room',
-    supplier: 'Mr Muscle NG',
-    lastRestocked: 'Apr 2, 2026',
-    requests: 5
-  },
-  {
-    id: 7,
-    name: 'Nescafé Classic Coffee',
-    category: 'Pantry',
-    icon: 'mdi-coffee-outline',
-    description: 'Instant coffee granules, 200g jar',
-    sku: 'PNT-001',
-    price: 4800,
-    unit: 'Jar',
-    stock: 22,
-    maxStock: 40,
-    reorderLevel: 8,
-    location: 'Pantry Cabinet B',
-    supplier: 'Nestle Nigeria',
-    lastRestocked: 'Apr 20, 2026',
-    requests: 31
-  },
-  {
-    id: 8,
-    name: 'Office Swivel Chair',
-    category: 'Furniture',
-    icon: 'mdi-seat-outline',
-    description: 'Ergonomic mesh back, adjustable height',
-    sku: 'FRN-001',
-    price: 85000,
-    unit: 'Piece',
-    stock: 3,
-    maxStock: 10,
-    reorderLevel: 2,
-    location: 'Furniture Store',
-    supplier: 'Interiors Plus',
-    lastRestocked: 'Jan 10, 2026',
-    requests: 2
-  },
-  {
-    id: 9,
-    name: 'Sticky Notes (3x3)',
-    category: 'Stationery',
-    icon: 'mdi-note-text-outline',
-    description: 'Pastel colors, 100 sheets/pad, 5 pads/pack',
-    sku: 'STN-003',
-    price: 1200,
-    unit: 'Pack',
-    stock: 40,
-    maxStock: 80,
-    reorderLevel: 15,
-    location: 'Store A - Shelf 4',
-    supplier: 'Post-it NG',
-    lastRestocked: 'Apr 12, 2026',
-    requests: 14
-  },
-  {
-    id: 10,
-    name: 'Wireless Mouse',
-    category: 'Electronics',
-    icon: 'mdi-mouse-outline',
-    description: 'Logitech M280, 2.4GHz, 18-month battery',
-    sku: 'ELC-002',
-    price: 18000,
-    unit: 'Piece',
-    stock: 5,
-    maxStock: 15,
-    reorderLevel: 3,
-    location: 'IT Store - Shelf 2',
-    supplier: 'Logitech Nigeria',
-    lastRestocked: 'Mar 15, 2026',
-    requests: 6
-  },
-  {
-    id: 11,
-    name: 'A3 Printing Paper',
-    category: 'Printing',
-    icon: 'mdi-printer-pos-outline',
-    description: '90gsm, 250 sheets/pack',
-    sku: 'PRT-002',
-    price: 5500,
-    unit: 'Pack',
-    stock: 18,
-    maxStock: 40,
-    reorderLevel: 8,
-    location: 'Store A - Shelf 1',
-    supplier: 'Leventis Office',
-    lastRestocked: 'Apr 8, 2026',
-    requests: 3
-  },
-  {
-    id: 12,
-    name: 'Tissue Paper (Rolls)',
-    category: 'Cleaning',
-    icon: 'mdi-paper-roll-outline',
-    description: 'Soft 2-ply, 10 rolls per pack',
-    sku: 'CLN-002',
-    price: 3200,
-    unit: 'Pack',
-    stock: 25,
-    maxStock: 60,
-    reorderLevel: 10,
-    location: 'Cleaning Supplies Room',
-    supplier: 'Tissue World NG',
-    lastRestocked: 'Apr 15, 2026',
-    requests: 20
-  }
-])
+// const supplies = ref([
+//   {
+//     id: 1,
+//     name: 'A4 Copy Paper',
+//     category: 'Stationery',
+//     icon: 'mdi-file-document-outline',
+//     description: '80gsm premium copy paper, 500 sheets/ream',
+//     sku: 'STN-001',
+//     price: 3500,
+//     unit: 'Ream',
+//     stock: 45,
+//     maxStock: 100,
+//     reorderLevel: 15,
+//     location: 'Store A - Shelf 2',
+//     supplier: 'Leventis Office',
+//     lastRestocked: 'Apr 10, 2026',
+//     requests: 12
+//   },
+//   {
+//     id: 2,
+//     name: 'Ballpoint Pens (Blue)',
+//     category: 'Stationery',
+//     icon: 'mdi-pen',
+//     description: 'Medium point, smooth ink flow, box of 50',
+//     sku: 'STN-002',
+//     price: 1800,
+//     unit: 'Box',
+//     stock: 8,
+//     maxStock: 50,
+//     reorderLevel: 10,
+//     location: 'Store A - Shelf 3',
+//     supplier: 'Bic Nigeria',
+//     lastRestocked: 'Mar 28, 2026',
+//     requests: 24
+//   },
+//   {
+//     id: 3,
+//     name: 'HP LaserJet Toner',
+//     category: 'Printing',
+//     icon: 'mdi-printer-outline',
+//     description: 'Compatible with HP LJ Pro M404/M428 series',
+//     sku: 'PRT-001',
+//     price: 45000,
+//     unit: 'Cartridge',
+//     stock: 0,
+//     maxStock: 20,
+//     reorderLevel: 3,
+//     location: 'IT Store - Cabinet 1',
+//     supplier: 'HP Nigeria',
+//     lastRestocked: 'Feb 15, 2026',
+//     requests: 7
+//   },
+//   {
+//     id: 4,
+//     name: 'Hand Sanitizer',
+//     category: 'Safety',
+//     icon: 'mdi-hand-wash-outline',
+//     description: '70% alcohol gel, 500ml pump bottle',
+//     sku: 'SFT-001',
+//     price: 2500,
+//     unit: 'Bottle',
+//     stock: 30,
+//     maxStock: 60,
+//     reorderLevel: 10,
+//     location: 'Store B - Shelf 1',
+//     supplier: 'Dettol Nigeria',
+//     lastRestocked: 'Apr 18, 2026',
+//     requests: 18
+//   },
+//   {
+//     id: 5,
+//     name: 'USB-C Charging Cable',
+//     category: 'Electronics',
+//     icon: 'mdi-usb-c-port',
+//     description: '2m braided cable, 65W fast charge',
+//     sku: 'ELC-001',
+//     price: 8500,
+//     unit: 'Piece',
+//     stock: 15,
+//     maxStock: 30,
+//     reorderLevel: 5,
+//     location: 'IT Store - Drawer 3',
+//     supplier: 'Anker Nigeria',
+//     lastRestocked: 'Apr 5, 2026',
+//     requests: 9
+//   },
+//   {
+//     id: 6,
+//     name: 'Floor Cleaner Concentrate',
+//     category: 'Cleaning',
+//     icon: 'mdi-broom',
+//     description: 'Lemon scented, 5L can, dilutes 1:20',
+//     sku: 'CLN-001',
+//     price: 6000,
+//     unit: 'Can',
+//     stock: 6,
+//     maxStock: 24,
+//     reorderLevel: 6,
+//     location: 'Cleaning Supplies Room',
+//     supplier: 'Mr Muscle NG',
+//     lastRestocked: 'Apr 2, 2026',
+//     requests: 5
+//   },
+//   {
+//     id: 7,
+//     name: 'Nescafé Classic Coffee',
+//     category: 'Pantry',
+//     icon: 'mdi-coffee-outline',
+//     description: 'Instant coffee granules, 200g jar',
+//     sku: 'PNT-001',
+//     price: 4800,
+//     unit: 'Jar',
+//     stock: 22,
+//     maxStock: 40,
+//     reorderLevel: 8,
+//     location: 'Pantry Cabinet B',
+//     supplier: 'Nestle Nigeria',
+//     lastRestocked: 'Apr 20, 2026',
+//     requests: 31
+//   },
+//   {
+//     id: 8,
+//     name: 'Office Swivel Chair',
+//     category: 'Furniture',
+//     icon: 'mdi-seat-outline',
+//     description: 'Ergonomic mesh back, adjustable height',
+//     sku: 'FRN-001',
+//     price: 85000,
+//     unit: 'Piece',
+//     stock: 3,
+//     maxStock: 10,
+//     reorderLevel: 2,
+//     location: 'Furniture Store',
+//     supplier: 'Interiors Plus',
+//     lastRestocked: 'Jan 10, 2026',
+//     requests: 2
+//   },
+//   {
+//     id: 9,
+//     name: 'Sticky Notes (3x3)',
+//     category: 'Stationery',
+//     icon: 'mdi-note-text-outline',
+//     description: 'Pastel colors, 100 sheets/pad, 5 pads/pack',
+//     sku: 'STN-003',
+//     price: 1200,
+//     unit: 'Pack',
+//     stock: 40,
+//     maxStock: 80,
+//     reorderLevel: 15,
+//     location: 'Store A - Shelf 4',
+//     supplier: 'Post-it NG',
+//     lastRestocked: 'Apr 12, 2026',
+//     requests: 14
+//   },
+//   {
+//     id: 10,
+//     name: 'Wireless Mouse',
+//     category: 'Electronics',
+//     icon: 'mdi-mouse-outline',
+//     description: 'Logitech M280, 2.4GHz, 18-month battery',
+//     sku: 'ELC-002',
+//     price: 18000,
+//     unit: 'Piece',
+//     stock: 5,
+//     maxStock: 15,
+//     reorderLevel: 3,
+//     location: 'IT Store - Shelf 2',
+//     supplier: 'Logitech Nigeria',
+//     lastRestocked: 'Mar 15, 2026',
+//     requests: 6
+//   },
+//   {
+//     id: 11,
+//     name: 'A3 Printing Paper',
+//     category: 'Printing',
+//     icon: 'mdi-printer-pos-outline',
+//     description: '90gsm, 250 sheets/pack',
+//     sku: 'PRT-002',
+//     price: 5500,
+//     unit: 'Pack',
+//     stock: 18,
+//     maxStock: 40,
+//     reorderLevel: 8,
+//     location: 'Store A - Shelf 1',
+//     supplier: 'Leventis Office',
+//     lastRestocked: 'Apr 8, 2026',
+//     requests: 3
+//   },
+//   {
+//     id: 12,
+//     name: 'Tissue Paper (Rolls)',
+//     category: 'Cleaning',
+//     icon: 'mdi-paper-roll-outline',
+//     description: 'Soft 2-ply, 10 rolls per pack',
+//     sku: 'CLN-002',
+//     price: 3200,
+//     unit: 'Pack',
+//     stock: 25,
+//     maxStock: 60,
+//     reorderLevel: 10,
+//     location: 'Cleaning Supplies Room',
+//     supplier: 'Tissue World NG',
+//     lastRestocked: 'Apr 15, 2026',
+//     requests: 20
+//   }
+// ])
 
+const fetchSupplies = async () => {
+  loading.value = true
+
+  const { data, error } = await supabase
+    .from('supplies')
+    .select(
+      `
+      id,
+      name,
+      description,
+      sku,
+      unit,
+      unit_price,
+      current_stock,
+      max_stock,
+      reorder_level,
+      storage_location,
+      icon,
+      image_url,
+      is_active,
+      notes,
+      created_at,
+      updated_at
+    `
+    )
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+  console.log('supplies data:', data)
+  if (error) {
+    console.log('Error fetching supplies:', error)
+    loading.value = false
+    return
+  }
+
+  // map DB fields → UI fields
+  supplies.value = (data || []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    sku: s.sku,
+    category: s.category_id, // or replace later if you join categories
+    icon: s.icon || 'mdi-package-variant',
+    unit: s.unit,
+    price: s.unit_price,
+    stock: s.current_stock,
+    maxStock: s.max_stock,
+    reorderLevel: s.reorder_level,
+    location: s.storage_location,
+    image: s.image_url,
+    isActive: s.is_active,
+    notes: s.notes,
+    requests: 0 // placeholder unless you join requests table
+  }))
+
+  loading.value = false
+}
+onMounted(() => {
+  fetchSupplies()
+})
 // ─── STATS ───────────────────────────────────────────────
 const stats = computed(() => [
   {
@@ -1232,10 +1174,11 @@ const supplyForm = reactive({
 })
 function openAddSupplyDialog() {
   editMode.value = false
+
   Object.assign(supplyForm, {
     id: null,
     name: '',
-    category: '',
+    category_id: null,
     sku: '',
     description: '',
     price: 0,
@@ -1246,60 +1189,69 @@ function openAddSupplyDialog() {
     location: '',
     supplier: ''
   })
-  addEditDialog.value = true
+
+  // force next tick so dialog sees fresh state
+  addEditDialog.value = false
+  requestAnimationFrame(() => {
+    addEditDialog.value = true
+  })
 }
 
-async function saveSupply() {
-  if (!supplyFormValid.value) return
-
+async function saveSupply(form) {
   try {
     savingSupply.value = true
 
-    console.log('💾 Saving supply...', supplyForm)
+    console.log('🚀 Saving supply...', form)
 
+    if (!form) {
+      console.warn('⚠️ No form data received')
+      return
+    }
+
+    // ─────────────────────────────
+    // CLEAN PAYLOAD (ONLY WHAT BACKEND NEEDS)
+    // ─────────────────────────────
     const payload = {
-      name: supplyForm.name,
-      description: supplyForm.description,
-      sku: supplyForm.sku,
-
-      // 🔑 important mappings
-      category_id: supplyForm.category_id,
-      supplier_id: supplyForm.supplier || null,
-
-      unit: supplyForm.unit,
-      unit_price: supplyForm.price,
-      current_stock: supplyForm.stock,
-      max_stock: supplyForm.maxStock,
-      reorder_level: supplyForm.reorderLevel,
-      storage_location: supplyForm.location
+      name: form.name,
+      description: form.description,
+      sku: form.sku,
+      category_id: form.category_id,
+      supplier_id: form.supplier || null,
+      unit: form.unit,
+      unit_price: form.price,
+      current_stock: form.stock,
+      max_stock: form.maxStock,
+      reorder_level: form.reorderLevel,
+      storage_location: form.location
     }
 
-    let response
+    console.log('📦 Payload ready:', payload)
 
-    if (editMode.value) {
-      // ✏️ UPDATE
-      response = await ApiService.put('/supplies', {
-        id: supplyForm.id,
-        ...payload
-      })
-      console.log('✏️ Updated supply:', response)
-    } else {
-      // ➕ CREATE
-      response = await ApiService.post('/supplies', payload)
-      console.log('✅ Created supply:', response)
-    }
+    const isEdit = !!form.id
 
-    // ✅ close dialog
+    const response = isEdit
+      ? await ApiService.put('/supplies-catalogue', {
+          id: form.id,
+          ...payload
+        })
+      : await ApiService.post('/supplies-catalogue', payload)
+
+    console.log('✅ Save success:', response)
+
     addEditDialog.value = false
-
-    // 🔄 refresh list (you should already have this)
     await fetchSupplies?.()
   } catch (err) {
-    console.log('❌ Save supply error:', err)
+    console.error('❌ Save failed:', err?.response?.data || err.message)
   } finally {
     savingSupply.value = false
   }
 }
+watch(
+  () => supplyForm.category_id,
+  (val) => {
+    console.log('Selected category ID:', val)
+  }
+)
 
 const deleteDialog = ref(false)
 const supplyToDelete = ref(null)
@@ -1345,7 +1297,7 @@ function openEditDialog(item) {
   Object.assign(supplyForm, {
     id: item.id,
     name: item.name,
-    category: item.category_id,
+    category_id: item.category_id,
     sku: item.sku,
     description: item.description,
     price: item.unit_price,

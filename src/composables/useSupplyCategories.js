@@ -30,7 +30,7 @@ export function useSupplyCategories() {
       categories.value = data || []
 
       // build dropdown options
-      categoryOptions.value = ['All', ...(data?.map((c) => c.name) || [])]
+      categoryOptions.value = [{ id: null, name: 'All' }, ...(data || [])]
     } catch (err) {
       error.value = err.message || 'Failed to fetch categories'
     } finally {

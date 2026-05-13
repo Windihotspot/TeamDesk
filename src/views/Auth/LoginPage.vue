@@ -8,11 +8,11 @@ const authMode = ref('login')
 
 <template>
   <!-- PAGE WRAPPER -->
-  <div class="min-h-screen flex items-center justify-center bg-[linear-gradient(135deg,#e6f2f7,#f4f8fb)] px-4">
-
+  <div
+    class="min-h-screen flex items-center justify-center bg-[linear-gradient(135deg,#e6f2f7,#f4f8fb)] px-4"
+  >
     <!-- CARD -->
     <div class="w-full max-w-md bg-white/90 backdrop-blur rounded-2xl shadow-xl p-6 sm:p-8">
-
       <!-- LOGO -->
       <div class="text-center mb-4">
         <h1 class="text-2xl font-bold text-gray-800">
@@ -24,9 +24,7 @@ const authMode = ref('login')
       <div class="flex bg-gray-200 rounded-full p-1 mb-6 shadow-inner">
         <button
           class="flex-1 py-2 rounded-full text-sm transition-all"
-          :class="authMode === 'login'
-            ? 'bg-[#0B1F3A] text-white shadow'
-            : 'text-gray-600'"
+          :class="authMode === 'login' ? 'bg-[#0B1F3A] text-white shadow' : 'text-gray-600'"
           @click="authMode = 'login'"
         >
           Log In
@@ -34,9 +32,7 @@ const authMode = ref('login')
 
         <button
           class="flex-1 py-2 rounded-full text-sm transition-all"
-          :class="authMode === 'signup'
-            ? 'bg-[#0B1F3A] text-white shadow'
-            : 'text-gray-600'"
+          :class="authMode === 'signup' ? 'bg-[#0B1F3A] text-white shadow' : 'text-gray-600'"
           @click="authMode = 'signup'"
         >
           Sign Up
@@ -53,12 +49,8 @@ const authMode = ref('login')
         leave-from-class="opacity-100"
         leave-to-class="opacity-0 scale-95"
       >
-        <component
-          :is="authMode === 'login' ? LoginForm : SignupForm"
-          :key="authMode"
-        />
+        <component :is="authMode === 'login' ? LoginForm : SignupForm" :key="authMode" />
       </transition>
-
     </div>
   </div>
 </template>
