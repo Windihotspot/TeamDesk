@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import FilterIcon from '../components/FilterIcon.vue'
+import Filtericon from '../components/Filtericon.vue'
 import GetTeams from '../components/GetTeams.vue'
 
 const props = defineProps({
@@ -56,7 +56,7 @@ const visibleTasks = computed(() => {
             </button>
 
             <!-- your component -->
-            <FilterIcon />
+            <Filtericon />
           </div>
         </div>
       </div>
@@ -79,7 +79,6 @@ const visibleTasks = computed(() => {
                 class="text-gray-400 hover:text-blue-500 ml-2"
               >
                 <i class="fas fa-eye text-xs"></i>
-                
               </button>
             </summary>
 
@@ -97,60 +96,54 @@ const visibleTasks = computed(() => {
         {{ showAllTasks ? 'Show Less' : 'See More' }}
       </button>
       <!-- TASK MODAL -->
-<div
-  v-if="showModal"
-  class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
->
-  <div class="bg-[#f4f4f4] w-full max-w-[500px] rounded-3xl shadow-2xl p-6 relative">
+      <div
+        v-if="showModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      >
+        <div class="bg-[#f4f4f4] w-full max-w-[500px] rounded-3xl shadow-2xl p-6 relative">
+          <!-- CLOSE BUTTON -->
+          <button
+            @click="showModal = false"
+            class="absolute top-5 right-5 text-gray-400 hover:text-gray-600"
+          >
+            <i class="fas fa-times text-lg"></i>
+          </button>
 
-    <!-- CLOSE BUTTON -->
-    <button
-      @click="showModal = false"
-      class="absolute top-5 right-5 text-gray-400 hover:text-gray-600"
-    >
-      <i class="fas fa-times text-lg"></i>
-    </button>
+          <!-- TITLE -->
+          <h2 class="text-2xl font-semibold text-[#2f3443] mb-6">
+            {{ selectedTask?.name || selectedTask?.title }}
+          </h2>
 
-    <!-- TITLE -->
-    <h2 class="text-2xl font-semibold text-[#2f3443] mb-6">
-      {{ selectedTask?.name || selectedTask?.title }}
-    </h2>
+          <!-- DESCRIPTION -->
+          <div class="mb-5">
+            <label class="block text-gray-500 text-sm mb-2"> Description </label>
 
-    <!-- DESCRIPTION -->
-    <div class="mb-5">
-      <label class="block text-gray-500 text-sm mb-2">
-        Description
-      </label>
+            <textarea
+              v-model="editableDescription"
+              rows="4"
+              class="w-full rounded-xl border border-gray-300 bg-[#f1f1f1] p-4 text-gray-700 outline-none resize-none focus:ring-2 focus:ring-blue-400"
+            ></textarea>
+          </div>
 
-      <textarea
-        v-model="editableDescription"
-        rows="4"
-        class="w-full rounded-xl border border-gray-300 bg-[#f1f1f1] p-4 text-gray-700 outline-none resize-none focus:ring-2 focus:ring-blue-400"
-      ></textarea>
-    </div>
+          <!-- TAG / ASSIGN -->
+          <div class="mb-6">
+            <label class="block text-gray-500 text-sm mb-2"> Tag / Assign </label>
 
-    <!-- TAG / ASSIGN -->
-    <div class="mb-6">
-      <label class="block text-gray-500 text-sm mb-2">
-        Tag / Assign
-      </label>
+            <input
+              type="text"
+              placeholder="Enter email or name"
+              class="w-full rounded-xl border border-gray-300 bg-[#f1f1f1] px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
 
-      <input
-        type="text"
-        placeholder="Enter email or name"
-        class="w-full rounded-xl border border-gray-300 bg-[#f1f1f1] px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
-      />
-    </div>
-
-    <!-- BUTTON -->
-    <button
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
-    >
-      Submit
-    </button>
-
-  </div>
-</div>
+          <!-- BUTTON -->
+          <button
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- PROJECTS CARD -->
@@ -170,7 +163,7 @@ const visibleTasks = computed(() => {
             </button>
 
             <!-- your component -->
-            <FilterIcon  />
+            <Filtericon />
           </div>
         </div>
       </div>
