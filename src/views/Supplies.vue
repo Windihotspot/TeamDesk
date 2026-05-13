@@ -127,205 +127,215 @@
         </div>
       </div>
 
-      <!-- GRID VIEW -->
-      <div v-if="viewMode === 'grid'" class="supplies-grid px-6 pb-8">
-        <transition-group
-          name="card-fade"
-          tag="div"
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-        >
-          <div
-            v-for="supply in filteredSupplies"
-            :key="supply.id"
-            class="supply-card"
-            @click="openDetailDialog(supply)"
+      <div
+        v-if="loading"
+        class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
+      >
+        <v-progress-circular indeterminate color="blue" size="60" width="2" />
+
+        <p class="mt-4 text-sm text-gray-500 font-medium">Loading supplies data...</p>
+      </div>
+      <div v-else>
+        <!-- GRID VIEW -->
+        <div v-if="viewMode === 'grid'" class="supplies-grid px-6 pb-8">
+          <transition-group
+            name="card-fade"
+            tag="div"
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
           >
-            <!-- Stock badge -->
-            <div class="stock-badge" :class="getStockClass(supply.stock)">
-              {{ getStockLabel(supply.stock) }}
+            <div
+              v-for="supply in filteredSupplies"
+              :key="supply.id"
+              class="supply-card"
+              @click="openDetailDialog(supply)"
+            >
+              <!-- Stock badge -->
+              <div class="stock-badge" :class="getStockClass(supply.stock)">
+                {{ getStockLabel(supply.stock) }}
+              </div>
+
+              <!-- Category color bar -->
+
+              <div class="card-body">
+                <!-- Icon + category -->
+                <div class="flex items-center gap-2 mb-3">
+                  <div
+                    class="supply-icon-wrap"
+                    :style="{ background: getCategoryBg(supply.category) }"
+                  >
+                    <v-icon :color="getCategoryColor(supply.category)" size="22">{{
+                      supply.icon
+                    }}</v-icon>
+                  </div>
+                  <span class="category-tag" :style="{ color: getCategoryColor(supply.category) }">
+                    {{ supply.category }}
+                  </span>
+                </div>
+
+                <h3 class="supply-name">{{ supply.name }}</h3>
+                <p class="supply-desc">{{ supply.description }}</p>
+
+                <div class="supply-meta mt-3">
+                  <div class="meta-row">
+                    <v-icon size="14" color="grey">mdi-package-variant</v-icon>
+                    <span>{{ supply.unit }}</span>
+                  </div>
+                  <div class="meta-row">
+                    <v-icon size="14" color="grey">mdi-map-marker-outline</v-icon>
+                    <span>{{ supply.location }}</span>
+                  </div>
+                </div>
+
+                <!-- Stock indicator -->
+                <div class="mt-3">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="stock-text">Stock Level</span>
+                    <span class="stock-count">{{ supply.stock }} / {{ supply.maxStock }}</span>
+                  </div>
+                  <v-progress-linear
+                    :model-value="(supply.stock / supply.maxStock) * 100"
+                    :color="getStockProgressColor(supply.stock, supply.maxStock)"
+                    height="5"
+                    rounded
+                    bg-color="#f0f4f8"
+                  />
+                </div>
+
+                <!-- Price + actions -->
+                <div class="card-footer mt-4">
+                  <div>
+                    <span class="price-label">Unit Price</span>
+                    <p class="price-value">₦{{ supply.price.toLocaleString() }}</p>
+                  </div>
+                  <div class="flex gap-2">
+                    <v-btn
+                      icon="mdi-cart-plus"
+                      size="small"
+                      color="#0f4c81"
+                      variant="tonal"
+                      rounded="lg"
+                      @click.stop="openRequestDialog(supply)"
+                    />
+                    <v-btn
+                      icon="mdi-dots-vertical"
+                      size="small"
+                      color="grey"
+                      variant="text"
+                      rounded="lg"
+                      @click.stop="openActionsMenu($event, supply)"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
+          </transition-group>
 
-            <!-- Category color bar -->
+          <!-- Empty state -->
+          <div v-if="!filteredSupplies.length" class="empty-state">
+            <v-icon size="64" color="#0f4c81" class="mb-4" style="opacity: 0.3"
+              >mdi-package-variant-closed</v-icon
+            >
+            <p class="empty-title">No supplies found</p>
+            <p class="empty-sub">Try adjusting your filters or add a new supply</p>
+            <v-btn
+              color="#0f4c81"
+              variant="tonal"
+              prepend-icon="mdi-plus"
+              rounded="lg"
+              class="mt-4"
+              @click="openAddSupplyDialog"
+            >
+              Add Supply
+            </v-btn>
+          </div>
+        </div>
 
-            <div class="card-body">
-              <!-- Icon + category -->
-              <div class="flex items-center gap-2 mb-3">
-                <div
-                  class="supply-icon-wrap"
-                  :style="{ background: getCategoryBg(supply.category) }"
+        <!-- LIST VIEW -->
+        <div v-else class="px-6 pb-8">
+          <v-card rounded="xl" elevation="0" class="list-card overflow-hidden">
+            <v-data-table
+              :headers="tableHeaders"
+              :items="filteredSupplies"
+              :search="search"
+              class="supplies-table"
+              hover
+              @click:row="(_, row) => openDetailDialog(row.item)"
+            >
+              <template #item.name="{ item }">
+                <div class="flex items-center gap-3 py-2">
+                  <div
+                    class="supply-icon-wrap-sm"
+                    :style="{ background: getCategoryBg(item.category) }"
+                  >
+                    <v-icon :color="getCategoryColor(item.category)" size="18">{{
+                      item.icon
+                    }}</v-icon>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-sm">{{ item.name }}</p>
+                    <p class="text-xs text-grey-darken-1">{{ item.category }}</p>
+                  </div>
+                </div>
+              </template>
+              <template #item.stock="{ item }">
+                <div class="flex items-center gap-2">
+                  <v-progress-linear
+                    :model-value="(item.stock / item.maxStock) * 100"
+                    :color="getStockProgressColor(item.stock, item.maxStock)"
+                    height="6"
+                    rounded
+                    style="width: 60px"
+                    bg-color="#f0f4f8"
+                  />
+                  <span class="text-sm">{{ item.stock }}</span>
+                </div>
+              </template>
+              <template #item.status="{ item }">
+                <v-chip
+                  size="small"
+                  :color="getStockChipColor(item.stock)"
+                  variant="tonal"
+                  rounded="lg"
                 >
-                  <v-icon :color="getCategoryColor(supply.category)" size="22">{{
-                    supply.icon
-                  }}</v-icon>
-                </div>
-                <span class="category-tag" :style="{ color: getCategoryColor(supply.category) }">
-                  {{ supply.category }}
-                </span>
-              </div>
-
-              <h3 class="supply-name">{{ supply.name }}</h3>
-              <p class="supply-desc">{{ supply.description }}</p>
-
-              <div class="supply-meta mt-3">
-                <div class="meta-row">
-                  <v-icon size="14" color="grey">mdi-package-variant</v-icon>
-                  <span>{{ supply.unit }}</span>
-                </div>
-                <div class="meta-row">
-                  <v-icon size="14" color="grey">mdi-map-marker-outline</v-icon>
-                  <span>{{ supply.location }}</span>
-                </div>
-              </div>
-
-              <!-- Stock indicator -->
-              <div class="mt-3">
-                <div class="flex justify-between items-center mb-1">
-                  <span class="stock-text">Stock Level</span>
-                  <span class="stock-count">{{ supply.stock }} / {{ supply.maxStock }}</span>
-                </div>
-                <v-progress-linear
-                  :model-value="(supply.stock / supply.maxStock) * 100"
-                  :color="getStockProgressColor(supply.stock, supply.maxStock)"
-                  height="5"
-                  rounded
-                  bg-color="#f0f4f8"
-                />
-              </div>
-
-              <!-- Price + actions -->
-              <div class="card-footer mt-4">
-                <div>
-                  <span class="price-label">Unit Price</span>
-                  <p class="price-value">₦{{ supply.price.toLocaleString() }}</p>
-                </div>
-                <div class="flex gap-2">
+                  {{ getStockLabel(item.stock) }}
+                </v-chip>
+              </template>
+              <template #item.price="{ item }">
+                <span class="font-semibold" style="color: #0f4c81"
+                  >₦{{ item.price.toLocaleString() }}</span
+                >
+              </template>
+              <template #item.actions="{ item }">
+                <div class="flex gap-1">
                   <v-btn
                     icon="mdi-cart-plus"
-                    size="small"
+                    size="x-small"
                     color="#0f4c81"
                     variant="tonal"
                     rounded="lg"
-                    @click.stop="openRequestDialog(supply)"
+                    @click.stop="openRequestDialog(item)"
                   />
                   <v-btn
-                    icon="mdi-dots-vertical"
-                    size="small"
+                    icon="mdi-pencil-outline"
+                    size="x-small"
                     color="grey"
                     variant="text"
                     rounded="lg"
-                    @click.stop="openActionsMenu($event, supply)"
+                    @click.stop="openEditDialog(item)"
+                  />
+                  <v-btn
+                    icon="mdi-delete-outline"
+                    size="x-small"
+                    color="error"
+                    variant="text"
+                    rounded="lg"
+                    @click.stop="confirmDelete(item)"
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-        </transition-group>
-
-        <!-- Empty state -->
-        <div v-if="!filteredSupplies.length" class="empty-state">
-          <v-icon size="64" color="#0f4c81" class="mb-4" style="opacity: 0.3"
-            >mdi-package-variant-closed</v-icon
-          >
-          <p class="empty-title">No supplies found</p>
-          <p class="empty-sub">Try adjusting your filters or add a new supply</p>
-          <v-btn
-            color="#0f4c81"
-            variant="tonal"
-            prepend-icon="mdi-plus"
-            rounded="lg"
-            class="mt-4"
-            @click="openAddSupplyDialog"
-          >
-            Add Supply
-          </v-btn>
+              </template>
+            </v-data-table>
+          </v-card>
         </div>
-      </div>
-
-      <!-- LIST VIEW -->
-      <div v-else class="px-6 pb-8">
-        <v-card rounded="xl" elevation="0" class="list-card overflow-hidden">
-          <v-data-table
-            :headers="tableHeaders"
-            :items="filteredSupplies"
-            :search="search"
-            class="supplies-table"
-            hover
-            @click:row="(_, row) => openDetailDialog(row.item)"
-          >
-            <template #item.name="{ item }">
-              <div class="flex items-center gap-3 py-2">
-                <div
-                  class="supply-icon-wrap-sm"
-                  :style="{ background: getCategoryBg(item.category) }"
-                >
-                  <v-icon :color="getCategoryColor(item.category)" size="18">{{
-                    item.icon
-                  }}</v-icon>
-                </div>
-                <div>
-                  <p class="font-semibold text-sm">{{ item.name }}</p>
-                  <p class="text-xs text-grey-darken-1">{{ item.category }}</p>
-                </div>
-              </div>
-            </template>
-            <template #item.stock="{ item }">
-              <div class="flex items-center gap-2">
-                <v-progress-linear
-                  :model-value="(item.stock / item.maxStock) * 100"
-                  :color="getStockProgressColor(item.stock, item.maxStock)"
-                  height="6"
-                  rounded
-                  style="width: 60px"
-                  bg-color="#f0f4f8"
-                />
-                <span class="text-sm">{{ item.stock }}</span>
-              </div>
-            </template>
-            <template #item.status="{ item }">
-              <v-chip
-                size="small"
-                :color="getStockChipColor(item.stock)"
-                variant="tonal"
-                rounded="lg"
-              >
-                {{ getStockLabel(item.stock) }}
-              </v-chip>
-            </template>
-            <template #item.price="{ item }">
-              <span class="font-semibold" style="color: #0f4c81"
-                >₦{{ item.price.toLocaleString() }}</span
-              >
-            </template>
-            <template #item.actions="{ item }">
-              <div class="flex gap-1">
-                <v-btn
-                  icon="mdi-cart-plus"
-                  size="x-small"
-                  color="#0f4c81"
-                  variant="tonal"
-                  rounded="lg"
-                  @click.stop="openRequestDialog(item)"
-                />
-                <v-btn
-                  icon="mdi-pencil-outline"
-                  size="x-small"
-                  color="grey"
-                  variant="text"
-                  rounded="lg"
-                  @click.stop="openEditDialog(item)"
-                />
-                <v-btn
-                  icon="mdi-delete-outline"
-                  size="x-small"
-                  color="error"
-                  variant="text"
-                  rounded="lg"
-                  @click.stop="confirmDelete(item)"
-                />
-              </div>
-            </template>
-          </v-data-table>
-        </v-card>
       </div>
 
       <!-- ============ DETAIL DIALOG ============ -->
