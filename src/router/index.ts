@@ -6,6 +6,7 @@ import BrowseProjects from '@/views/BrowseProjects.vue'
 import MyTasks from '@/views/MyTasks.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import Supplies from '@/views/Supplies.vue'
+import Profile from '@/views/Profile.vue'
 
 // import LoginForm from '@/views/Auth/LoginForm.vue'
 
@@ -48,6 +49,11 @@ const router = createRouter({
       path: '/supplies',
       name: 'supplies',
       component: Supplies
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: Profile
     }
   ]
 })
