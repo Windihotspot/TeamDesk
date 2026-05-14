@@ -82,6 +82,12 @@ const menuItems = [
     route: '/supplies'
   },
   {
+    nav: 'supplies',
+    label: 'Supplies',
+    icon: 'mdi mdi-package-variant',
+    route: '/supplies'
+  },
+  {
     nav: 'attendance',
     label: 'Attendance',
     icon: 'mdi mdi-calendar-check-outline',
