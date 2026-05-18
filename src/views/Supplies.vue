@@ -41,7 +41,7 @@
               <v-icon :color="stat.color" size="20">{{ stat.icon }}</v-icon>
             </div>
             <div>
-              <p class="stat-value">0</p>
+              <p class="stat-value">{{ stat.value }}</p>
               <p class="stat-label">{{ stat.label }}</p>
             </div>
           </div>
@@ -132,9 +132,9 @@
         class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
       >
         <v-progress-circular indeterminate color="blue" size="60" width="2" />
-
         <p class="mt-4 text-sm text-gray-500 font-medium">Loading supplies data...</p>
       </div>
+
       <div v-else>
         <!-- GRID VIEW -->
         <div v-if="viewMode === 'grid'" class="supplies-grid px-6 pb-8">
@@ -153,8 +153,6 @@
               <div class="stock-badge" :class="getStockClass(supply.stock)">
                 {{ getStockLabel(supply.stock) }}
               </div>
-
-              <!-- Category color bar -->
 
               <div class="card-body">
                 <!-- Icon + category -->
@@ -214,6 +212,7 @@
                       color="#0f4c81"
                       variant="tonal"
                       rounded="lg"
+                      :disabled="supply.stock === 0"
                       @click.stop="openRequestDialog(supply)"
                     />
                     <v-btn
@@ -313,6 +312,7 @@
                     color="#0f4c81"
                     variant="tonal"
                     rounded="lg"
+                    :disabled="item.stock === 0"
                     @click.stop="openRequestDialog(item)"
                   />
                   <v-btn
@@ -469,6 +469,7 @@
               prepend-icon="mdi-cart-plus"
               class="flex-1"
               elevation="0"
+              :disabled="selectedSupply.stock === 0"
               @click="handleDetailRequest"
             >
               Request
@@ -508,28 +509,22 @@
           </div>
 
           <v-card-text class="pa-5">
-            <v-form ref="requestForm" v-model="requestFormValid">
+            <!-- Out of stock guard -->
+            <v-alert
+              v-if="requestSupply.stock === 0"
+              type="error"
+              variant="tonal"
+              rounded="lg"
+              class="mb-4"
+              icon="mdi-package-variant-closed-remove"
+            >
+              This item is currently out of stock and cannot be requested.
+            </v-alert>
+
+            <v-form ref="requestFormRef" v-model="requestFormValid">
               <div class="grid grid-cols-2 gap-4">
                 <v-text-field
-                  v-model="requestForm.requesterName"
-                  label="Your Name"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-account-outline"
-                  :rules="[(v) => !!v || 'Required']"
-                />
-                <v-text-field
-                  v-model="requestForm.department"
-                  label="Department"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-office-building-outline"
-                  :rules="[(v) => !!v || 'Required']"
-                />
-                <v-text-field
-                  v-model.number="requestForm.quantity"
+                  v-model.number="requestFormFields.quantity"
                   label="Quantity"
                   type="number"
                   variant="outlined"
@@ -539,7 +534,7 @@
                   :rules="[
                     (v) => !!v || 'Required',
                     (v) => v > 0 || 'Must be > 0',
-                    (v) => v <= requestSupply.stock || 'Exceeds stock'
+                    (v) => v <= requestSupply.stock || `Only ${requestSupply.stock} in stock`
                   ]"
                   @update:model-value="calcTotal"
                 />
@@ -554,39 +549,64 @@
                   style="background: #f5f8fc"
                 />
               </div>
+
               <v-select
-                v-model="requestForm.priority"
-                :items="['Low', 'Normal', 'Urgent']"
+                v-model="requestFormFields.priority"
+                :items="['low', 'normal', 'urgent']"
                 label="Priority"
                 variant="outlined"
                 density="comfortable"
                 rounded="lg"
                 prepend-inner-icon="mdi-flag-outline"
                 class="mt-1"
-              />
+              >
+                <template #item="{ item, props }">
+                  <v-list-item v-bind="props">
+                    <template #prepend>
+                      <v-icon
+                        size="16"
+                        :color="
+                          item.value === 'urgent'
+                            ? 'error'
+                            : item.value === 'low'
+                              ? 'grey'
+                              : '#0f4c81'
+                        "
+                      >
+                        mdi-flag
+                      </v-icon>
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-select>
+
               <v-menu v-model="datepickerMenu" :close-on-content-click="false">
                 <template #activator="{ props }">
                   <v-text-field
                     v-bind="props"
-                    v-model="requestForm.neededBy"
-                    label="Needed By"
+                    v-model="requestFormFields.neededBy"
+                    label="Needed By (optional)"
                     variant="outlined"
                     density="comfortable"
                     rounded="lg"
                     prepend-inner-icon="mdi-calendar-outline"
                     readonly
                     class="mt-1"
+                    clearable
+                    @click:clear="clearNeededBy"
                   />
                 </template>
                 <v-date-picker
-                  v-model="requestForm.neededByDate"
+                  v-model="requestFormFields.neededByDate"
                   color="#0f4c81"
+                  :min="new Date().toISOString().split('T')[0]"
                   @update:model-value="setNeededBy"
                 />
               </v-menu>
+
               <v-textarea
-                v-model="requestForm.reason"
-                label="Reason / Justification"
+                v-model="requestFormFields.reason"
+                label="Reason / Justification (optional)"
                 variant="outlined"
                 density="comfortable"
                 rounded="lg"
@@ -597,12 +617,25 @@
             </v-form>
 
             <div class="mt-3 p-3 rounded-xl flex items-center gap-3" style="background: #e8f0fb">
-              <v-icon color="#0f4c81" size="18">mdi-email-fast-outline</v-icon>
+              <v-icon color="#0f4c81" size="18">mdi-shield-check-outline</v-icon>
               <p class="text-xs" style="color: #0f4c81">
-                An automated email notification will be sent to the supply manager and your
-                department head upon submission.
+                Your request will be routed to the appropriate approver based on your organisation's
+                workflow. You'll be notified when it's reviewed.
               </p>
             </div>
+
+            <!-- Error banner -->
+            <v-alert
+              v-if="requestError"
+              type="error"
+              variant="tonal"
+              rounded="lg"
+              class="mt-3"
+              closable
+              @click:close="requestError = ''"
+            >
+              {{ requestError }}
+            </v-alert>
           </v-card-text>
 
           <v-card-actions class="pa-5 pt-0">
@@ -616,6 +649,7 @@
               elevation="0"
               prepend-icon="mdi-send-outline"
               :loading="submittingRequest"
+              :disabled="requestSupply.stock === 0"
               @click="submitRequest"
             >
               Submit Request
@@ -653,10 +687,17 @@
               color="grey"
               rounded="lg"
               class="flex-1"
+              :disabled="deletingSupply"
               @click="deleteDialog = false"
               >Cancel</v-btn
             >
-            <v-btn color="error" rounded="lg" class="flex-1" elevation="0" @click="deleteSupply"
+            <v-btn
+              color="error"
+              rounded="lg"
+              class="flex-1"
+              elevation="0"
+              :loading="deletingSupply"
+              @click="deleteSupply"
               >Delete</v-btn
             >
           </v-card-actions>
@@ -698,6 +739,7 @@
           <v-list-item
             prepend-icon="mdi-cart-plus"
             title="Request"
+            :disabled="actionsMenu.supply?.stock === 0"
             @click="openRequestDialog(actionsMenu.supply)"
           />
           <v-divider />
@@ -720,10 +762,10 @@ import { useSupplyCategories } from '@/composables/useSupplyCategories'
 import AddEditSupplyDialog from '@/components/AddEditSupplyDialog.vue'
 import ApiService from '@/services/api'
 import { supabase } from '@/services/supabase.js'
+
 const { categories, categoryOptions, loading, error } = useSupplyCategories()
 
 // ─── VIEW MODE ───────────────────────────────────────────
-
 const viewMode = ref('grid')
 
 // ─── FILTERS ─────────────────────────────────────────────
@@ -731,7 +773,6 @@ const search = ref('')
 const selectedCategory = ref('All')
 const selectedStatus = ref('All')
 const datepickerMenu = ref(false)
-
 const statusOptions = ['All', 'In Stock', 'Low Stock', 'Out of Stock']
 
 const activeFilters = computed(() => {
@@ -747,7 +788,6 @@ function clearFilter(key) {
   if (key === 'category') selectedCategory.value = 'All'
   if (key === 'status') selectedStatus.value = 'All'
 }
-
 function clearAllFilters() {
   selectedCategory.value = 'All'
   selectedStatus.value = 'All'
@@ -773,13 +813,8 @@ const categoryBgs = {
   Pantry: '#dcfce7',
   Safety: '#fee2e2'
 }
-
-function getCategoryColor(cat) {
-  return categoryColors[cat] || '#0f4c81'
-}
-function getCategoryBg(cat) {
-  return categoryBgs[cat] || '#e8f0fb'
-}
+const getCategoryColor = (cat) => categoryColors[cat] || '#0f4c81'
+const getCategoryBg = (cat) => categoryBgs[cat] || '#e8f0fb'
 
 // ─── STOCK HELPERS ───────────────────────────────────────
 function getStockLabel(stock) {
@@ -804,256 +839,37 @@ function getStockProgressColor(stock, max) {
   if (pct < 50) return '#eab308'
   return '#22c55e'
 }
-const supplies = ref([])
+
 // ─── SUPPLIES DATA ───────────────────────────────────────
-// const supplies = ref([
-//   {
-//     id: 1,
-//     name: 'A4 Copy Paper',
-//     category: 'Stationery',
-//     icon: 'mdi-file-document-outline',
-//     description: '80gsm premium copy paper, 500 sheets/ream',
-//     sku: 'STN-001',
-//     price: 3500,
-//     unit: 'Ream',
-//     stock: 45,
-//     maxStock: 100,
-//     reorderLevel: 15,
-//     location: 'Store A - Shelf 2',
-//     supplier: 'Leventis Office',
-//     lastRestocked: 'Apr 10, 2026',
-//     requests: 12
-//   },
-//   {
-//     id: 2,
-//     name: 'Ballpoint Pens (Blue)',
-//     category: 'Stationery',
-//     icon: 'mdi-pen',
-//     description: 'Medium point, smooth ink flow, box of 50',
-//     sku: 'STN-002',
-//     price: 1800,
-//     unit: 'Box',
-//     stock: 8,
-//     maxStock: 50,
-//     reorderLevel: 10,
-//     location: 'Store A - Shelf 3',
-//     supplier: 'Bic Nigeria',
-//     lastRestocked: 'Mar 28, 2026',
-//     requests: 24
-//   },
-//   {
-//     id: 3,
-//     name: 'HP LaserJet Toner',
-//     category: 'Printing',
-//     icon: 'mdi-printer-outline',
-//     description: 'Compatible with HP LJ Pro M404/M428 series',
-//     sku: 'PRT-001',
-//     price: 45000,
-//     unit: 'Cartridge',
-//     stock: 0,
-//     maxStock: 20,
-//     reorderLevel: 3,
-//     location: 'IT Store - Cabinet 1',
-//     supplier: 'HP Nigeria',
-//     lastRestocked: 'Feb 15, 2026',
-//     requests: 7
-//   },
-//   {
-//     id: 4,
-//     name: 'Hand Sanitizer',
-//     category: 'Safety',
-//     icon: 'mdi-hand-wash-outline',
-//     description: '70% alcohol gel, 500ml pump bottle',
-//     sku: 'SFT-001',
-//     price: 2500,
-//     unit: 'Bottle',
-//     stock: 30,
-//     maxStock: 60,
-//     reorderLevel: 10,
-//     location: 'Store B - Shelf 1',
-//     supplier: 'Dettol Nigeria',
-//     lastRestocked: 'Apr 18, 2026',
-//     requests: 18
-//   },
-//   {
-//     id: 5,
-//     name: 'USB-C Charging Cable',
-//     category: 'Electronics',
-//     icon: 'mdi-usb-c-port',
-//     description: '2m braided cable, 65W fast charge',
-//     sku: 'ELC-001',
-//     price: 8500,
-//     unit: 'Piece',
-//     stock: 15,
-//     maxStock: 30,
-//     reorderLevel: 5,
-//     location: 'IT Store - Drawer 3',
-//     supplier: 'Anker Nigeria',
-//     lastRestocked: 'Apr 5, 2026',
-//     requests: 9
-//   },
-//   {
-//     id: 6,
-//     name: 'Floor Cleaner Concentrate',
-//     category: 'Cleaning',
-//     icon: 'mdi-broom',
-//     description: 'Lemon scented, 5L can, dilutes 1:20',
-//     sku: 'CLN-001',
-//     price: 6000,
-//     unit: 'Can',
-//     stock: 6,
-//     maxStock: 24,
-//     reorderLevel: 6,
-//     location: 'Cleaning Supplies Room',
-//     supplier: 'Mr Muscle NG',
-//     lastRestocked: 'Apr 2, 2026',
-//     requests: 5
-//   },
-//   {
-//     id: 7,
-//     name: 'Nescafé Classic Coffee',
-//     category: 'Pantry',
-//     icon: 'mdi-coffee-outline',
-//     description: 'Instant coffee granules, 200g jar',
-//     sku: 'PNT-001',
-//     price: 4800,
-//     unit: 'Jar',
-//     stock: 22,
-//     maxStock: 40,
-//     reorderLevel: 8,
-//     location: 'Pantry Cabinet B',
-//     supplier: 'Nestle Nigeria',
-//     lastRestocked: 'Apr 20, 2026',
-//     requests: 31
-//   },
-//   {
-//     id: 8,
-//     name: 'Office Swivel Chair',
-//     category: 'Furniture',
-//     icon: 'mdi-seat-outline',
-//     description: 'Ergonomic mesh back, adjustable height',
-//     sku: 'FRN-001',
-//     price: 85000,
-//     unit: 'Piece',
-//     stock: 3,
-//     maxStock: 10,
-//     reorderLevel: 2,
-//     location: 'Furniture Store',
-//     supplier: 'Interiors Plus',
-//     lastRestocked: 'Jan 10, 2026',
-//     requests: 2
-//   },
-//   {
-//     id: 9,
-//     name: 'Sticky Notes (3x3)',
-//     category: 'Stationery',
-//     icon: 'mdi-note-text-outline',
-//     description: 'Pastel colors, 100 sheets/pad, 5 pads/pack',
-//     sku: 'STN-003',
-//     price: 1200,
-//     unit: 'Pack',
-//     stock: 40,
-//     maxStock: 80,
-//     reorderLevel: 15,
-//     location: 'Store A - Shelf 4',
-//     supplier: 'Post-it NG',
-//     lastRestocked: 'Apr 12, 2026',
-//     requests: 14
-//   },
-//   {
-//     id: 10,
-//     name: 'Wireless Mouse',
-//     category: 'Electronics',
-//     icon: 'mdi-mouse-outline',
-//     description: 'Logitech M280, 2.4GHz, 18-month battery',
-//     sku: 'ELC-002',
-//     price: 18000,
-//     unit: 'Piece',
-//     stock: 5,
-//     maxStock: 15,
-//     reorderLevel: 3,
-//     location: 'IT Store - Shelf 2',
-//     supplier: 'Logitech Nigeria',
-//     lastRestocked: 'Mar 15, 2026',
-//     requests: 6
-//   },
-//   {
-//     id: 11,
-//     name: 'A3 Printing Paper',
-//     category: 'Printing',
-//     icon: 'mdi-printer-pos-outline',
-//     description: '90gsm, 250 sheets/pack',
-//     sku: 'PRT-002',
-//     price: 5500,
-//     unit: 'Pack',
-//     stock: 18,
-//     maxStock: 40,
-//     reorderLevel: 8,
-//     location: 'Store A - Shelf 1',
-//     supplier: 'Leventis Office',
-//     lastRestocked: 'Apr 8, 2026',
-//     requests: 3
-//   },
-//   {
-//     id: 12,
-//     name: 'Tissue Paper (Rolls)',
-//     category: 'Cleaning',
-//     icon: 'mdi-paper-roll-outline',
-//     description: 'Soft 2-ply, 10 rolls per pack',
-//     sku: 'CLN-002',
-//     price: 3200,
-//     unit: 'Pack',
-//     stock: 25,
-//     maxStock: 60,
-//     reorderLevel: 10,
-//     location: 'Cleaning Supplies Room',
-//     supplier: 'Tissue World NG',
-//     lastRestocked: 'Apr 15, 2026',
-//     requests: 20
-//   }
-// ])
+const supplies = ref([])
 
 const fetchSupplies = async () => {
   loading.value = true
-
-  const { data, error } = await supabase
+  const { data, error: dbErr } = await supabase
     .from('supplies')
     .select(
       `
-      id,
-      name,
-      description,
-      sku,
-      unit,
-      unit_price,
-      current_stock,
-      max_stock,
-      reorder_level,
-      storage_location,
-      icon,
-      image_url,
-      is_active,
-      notes,
-      created_at,
-      updated_at
+      id, name, description, sku, unit, unit_price,
+      current_stock, max_stock, reorder_level,
+      storage_location, icon, image_url, is_active, notes,
+      created_at, updated_at
     `
     )
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-  console.log('supplies data:', data)
-  if (error) {
-    console.log('Error fetching supplies:', error)
+
+  if (dbErr) {
+    console.error('Error fetching supplies:', dbErr)
     loading.value = false
     return
   }
 
-  // map DB fields → UI fields
   supplies.value = (data || []).map((s) => ({
     id: s.id,
     name: s.name,
     description: s.description,
     sku: s.sku,
-    category: s.category_id, // or replace later if you join categories
+    category: s.category_id,
     icon: s.icon || 'mdi-package-variant',
     unit: s.unit,
     price: s.unit_price,
@@ -1064,14 +880,16 @@ const fetchSupplies = async () => {
     image: s.image_url,
     isActive: s.is_active,
     notes: s.notes,
-    requests: 0 // placeholder unless you join requests table
+    requests: 0
   }))
 
   loading.value = false
 }
+
 onMounted(() => {
   fetchSupplies()
 })
+
 // ─── STATS ───────────────────────────────────────────────
 const stats = computed(() => [
   {
@@ -1110,7 +928,7 @@ const filteredSupplies = computed(() => {
     const matchSearch =
       !search.value ||
       s.name.toLowerCase().includes(search.value.toLowerCase()) ||
-      s.description.toLowerCase().includes(search.value.toLowerCase())
+      (s.description || '').toLowerCase().includes(search.value.toLowerCase())
     const matchCat = selectedCategory.value === 'All' || s.category === selectedCategory.value
     const matchStatus =
       selectedStatus.value === 'All' ||
@@ -1132,31 +950,47 @@ const tableHeaders = [
   { title: 'Actions', key: 'actions', sortable: false, align: 'center' }
 ]
 
-// ─── DIALOGS ─────────────────────────────────────────────
+// ─── DETAIL DIALOG ───────────────────────────────────────
 const detailDialog = ref(false)
 const selectedSupply = ref(null)
 
+function openDetailDialog(supply) {
+  selectedSupply.value = supply
+  detailDialog.value = true
+}
+function handleDetailRequest() {
+  openRequestDialog(selectedSupply.value)
+  detailDialog.value = false
+}
+function handleDetailEdit() {
+  openEditDialog(selectedSupply.value)
+  detailDialog.value = false
+}
+
+// ─── REQUEST DIALOG ──────────────────────────────────────
 const requestDialog = ref(false)
 const requestSupply = ref(null)
+const requestFormRef = ref(null) // v-form element ref
 const requestFormValid = ref(false)
 const submittingRequest = ref(false)
-const requestForm = reactive({
-  requesterName: '',
-  department: '',
+const requestError = ref('')
+const requestTotal = ref(0)
+
+// Separate reactive object for form field values (avoids ref/reactive naming clash)
+const requestFormFields = reactive({
   quantity: 1,
-  priority: 'Normal',
+  priority: 'normal',
   neededBy: '',
   neededByDate: null,
   reason: ''
 })
-const requestTotal = ref(0)
 
 function calcTotal() {
-  requestTotal.value = (requestForm.quantity || 0) * (requestSupply.value?.price || 0)
+  requestTotal.value = (requestFormFields.quantity || 0) * (requestSupply.value?.price || 0)
 }
 
 function setNeededBy(date) {
-  requestForm.neededBy = new Date(date).toLocaleDateString('en-NG', {
+  requestFormFields.neededBy = new Date(date).toLocaleDateString('en-NG', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -1164,9 +998,79 @@ function setNeededBy(date) {
   datepickerMenu.value = false
 }
 
+function clearNeededBy() {
+  requestFormFields.neededByDate = null
+  requestFormFields.neededBy = ''
+}
+
+function openRequestDialog(supply) {
+  requestSupply.value = supply
+  requestFormFields.quantity = 1
+  requestFormFields.priority = 'normal'
+  requestFormFields.neededBy = ''
+  requestFormFields.neededByDate = null
+  requestFormFields.reason = ''
+  requestTotal.value = supply.price
+  requestError.value = ''
+  requestDialog.value = true
+}
+
+// ── SUBMIT to /supply-requests edge function ──────────────
+async function submitRequest() {
+  // Validate Vuetify form rules
+  const { valid } = (await requestFormRef.value?.validate()) ?? { valid: true }
+  if (!valid) return
+
+  submittingRequest.value = true
+  requestError.value = ''
+
+  try {
+    const payload = {
+      supply_id: requestSupply.value.id,
+      quantity_requested: Number(requestFormFields.quantity),
+      priority: requestFormFields.priority || 'normal',
+      needed_by_date: requestFormFields.neededByDate
+        ? new Date(requestFormFields.neededByDate).toISOString().split('T')[0]
+        : null,
+      reason: requestFormFields.reason || null
+    }
+
+    const response = await ApiService.post('/supplies-requests', payload)
+
+    requestDialog.value = false
+
+    showSnack(
+      `Request #${response.request_number} submitted — awaiting approval.`,
+      'success',
+      'mdi-check-circle-outline'
+    )
+
+    // Optimistically bump request counter in UI
+    const s = supplies.value.find((x) => x.id === requestSupply.value.id)
+    if (s) s.requests++
+  } catch (err) {
+    // Parse backend error messages from the edge function
+    const backendMsg = err?.response?.data?.error || err?.message || ''
+    const friendlyErrors = {
+      'Supply not found': 'This supply no longer exists. Please refresh the page.',
+      'Supply is no longer active': 'This supply has been deactivated and cannot be requested.',
+      'Insufficient stock': backendMsg // includes available count
+    }
+
+    const knownError = Object.keys(friendlyErrors).find((k) => backendMsg.startsWith(k))
+    requestError.value = knownError
+      ? friendlyErrors[knownError]
+      : backendMsg || 'Failed to submit request. Please try again.'
+
+    console.error('❌ submitRequest error:', err)
+  } finally {
+    submittingRequest.value = false
+  }
+}
+
+// ─── ADD / EDIT DIALOG ───────────────────────────────────
 const addEditDialog = ref(false)
 const editMode = ref(false)
-const supplyFormValid = ref(false)
 const savingSupply = ref(false)
 const supplyForm = reactive({
   id: null,
@@ -1182,9 +1086,9 @@ const supplyForm = reactive({
   location: '',
   supplier: ''
 })
+
 function openAddSupplyDialog() {
   editMode.value = false
-
   Object.assign(supplyForm, {
     id: null,
     name: '',
@@ -1199,111 +1103,14 @@ function openAddSupplyDialog() {
     location: '',
     supplier: ''
   })
-
-  // force next tick so dialog sees fresh state
   addEditDialog.value = false
   requestAnimationFrame(() => {
     addEditDialog.value = true
   })
 }
 
-async function saveSupply(form) {
-  try {
-    savingSupply.value = true
-
-    console.log('🚀 Saving supply...', form)
-
-    if (!form) {
-      console.warn('⚠️ No form data received')
-      return
-    }
-
-    // ─────────────────────────────
-    // CLEAN PAYLOAD (ONLY WHAT BACKEND NEEDS)
-    // ─────────────────────────────
-    const payload = {
-      name: form.name,
-      description: form.description,
-      sku: form.sku,
-      category_id: form.category_id,
-      supplier_id: form.supplier || null,
-      unit: form.unit,
-      unit_price: form.price,
-      current_stock: form.stock,
-      max_stock: form.maxStock,
-      reorder_level: form.reorderLevel,
-      storage_location: form.location
-    }
-
-    console.log('📦 Payload ready:', payload)
-
-    const isEdit = !!form.id
-
-    const response = isEdit
-      ? await ApiService.put('/supplies-catalogue', {
-          id: form.id,
-          ...payload
-        })
-      : await ApiService.post('/supplies-catalogue', payload)
-
-    console.log('✅ Save success:', response)
-
-    addEditDialog.value = false
-    await fetchSupplies?.()
-  } catch (err) {
-    console.error('❌ Save failed:', err?.response?.data || err.message)
-  } finally {
-    savingSupply.value = false
-  }
-}
-watch(
-  () => supplyForm.category_id,
-  (val) => {
-    console.log('Selected category ID:', val)
-  }
-)
-
-const deleteDialog = ref(false)
-const supplyToDelete = ref(null)
-
-const actionsMenu = reactive({ show: false, x: 0, y: 0, supply: null })
-
-// ─── SNACKBAR ────────────────────────────────────────────
-const snackbar = reactive({ show: false, text: '', color: 'success', icon: 'mdi-check-circle' })
-function showSnack(text, color = 'success', icon = 'mdi-check-circle') {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.icon = icon
-  snackbar.show = true
-}
-
-// ─── DIALOG OPENERS ──────────────────────────────────────
-function openDetailDialog(supply) {
-  selectedSupply.value = supply
-  detailDialog.value = true
-}
-
-function openRequestDialog(supply) {
-  requestSupply.value = supply
-  requestForm.requesterName = ''
-  requestForm.department = ''
-  requestForm.quantity = 1
-  requestForm.priority = 'Normal'
-  requestForm.neededBy = ''
-  requestForm.reason = ''
-  requestTotal.value = supply.price
-  requestDialog.value = true
-}
-
-// function openEditDialog(supply) {
-//   editMode.value = true
-//   Object.assign(supplyForm, { ...supply })
-//   addEditDialog.value = true
-// }
-
 function openEditDialog(item) {
   editMode.value = true
-
   Object.assign(supplyForm, {
     id: item.id,
     name: item.name,
@@ -1318,19 +1125,78 @@ function openEditDialog(item) {
     location: item.storage_location,
     supplier: item.supplier_id
   })
-
   addEditDialog.value = true
 }
 
-function handleDetailRequest() {
-  openRequestDialog(selectedSupply.value)
-  detailDialog.value = false
+async function saveSupply(form) {
+  if (!form) return
+  savingSupply.value = true
+  try {
+    const payload = {
+      name: form.name,
+      description: form.description,
+      sku: form.sku,
+      category_id: form.category_id,
+      supplier_id: form.supplier || null,
+      unit: form.unit,
+      unit_price: form.price,
+      current_stock: form.stock,
+      max_stock: form.maxStock,
+      reorder_level: form.reorderLevel,
+      storage_location: form.location
+    }
+
+    const isEdit = !!form.id
+    isEdit
+      ? await ApiService.put('/supplies-catalogue', { id: form.id, ...payload })
+      : await ApiService.post('/supplies-catalogue', payload)
+
+    addEditDialog.value = false
+    await fetchSupplies()
+    showSnack(isEdit ? 'Supply updated.' : 'Supply added.', 'success', 'mdi-check-circle')
+  } catch (err) {
+    console.error('❌ Save failed:', err?.response?.data || err.message)
+    showSnack('Failed to save supply.', 'error', 'mdi-alert-circle-outline')
+  } finally {
+    savingSupply.value = false
+  }
 }
 
-function handleDetailEdit() {
-  openEditDialog(selectedSupply.value)
-  detailDialog.value = false
+watch(
+  () => supplyForm.category_id,
+  (val) => {
+    console.log('Selected category ID:', val)
+  }
+)
+
+// ─── DELETE ──────────────────────────────────────────────
+const deleteDialog = ref(false)
+const deletingSupply = ref(false)
+const supplyToDelete = ref(null)
+
+function confirmDelete(supply) {
+  supplyToDelete.value = supply
+  deleteDialog.value = true
 }
+
+async function deleteSupply() {
+  if (!supplyToDelete.value) return
+  deletingSupply.value = true
+  try {
+    await ApiService.delete(`/supplies-catalogue?id=${supplyToDelete.value.id}`)
+    supplies.value = supplies.value.filter((s) => s.id !== supplyToDelete.value.id)
+    deleteDialog.value = false
+    showSnack(`${supplyToDelete.value.name} removed.`, 'error', 'mdi-delete-circle')
+  } catch (err) {
+    showSnack('Failed to delete supply.', 'error', 'mdi-alert-circle-outline')
+    console.error('❌ deleteSupply error:', err)
+  } finally {
+    deletingSupply.value = false
+  }
+}
+
+// ─── ACTIONS MENU ────────────────────────────────────────
+const actionsMenu = reactive({ show: false, x: 0, y: 0, supply: null })
 
 function openActionsMenu(event, supply) {
   actionsMenu.x = event.clientX
@@ -1339,30 +1205,14 @@ function openActionsMenu(event, supply) {
   actionsMenu.show = true
 }
 
-function confirmDelete(supply) {
-  supplyToDelete.value = supply
-  deleteDialog.value = true
-}
+// ─── SNACKBAR ────────────────────────────────────────────
+const snackbar = reactive({ show: false, text: '', color: 'success', icon: 'mdi-check-circle' })
 
-// ─── ACTIONS ─────────────────────────────────────────────
-async function submitRequest() {
-  submittingRequest.value = true
-  await new Promise((r) => setTimeout(r, 1500))
-  submittingRequest.value = false
-  requestDialog.value = false
-  showSnack(
-    `Request for ${requestSupply.value.name} submitted! Email notification sent.`,
-    'success',
-    'mdi-email-check'
-  )
-  const s = supplies.value.find((x) => x.id === requestSupply.value.id)
-  if (s) s.requests++
-}
-
-function deleteSupply() {
-  supplies.value = supplies.value.filter((s) => s.id !== supplyToDelete.value.id)
-  deleteDialog.value = false
-  showSnack(`${supplyToDelete.value.name} removed.`, 'error', 'mdi-delete-circle')
+function showSnack(text, color = 'success', icon = 'mdi-check-circle') {
+  snackbar.text = text
+  snackbar.color = color
+  snackbar.icon = icon
+  snackbar.show = true
 }
 </script>
 
