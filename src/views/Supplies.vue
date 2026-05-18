@@ -63,7 +63,7 @@
             style="min-width: 200px; max-width: 340px"
             bg-color="white"
           />
-          <v-select
+          <!-- <v-select
             v-model="selectedCategory"
             :items="categoryOptions"
             label="Category"
@@ -74,7 +74,7 @@
             class="filter-select"
             style="min-width: 160px; max-width: 200px"
             bg-color="white"
-          />
+          /> -->
           <v-select
             v-model="selectedStatus"
             :items="statusOptions"
