@@ -1,8 +1,12 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
+import { useToast } from 'vue-toastification'
 
 import { useAuthStore } from '@/stores/auth'
+
+
+const toast = useToast();
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -32,14 +36,17 @@ const submit = async () => {
   try {
     const data = await auth.login({ email, password })
 
+
     console.log('✅ User:', data.user)
     console.log('✅ Session:', data.session)
 
     router.push('/dashboard')
   } catch (err) {
     console.error('❌ Login error:', err.message)
+    toast.error('invalid email or password');
   } finally {
     loading.value = false
+    
   }
 }
 </script>
@@ -132,6 +139,7 @@ const submit = async () => {
                 rounded="lg"
                 color="#0B1F3A"
                 :loading="loading"
+                :disabled="!form.email || !form.password"
                 class="text-white"
                 @click="submit"
               >

@@ -173,6 +173,7 @@ const submitPage = async () => {
                 color="#0B1F3A"
                 class="text-white"
                 :loading="loading"
+                :disabled="!form.email || !form.password"
                 @click="submitPage"
               >
                 Sign Up
