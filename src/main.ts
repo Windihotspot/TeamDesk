@@ -22,6 +22,8 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSliders } from '@fortawesome/free-solid-svg-icons'
+import Toast from 'vue-toastification';
+import 'vue-toastification/dist/index.css';
 
 import { faUser, faHome, faCheck } from '@fortawesome/free-solid-svg-icons'
 let vuetify = createVuetify({
@@ -45,6 +47,7 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.use(vuetify)
+app.use(Toast);
 app.use(VueApexCharts)
 app.use(ElementPlus);
 app.component('font-awesome-icon', FontAwesomeIcon)
