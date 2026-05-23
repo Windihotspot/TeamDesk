@@ -249,7 +249,6 @@
                       color="error"
                       variant="text"
                       rounded="lg"
-                      :disabled="!canDelete(item)"
                       @click="confirmDelete(item)"
                     />
                   </template>
@@ -362,7 +361,6 @@
                     color="error"
                     variant="text"
                     rounded="lg"
-                    :disabled="!canDelete(req)"
                     @click="confirmDelete(req)"
                   />
                 </div>
@@ -651,13 +649,13 @@
                   </p>
                 </div>
               </div>
-              <div class="sr-info-item">
+              <!-- <div class="sr-info-item">
                 <v-icon size="15" color="#0f4c81">mdi-account-check-outline</v-icon>
                 <div>
                   <p class="sr-info-lbl">Approver</p>
                   <p class="sr-info-val">{{ selectedRequest.approver_name || 'Not assigned' }}</p>
                 </div>
-              </div>
+              </div> -->
               <div class="sr-info-item">
                 <v-icon size="15" color="#0f4c81">mdi-office-building-outline</v-icon>
                 <div>

@@ -9,6 +9,7 @@ import Supplies from '@/views/Supplies.vue'
 import Profile from '@/views/Profile.vue'
 import SuppliersPage from '@/views/SuppliersPage.vue'
 import SuppliesRequests from '@/views/SuppliesRequests.vue'
+import SuppliesApproval from '@/views/SuppliesApproval.vue'
 
 // import LoginForm from '@/views/Auth/LoginForm.vue'
 
@@ -66,6 +67,11 @@ const router = createRouter({
       path: '/supplies-requests',
       name: 'supplies-requests',
       component: SuppliesRequests
+    },
+    {
+      path: '/supplies-approvals',
+      name: 'supplies-approvals',
+      component: SuppliesApproval
     }
   ]
 })
