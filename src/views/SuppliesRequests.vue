@@ -30,7 +30,7 @@
         </div>
 
         <!-- Stats -->
-        <div class="sr-stats mt-5 grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="sr-stats mt-5 grid grid-cols-2 md:grid-cols-6 gap-3">
           <div v-for="s in summaryStats" :key="s.label" class="sr-stat-card">
             <div class="sr-stat-icon" :style="{ background: s.bg }">
               <v-icon :color="s.color" size="18">{{ s.icon }}</v-icon>
@@ -140,10 +140,6 @@
             hover
             @click:row="(_, row) => openDetailDialog(row.item)"
           >
-            <template #item.request_number="{ item }">
-              <span class="sr-request-num">#{{ item.request_number }}</span>
-            </template>
-
             <template #item.supply_name="{ item }">
               <div class="flex items-center gap-2 py-1">
                 <div class="sr-tbl-icon" :style="{ background: '#e8f0fb' }">
@@ -151,9 +147,9 @@
                 </div>
                 <div>
                   <p class="font-semibold text-sm leading-tight">{{ item.supply_name }}</p>
-                  <p class="text-xs text-grey-darken-1">
+                  <!-- <p class="text-xs text-grey-darken-1">
                     {{ item.quantity_requested }} {{ item.unit }}
-                  </p>
+                  </p> -->
                 </div>
               </div>
             </template>
@@ -194,7 +190,7 @@
 
             <template #item.total_amount="{ item }">
               <span class="font-semibold" style="color: #0f4c81">
-                ₦{{ Number(item.total_amount || 0).toLocaleString() }}
+                ₦{{ Number(item.estimated_total || 0).toLocaleString() }}
               </span>
             </template>
 
@@ -233,7 +229,7 @@
                 </v-tooltip>
                 <v-tooltip text="Copy link" location="top">
                   <template #activator="{ props }">
-                    <v-btn
+                    <!-- <v-btn
                       v-bind="props"
                       icon="mdi-link-variant"
                       size="x-small"
@@ -241,7 +237,7 @@
                       variant="text"
                       rounded="lg"
                       @click="copyLink(item)"
-                    />
+                    /> -->
                   </template>
                 </v-tooltip>
                 <v-tooltip text="Delete" location="top">
@@ -300,7 +296,6 @@
 
             <div class="sr-card-body">
               <div class="flex items-start justify-between mb-3">
-                <span class="sr-request-num">#{{ req.request_number }}</span>
                 <v-chip
                   size="x-small"
                   :color="statusColor(req.status)"
@@ -317,7 +312,6 @@
                 </div>
                 <div>
                   <p class="font-semibold text-sm leading-tight">{{ req.supply_name }}</p>
-                  <p class="text-xs text-grey">{{ req.quantity_requested }} {{ req.unit }}</p>
                 </div>
               </div>
 
@@ -341,7 +335,9 @@
               </div>
 
               <div class="sr-card-footer">
-                <span class="sr-amount">₦{{ Number(req.total_amount || 0).toLocaleString() }}</span>
+                <span class="sr-amount"
+                  >₦{{ Number(req.estimated_total || 0).toLocaleString() }}</span
+                >
                 <div class="flex gap-1" @click.stop>
                   <v-btn
                     icon="mdi-pencil-outline"
@@ -352,14 +348,14 @@
                     :disabled="!canEdit(req)"
                     @click="openEditDialog(req)"
                   />
-                  <v-btn
+                  <!-- <v-btn
                     icon="mdi-link-variant"
                     size="x-small"
                     color="grey"
                     variant="text"
                     rounded="lg"
                     @click="copyLink(req)"
-                  />
+                  /> -->
                   <v-btn
                     icon="mdi-delete-outline"
                     size="x-small"
@@ -400,7 +396,7 @@
           <div class="sr-dialog-header">
             <div class="flex items-center justify-between">
               <h3 class="text-white font-bold text-lg">
-                {{ editMode ? `Edit Request #${formFields.request_number}` : 'New Supply Request' }}
+                {{ editMode ? `Edit Request:  ${formFields.supply_name}` : 'New Supply Request' }}
               </h3>
               <v-btn
                 icon="mdi-close"
@@ -577,7 +573,6 @@
                 <p class="text-white text-xs opacity-60 uppercase tracking-widest font-semibold">
                   Supply Request
                 </p>
-                <h2 class="text-white text-xl font-bold">#{{ selectedRequest.request_number }}</h2>
                 <p class="text-white text-sm opacity-70 mt-0.5">
                   {{ selectedRequest.supply_name }}
                 </p>
@@ -602,13 +597,13 @@
               </div>
               <div class="sr-detail-stat">
                 <p class="sr-detail-stat-val">
-                  ₦{{ Number(selectedRequest.unit_price_at_request || 0).toLocaleString() }}
+                  ₦{{ Number(selectedRequest.unit_price || 0).toLocaleString() }}
                 </p>
                 <p class="sr-detail-stat-lbl">Unit Price</p>
               </div>
               <div class="sr-detail-stat">
                 <p class="sr-detail-stat-val">
-                  ₦{{ Number(selectedRequest.total_amount || 0).toLocaleString() }}
+                  ₦{{ Number(selectedRequest.estimated_total || 0).toLocaleString() }}
                 </p>
                 <p class="sr-detail-stat-lbl">Total</p>
               </div>
@@ -683,25 +678,41 @@
             </div>
 
             <!-- Comments -->
+            <!-- Comments -->
             <div class="mt-5">
               <p class="text-sm font-bold mb-3" style="color: #0f4c81">Comments</p>
-              <div v-if="detailComments.length" class="space-y-3">
-                <div v-for="c in detailComments" :key="c.id" class="sr-comment">
-                  <v-avatar size="28" color="#e8f0fb">
-                    <span class="text-xs font-bold" style="color: #0f4c81">
-                      {{ initials(`${c.users?.first_name} ${c.users?.last_name}`) }}
-                    </span>
-                  </v-avatar>
+
+              <!-- Skeleton -->
+              <div v-if="loadingComments" class="space-y-3">
+                <div v-for="i in 3" :key="i" class="flex gap-3 items-start">
                   <div class="flex-1">
-                    <p class="text-xs font-semibold">
-                      {{ c.users?.first_name }} {{ c.users?.last_name }}
-                    </p>
-                    <p class="text-sm mt-0.5">{{ c.content }}</p>
-                    <p class="text-xs text-grey mt-0.5">{{ formatDate(c.created_at) }}</p>
+                    <v-skeleton-loader type="text" width="30%" class="mb-1" />
+                    <v-skeleton-loader type="text" width="80%" />
+                    <v-skeleton-loader type="text" width="20%" class="mt-1" />
                   </div>
                 </div>
               </div>
-              <p v-else class="text-sm text-grey">No comments yet.</p>
+
+              <!-- Loaded -->
+              <template v-else>
+                <div v-if="detailComments.length" class="space-y-3">
+                  <div v-for="c in detailComments" :key="c.id" class="sr-comment">
+                    <v-avatar size="28" color="#e8f0fb">
+                      <span class="text-xs font-bold" style="color: #0f4c81">
+                        {{ initials(`${c.users?.first_name} ${c.users?.last_name}`) }}
+                      </span>
+                    </v-avatar>
+                    <div class="flex-1">
+                      <p class="text-xs font-semibold">
+                        {{ c.users?.first_name }} {{ c.users?.last_name }}
+                      </p>
+                      <p class="text-sm mt-0.5">{{ c.content }}</p>
+                      <p class="text-xs text-grey mt-0.5">{{ formatDate(c.created_at) }}</p>
+                    </div>
+                  </div>
+                </div>
+                <p v-else class="text-sm text-grey">No comments yet.</p>
+              </template>
 
               <!-- Add comment -->
               <div class="flex gap-2 mt-3">
@@ -729,14 +740,14 @@
           </v-card-text>
 
           <v-card-actions class="pa-5 pt-0 gap-2 flex-wrap">
-            <v-btn
+            <!-- <v-btn
               variant="outlined"
               color="grey"
               rounded="lg"
               prepend-icon="mdi-link-variant"
               @click="copyLink(selectedRequest)"
               >Copy Link</v-btn
-            >
+            > -->
             <v-spacer />
             <v-btn
               v-if="canEdit(selectedRequest)"
@@ -763,17 +774,33 @@
       <!-- ════════════════════════════════════════
            DELETE / CANCEL CONFIRM
       ════════════════════════════════════════ -->
-      <v-dialog v-model="deleteDialog" max-width="400">
+      <v-dialog v-model="deleteDialog" max-width="500">
         <v-card rounded="xl" elevation="0" class="pa-2">
           <v-card-text class="text-center pa-6">
             <div class="sr-delete-icon mx-auto mb-4">
-              <v-icon color="error" size="28">mdi-alert-circle-outline</v-icon>
+              <v-icon
+                :color="requestToDelete?._deleteAction === 'delete' ? 'error' : 'warning'"
+                size="28"
+              >
+                mdi-alert-circle-outline
+              </v-icon>
             </div>
-            <h3 class="font-bold text-lg mb-2">Cancel this Request?</h3>
+            <h3 class="font-bold text-lg mb-2">
+              {{
+                requestToDelete?._deleteAction === 'delete'
+                  ? 'Delete this Request?'
+                  : 'Cancel this Request?'
+              }}
+            </h3>
             <p class="text-grey text-sm">
               Request <strong>#{{ requestToDelete?.request_number }}</strong> for
-              <strong>{{ requestToDelete?.supply_name }}</strong> will be cancelled. This cannot be
-              undone.
+              <strong>{{ requestToDelete?.supply_name }}</strong>
+              {{
+                requestToDelete?._deleteAction === 'delete'
+                  ? 'will be permanently deleted.'
+                  : 'will be cancelled.'
+              }}
+              This cannot be undone.
             </p>
           </v-card-text>
           <v-card-actions class="pb-4 px-4 gap-2">
@@ -787,18 +814,27 @@
               >Keep</v-btn
             >
             <v-btn
+              color="warning"
+              rounded="lg"
+              class="flex-1"
+              elevation="0"
+              variant="tonal"
+              :loading="deletingRequest"
+              @click="cancelRequest"
+              >Cancel Request</v-btn
+            >
+            <v-btn
               color="error"
               rounded="lg"
               class="flex-1"
               elevation="0"
               :loading="deletingRequest"
-              @click="deleteRequest"
-              >Cancel Request</v-btn
+              @click="hardDeleteRequest"
+              >Delete</v-btn
             >
           </v-card-actions>
         </v-card>
       </v-dialog>
-
       <!-- Snackbar -->
       <v-snackbar
         v-model="snackbar.show"
@@ -917,8 +953,8 @@ const summaryStats = computed(() => {
   const pending = all.filter((r) => r.status === 'pending_approval').length
   const approved = all.filter((r) => r.status === 'approved').length
   const fulfilled = all.filter((r) => r.status === 'fulfilled').length
-  const rejected = all.filter((r) => ['rejected', 'cancelled'].includes(r.status)).length
-
+  const rejected = all.filter((r) => r.status === 'rejected').length
+  const cancelled = all.filter((r) => r.status === 'cancelled').length
   return [
     {
       label: 'Total',
@@ -948,6 +984,7 @@ const summaryStats = computed(() => {
       color: '#0284c7',
       bg: '#e0f2fe'
     },
+    { label: 'Cancelled', value: cancelled, icon: 'mdi-cancel', color: '#64748b', bg: '#f1f5f9' },
     {
       label: 'Rejected',
       value: rejected,
@@ -960,7 +997,6 @@ const summaryStats = computed(() => {
 
 // ─── TABLE HEADERS ───────────────────────────────────────
 const tableHeaders = [
-  { title: '#', key: 'request_number', sortable: true, width: '100px' },
   { title: 'Supply', key: 'supply_name', sortable: true },
   { title: 'Requester', key: 'requester_name', sortable: true },
   { title: 'Status', key: 'status', sortable: true },
@@ -1020,7 +1056,7 @@ function statusColor(s) {
     approved: 'success',
     fulfilled: 'info',
     rejected: 'error',
-    cancelled: 'grey',
+    cancelled: '#e03c3c',
     draft: 'grey'
   }
   return map[s] || 'grey'
@@ -1031,7 +1067,7 @@ function statusHex(s) {
     approved: '#10b981',
     fulfilled: '#0ea5e9',
     rejected: '#ef4444',
-    cancelled: '#94a3b8',
+    cancelled: '#e03c3c',
     draft: '#cbd5e1'
   }
   return map[s] || '#cbd5e1'
@@ -1088,6 +1124,7 @@ function clearAllFilters() {
 // ─── COPY LINK ───────────────────────────────────────────
 async function copyLink(req) {
   const url = `${BASE_URL}/${req.id}`
+  console.log('copy link url:', url)
   try {
     await navigator.clipboard.writeText(url)
     showSnack('Link copied to clipboard!', 'success', 'mdi-link-variant')
@@ -1117,10 +1154,12 @@ function openCreateDialog() {
 
 // ─── EDIT DIALOG ─────────────────────────────────────────
 function openEditDialog(req) {
+  console.log('edit request:', req)
   editMode.value = true
   Object.assign(formFields, {
     id: req.id,
     request_number: req.request_number,
+    supply_name: req.supply_name,
     supply_id: req.supply_id,
     quantity_requested: req.quantity_requested,
     priority: req.priority,
@@ -1129,13 +1168,14 @@ function openEditDialog(req) {
     reason: req.reason || ''
   })
   selectedSupply.value = supplies.value.find((s) => s.id === req.supply_id) || null
-  estimatedTotal.value = Number(req.total_amount || 0)
+  estimatedTotal.value = Number(req.estimated_total || 0)
   formError.value = ''
   formDialog.value = true
 }
 
 function openEditFromDetail() {
   openEditDialog(selectedRequest.value)
+  console.log('selected request:', selectedRequest.value)
   detailDialog.value = false
 }
 
@@ -1187,13 +1227,15 @@ async function submitForm() {
         ...payload
       })
       showSnack(
-        `Request #${formFields.request_number} updated.`,
+        `Request #${formFields.supply_name} updated.`,
         'success',
         'mdi-check-circle-outline'
       )
     } else {
+      console.log('supplies requests payload:', payload)
       const res = await ApiService.post('/supplies-requests', payload)
-      showSnack(`Request #${res.request_number} submitted!`, 'success', 'mdi-check-circle-outline')
+      console.log('supplies requests response:', res)
+      showSnack('Request submitted!', 'success', 'mdi-check-circle-outline')
     }
 
     formDialog.value = false
@@ -1206,21 +1248,24 @@ async function submitForm() {
     savingForm.value = false
   }
 }
-
+const loadingComments = ref(false)
 // ─── DETAIL DIALOG ───────────────────────────────────────
 async function openDetailDialog(req) {
+  console.log('details dialog:', req)
   selectedRequest.value = req
   detailComments.value = []
   newComment.value = ''
   detailDialog.value = true
-
+  loadingComments.value = true
   // Fetch full details + comments from edge function
   try {
     const full = await ApiService.get(`/supplies-requests?action=get&id=${req.id}`)
-    selectedRequest.value = full
-    detailComments.value = full.comments || []
+    console.log('supplie request full:', full)
+    detailComments.value = full.data.comments || []
   } catch (err) {
     console.warn('Could not fetch full details:', err)
+  } finally {
+    loadingComments.value = false
   }
 }
 
@@ -1234,6 +1279,7 @@ async function addComment() {
       request_id: selectedRequest.value.id,
       content: newComment.value.trim()
     })
+    console.log('comment response:', comment)
     detailComments.value.push(comment)
     newComment.value = ''
   } catch (err) {
@@ -1242,10 +1288,19 @@ async function addComment() {
     addingComment.value = false
   }
 }
+function cancelRequest() {
+  requestToDelete.value._deleteAction = 'cancel'
+  deleteRequest()
+}
 
+function hardDeleteRequest() {
+  requestToDelete.value._deleteAction = 'delete'
+  deleteRequest()
+}
 // ─── DELETE / CANCEL ─────────────────────────────────────
-function confirmDelete(req) {
+function confirmDelete(req, action = 'cancel') {
   requestToDelete.value = req
+  requestToDelete.value._deleteAction = action
   deleteDialog.value = true
 }
 function confirmDeleteFromDetail() {
@@ -1257,19 +1312,20 @@ async function deleteRequest() {
   if (!requestToDelete.value) return
   deletingRequest.value = true
   try {
-    await ApiService.patch('/supplies-requests', {
-      action: 'cancel',
-      id: requestToDelete.value.id
-    })
+    const action = requestToDelete.value._deleteAction || 'cancel'
+    const payload = { action, id: requestToDelete.value.id }
+    await ApiService.patch('/supplies-requests', payload)
     showSnack(
-      `Request #${requestToDelete.value.request_number} cancelled.`,
-      'warning',
-      'mdi-cancel'
+      action === 'delete'
+        ? `Request #${requestToDelete.value.supply_name} deleted.`
+        : `Request #${requestToDelete.value.supply_name} cancelled.`,
+      action === 'delete' ? 'error' : 'warning',
+      action === 'delete' ? 'mdi-delete-outline' : 'mdi-cancel'
     )
     deleteDialog.value = false
     await fetchRequests()
   } catch (err) {
-    const msg = err?.response?.data?.error || 'Failed to cancel request.'
+    const msg = err?.response?.data?.error || 'Failed to process request.'
     showSnack(msg, 'error', 'mdi-alert-circle-outline')
   } finally {
     deletingRequest.value = false
@@ -1287,6 +1343,9 @@ function showSnack(text, color = 'success', icon = 'mdi-check-circle') {
 
 <!-- ── SCOPED STYLES ── -->
 <style scoped>
+.v-btn {
+  text-transform: none;
+}
 .sr-page {
   position: relative;
   min-height: 100vh;

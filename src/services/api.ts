@@ -59,6 +59,9 @@ const ApiService = {
   put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     return apiClient.put(url, data, config).then((res) => res.data)
   },
+  patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return apiClient.patch(url, data, config).then((res) => res.data)
+  },
 
   delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
     return apiClient.delete(url, config).then((res) => res.data)
