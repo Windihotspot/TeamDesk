@@ -94,6 +94,12 @@ const menuItems = [
     route: '/supplies-approvals'
   },
   {
+    nav: 'purchase-orders',
+    label: 'Purchase Orders',
+    icon: 'mdi mdi-package-variant',
+    route: '/purchase-orders'
+  },
+  {
     nav: 'suppliers',
     label: 'Suppliers',
     icon: 'mdi mdi-package-variant',

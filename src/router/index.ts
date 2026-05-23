@@ -10,6 +10,7 @@ import Profile from '@/views/Profile.vue'
 import SuppliersPage from '@/views/SuppliersPage.vue'
 import SuppliesRequests from '@/views/SuppliesRequests.vue'
 import SuppliesApproval from '@/views/SuppliesApproval.vue'
+import PurchaseOrders from '@/views/PurchaseOrders.vue'
 
 // import LoginForm from '@/views/Auth/LoginForm.vue'
 
@@ -72,6 +73,11 @@ const router = createRouter({
       path: '/supplies-approvals',
       name: 'supplies-approvals',
       component: SuppliesApproval
+    },
+    {
+      path: '/purchase-orders',
+      name: 'purchase-orders',
+      component: PurchaseOrders
     }
   ]
 })
