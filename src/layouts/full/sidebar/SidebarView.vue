@@ -110,10 +110,16 @@ const menuItems = [
 
   // Delivery tracking
   {
-    nav: 'supplies-deloveries',
+    nav: 'supplies-deliveries',
     label: 'Supplies Deliveries',
     icon: 'mdi mdi-truck-delivery-outline',
     route: '/supplies-deliveries'
+  },
+  {
+    nav: 'payments',
+    label: 'Payments',
+    icon: 'mdi mdi-cash-multiple',
+    route: '/payments'
   },
 
   // Vendors
