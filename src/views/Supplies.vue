@@ -912,13 +912,6 @@ const stats = computed(() => [
     icon: 'mdi-package-variant-closed-remove',
     color: '#dc2626',
     bg: '#fef2f2'
-  },
-  {
-    label: 'Total Requests',
-    value: supplies.value.reduce((a, s) => a + s.requests, 0),
-    icon: 'mdi-clipboard-list-outline',
-    color: '#15803d',
-    bg: '#f0fdf4'
   }
 ])
 

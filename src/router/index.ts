@@ -11,6 +11,7 @@ import SuppliersPage from '@/views/SuppliersPage.vue'
 import SuppliesRequests from '@/views/SuppliesRequests.vue'
 import SuppliesApproval from '@/views/SuppliesApproval.vue'
 import PurchaseOrders from '@/views/PurchaseOrders.vue'
+import SuppliesDeliveries from '@/views/SuppliesDeliveries.vue'
 
 // import LoginForm from '@/views/Auth/LoginForm.vue'
 
@@ -73,6 +74,11 @@ const router = createRouter({
       path: '/supplies-approvals',
       name: 'supplies-approvals',
       component: SuppliesApproval
+    },
+    {
+      path: '/supplies-deliveries',
+      name: 'supplies-deliveries',
+      component: SuppliesDeliveries
     },
     {
       path: '/purchase-orders',

@@ -75,36 +75,55 @@ const menuItems = [
     icon: 'mdi mdi-format-list-checkbox',
     route: '/tasks'
   },
+
+  // Inventory / stock
   {
     nav: 'supplies',
     label: 'Supplies',
-    icon: 'mdi mdi-package-variant',
+    icon: 'mdi mdi-package-variant-closed',
     route: '/supplies'
   },
+
+  // Requests from staff/users
   {
     nav: 'supplies-requests',
     label: 'Supplies Requests',
-    icon: 'mdi mdi-package-variant',
+    icon: 'mdi mdi-clipboard-text-outline',
     route: '/supplies-requests'
   },
+
+  // Approval workflow
   {
     nav: 'supplies-approvals',
     label: 'Supplies Approvals',
-    icon: 'mdi mdi-package-variant',
+    icon: 'mdi mdi-check-decagram-outline',
     route: '/supplies-approvals'
   },
+
+  // Procurement / vendor orders
   {
     nav: 'purchase-orders',
     label: 'Purchase Orders',
-    icon: 'mdi mdi-package-variant',
+    icon: 'mdi mdi-file-document-outline',
     route: '/purchase-orders'
   },
+
+  // Delivery tracking
+  {
+    nav: 'supplies-deloveries',
+    label: 'Supplies Deliveries',
+    icon: 'mdi mdi-truck-delivery-outline',
+    route: '/supplies-deliveries'
+  },
+
+  // Vendors
   {
     nav: 'suppliers',
     label: 'Suppliers',
-    icon: 'mdi mdi-package-variant',
+    icon: 'mdi mdi-domain',
     route: '/suppliers'
   },
+
   {
     nav: 'attendance',
     label: 'Attendance',

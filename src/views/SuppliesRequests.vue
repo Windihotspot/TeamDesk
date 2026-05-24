@@ -1266,6 +1266,15 @@ async function openDetailDialog(req) {
     loadingComments.value = false
   }
 }
+const refreshSupplies = async () => {
+  try {
+    const full = await ApiService.get(`/supplies-requests?action=get&id=${req.id}`)
+    console.log('supplie request full:', full)
+    detailComments.value = full.data.comments || []
+  } catch (err) {
+    console.warn('Could not fetch full details:', err)
+  }
+}
 
 // ─── ADD COMMENT ─────────────────────────────────────────
 async function addComment() {
@@ -1277,8 +1286,8 @@ async function addComment() {
       request_id: selectedRequest.value.id,
       content: newComment.value.trim()
     })
+    refreshSupplies()
     console.log('comment response:', comment)
-    detailComments.value.push(comment)
     newComment.value = ''
   } catch (err) {
     showSnack('Failed to add comment.', 'error', 'mdi-alert-circle-outline')
