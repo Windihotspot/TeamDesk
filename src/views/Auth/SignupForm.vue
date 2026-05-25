@@ -1,7 +1,10 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { authService } from '@/services/authService.js'
+import { useRouter } from "vue-router";
 
+
+const router = useRouter();
 const show = ref(false)
 const authMode = ref('signup') // toggle state
 
@@ -24,7 +27,12 @@ const submitPage = async () => {
   try {
     const data = await authService.signup({ ...form })
     console.log('✅ Success:', data)
-    form.value = { firstName: '', lastName: '', email: '', teamName: '', password: '' } //reset form
+    form.firstName = ''
+    form.lastName = ''
+    form.email = ''
+    form.teamName = ''
+    form.password = ''
+    router.push("/");
   } catch (err) {
     console.error('Error:', err)
   } finally {
@@ -115,8 +123,8 @@ const submitPage = async () => {
                 variant="outlined"
                 density="comfortable"
                 :rules="[
-                  (v) => !!v || 'TeamName is required',
-                  (v) => /.+@.+\..+/.test(v) || 'TeamName must be valid'
+                  (v) => !!v || 'TeamName is required'
+                  
                 ]"
                 rounded-md
               />
@@ -145,7 +153,7 @@ const submitPage = async () => {
                 density="comfortable"
                 :rules="[
                   (v) => !!v || 'Password is required',
-                  (v) => /.+@.+\..+/.test(v) || 'Password must be valid'
+                  (v) => v.length >= 6 || 'Password must be at least 6 characters'
                 ]"
                 rounded-md
               />
@@ -159,7 +167,7 @@ const submitPage = async () => {
                 density="comfortable"
                 :rules="[
                   (v) => !!v || 'Password is required',
-                  (v) => /.+@.+\..+/.test(v) || 'Password must be valid'
+                  (v) => v.length >= 6 || 'Password must be at least 6 characters'
                 ]"
                 rounded-md
               />
