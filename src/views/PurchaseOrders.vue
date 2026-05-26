@@ -577,6 +577,16 @@
                 >Mark Fulfilled</v-btn
               >
             </template>
+            <v-btn
+              color="#0f4c81"
+              variant="tonal"
+              rounded="lg"
+              prepend-icon="mdi-file-pdf-box"
+              :loading="loadingPDF"
+              @click="downloadPO(selectedPO)"
+            >
+              Export PDF
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -639,6 +649,8 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import ApiService from '@/services/api'
 import { supabase } from '@/services/supabase.js'
+import { usePOExport } from '@/composables/Usepoexport'
+const { downloadPO, loadingPDF } = usePOExport()
 
 // ─── STATE ───────────────────────────────────────────────
 const loading = ref(false)
@@ -760,6 +772,7 @@ async function fetchPOs() {
   try {
     const res = await ApiService.get('/purchase-orders?limit=100')
     purchaseOrders.value = res.data.purchase_orders || []
+    console.log("PO'S:", purchaseOrders.value)
   } catch (err) {
     console.error('fetchPOs error:', err)
     showSnack('Failed to load purchase orders.', 'error', 'mdi-alert-circle-outline')
