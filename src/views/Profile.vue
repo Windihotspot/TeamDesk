@@ -1,6 +1,6 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-import { ref } from 'vue'
+import { ref, onBeforeUnmount  } from 'vue'
 import { onMounted } from 'vue'
 // import { useProfile } from '@/composables/useProfile.js'
 import { supabase } from '@/services/supabase.js'
@@ -41,6 +41,78 @@ const fetchProfile = async () => {
 onMounted(() => {
   fetchProfile()
 })
+
+const showEdit = ref(false)
+
+const openEditProfile = () => {
+  showEdit.value = true
+}
+
+const profile = ref({
+  first_name: '',
+  last_name: '',
+  email: '',
+  bio: ''
+})
+
+
+
+const cameraDialog = ref(false);
+const video = ref(null);
+const canvas = ref(null);
+const imageUrl = ref('')
+
+let stream = null;
+
+// Open Camera
+const startCamera = async () => {
+  cameraDialog.value = true;
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user", // front camera
+      },
+      audio: false,
+    });
+
+    video.value.srcObject = stream;
+  } catch (error) {
+    console.error("Camera access denied:", error);
+  }
+};
+
+// Take Photo
+const capturePhoto = () => {
+  const context = canvas.value.getContext("2d");
+
+  canvas.value.width = video.value.videoWidth;
+  canvas.value.height = video.value.videoHeight;
+
+  context.drawImage(
+    video.value,
+    0,
+    0,
+    canvas.value.width,
+    canvas.value.height
+  );
+
+  imageUrl.value = canvas.value.toDataURL("image/png");
+
+  stopCamera();
+  cameraDialog.value = false;
+};
+
+// Stop Camera
+const stopCamera = () => {
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+};
+
+onBeforeUnmount(() => {
+  stopCamera();
+});
 </script>
 
 <template>
@@ -79,51 +151,124 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- Info -->
-
-          <div v-if="profiles.length" class="flex items-center gap-4">
-            <div v-for="profile in profiles" :key="profile.id">
-              <h1>Welcome, {{ profile.first_name }} {{ profile.last_name }}!</h1>
+          <!-- Profile Info -->
+          <div class="flex flex-col justify-center">
+            <div v-if="profiles.length">
+              <div v-for="profile in profiles" :key="profile.id">
+                <h1 class="text-2xl font-semibold text-gray-800">
+                  Welcome, {{ profile.first_name }} {{ profile.last_name }}!
+                </h1>
+              </div>
             </div>
-          </div>
 
-          <!-- Out of office -->
-          <div class="flex items-center gap-2 mt-2 text-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <!-- Button -->
+            <button
+              @click="openEditProfile"
+              class="mt-4 w-fit bg-[#0f4c81] hover:bg-[#0c3d67] text-white px-4 py-2 rounded-lg transition-all duration-300"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z"
-              />
-            </svg>
-
-            <span>Set out of office</span>
+              Edit profile
+            </button>
           </div>
-
-          <!-- Actions -->
-          <div class="flex flex-wrap gap-5 mt-5 text-lg">
-            <button class="hover:text-gray-700 transition">+ Add job title</button>
-
-            <button class="hover:text-gray-700 transition">+ Add team or dept.</button>
-
-            <button class="hover:text-gray-700 transition">+ Add about me</button>
-          </div>
-
-          <!-- Button -->
-          <button
-            class="mt-6 bg-blue-100 text-blue-600 px-5 py-2 rounded-lg hover:bg-blue-200 transition"
-          >
-            Edit profile
-          </button>
         </div>
       </div>
+
+      <!-- popup modal for editprofile-->
+
+      <v-dialog v-model="showEdit" max-width="650" persistent>
+        <v-card class="rounded-xl pa-4">
+          <!-- Header -->
+          <div class="d-flex align-center justify-space-between mb-4">
+            <div>
+              <h2 class="text-h5 font-weight-bold">Settings</h2>
+              <p class="text-grey text-body-2">
+                Update your personal information and profile photo.
+              </p>
+            </div>
+
+            <v-btn icon="mdi-close" variant="text" @click="showEdit = false"></v-btn>
+          </div>
+
+          <v-divider class="mb-6"></v-divider>
+
+          <!-- Profile Image -->
+          <div class="d-flex flex-column align-center mb-6">
+            <v-avatar size="90" class="mb-3">
+              <v-img src="imageUrl"></v-img>
+            </v-avatar>
+
+            <v-btn @click="startCamera" size="small" variant="outlined" prepend-icon="mdi-camera">
+              Upload your Photo
+            </v-btn>
+          </div>
+
+          <!-- Camera Dialog -->
+          <v-dialog v-model="cameraDialog" max-width="600">
+            <v-card class="pa-4 rounded-xl">
+              <div class="d-flex justify-space-between align-center mb-4">
+                <h3 class="text-h6">Take a Photo</h3>
+
+                <v-btn icon="mdi-close" variant="text" @click="cameraDialog = false" />
+              </div>
+
+              <!-- Live Camera -->
+              <video ref="video" autoplay playsinline class="w-100 rounded-lg"></video>
+
+              <canvas ref="canvas" class="d-none"></canvas>
+
+              <v-card-actions class="mt-4">
+                <v-spacer />
+
+                <v-btn color="primary" prepend-icon="mdi-camera" @click="capturePhoto">
+                  Capture
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+
+          <!-- Form -->
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                label="First Name"
+                variant="outlined"
+                density="comfortable"
+                v-model="profile.first_name"
+              />
+            </v-col>
+
+            <v-col cols="12" md="6">
+              <v-text-field
+                label="Last Name"
+                variant="outlined"
+                density="comfortable"
+                v-model="profile.last_name"
+              />
+            </v-col>
+
+            <v-col cols="12">
+              <v-text-field
+                label="Email Address"
+                variant="outlined"
+                density="comfortable"
+                v-model="profile.email"
+              />
+            </v-col>
+
+            <v-col cols="12">
+              <v-textarea label="Bio" variant="outlined" rows="3" auto-grow v-model="profile.bio" />
+            </v-col>
+          </v-row>
+
+          <!-- Actions -->
+          <v-card-actions class="mt-4">
+            <v-spacer />
+
+            <v-btn variant="text" @click="showEdit = false"> Cancel </v-btn>
+
+            <v-btn color="primary" class="px-6"> Save Changes </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <!-- TASKS -->
       <div class="mt-14 border border-gray-200 rounded-2xl overflow-hidden">
