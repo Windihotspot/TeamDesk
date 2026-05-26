@@ -3,192 +3,248 @@ import MainLayout from '@/layouts/full/MainLayout.vue'
 
 import { ref } from 'vue'
 
-const columns = ref([
-  { id: 1, title: 'Recently assigned', color: '#64748b' },
-  { id: 2, title: 'Do today', color: '#ef4444' },
-  { id: 3, title: 'Do next week', color: '#f59e0b' },
-  { id: 4, title: 'Do later', color: '#10b981' }
-])
+// const columns = ref([
+//   { id: 1, title: 'Recently assigned', color: '#64748b' },
+//   { id: 2, title: 'Do today', color: '#ef4444' },
+//   { id: 3, title: 'Do next week', color: '#f59e0b' },
+//   { id: 4, title: 'Do later', color: '#10b981' }
+// ])
 
-const tasks = ref([])
+// const tasks = ref([])
 
-const tasksByColumn = (columnId) => {
-  return tasks.value.filter(t => t.columnId === columnId)
+// const tasksByColumn = (columnId) => {
+//   return tasks.value.filter((t) => t.columnId === columnId)
+// }
+
+// defineEmits(['add-task', 'toggle-complete', 'task-click', 'task-menu'])
+
+const openNewTask = ref(false)
+
+const showNewTask = () => {
+  openNewTask.value = true
 }
-
-
-defineEmits(['add-task', 'toggle-complete', 'task-click', 'task-menu'])
 </script>
 
 <template>
   <MainLayout>
-    <div class="flex gap-4 overflow-x-auto pb-4 p-6 bg-gray-50 min-h-screen">
-      <div
-        v-for="column in columns"
-        :key="column.id"
-        class="flex flex-col flex-shrink-0 w-72 sm:w-80"
-      >
-        <!-- Column header -->
-        <div class="flex items-center gap-2 mb-3 px-1">
-          <span
-            class="w-2.5 h-2.5 rounded-full flex-shrink-0"
-            :style="{ background: column.color }"
-          />
-          <h2 class="text-sm font-semibold text-gray-700">{{ column.title }}</h2>
-          <span class="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
-            {{ tasksByColumn(column.id).length }}
-          </span> 
-          <button
-            @click="$emit('add-task', column.id)"
-            class="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              class="w-4 h-4"
-            >
-              <path d="M7 1v12M1 7h12" />
-            </svg>
-          </button>
+    <div class="h-screen bg-[#f6f7fb] flex flex-col overflow-hidden">
+      <!-- HEADER -->
+      <div class="bg-white border-b px-6 py-5 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Tasks</h1>
+
+          <p class="text-sm text-gray-500 mt-1">Manage your team workflow</p>
         </div>
 
-        <!-- Task cards -->
-        <div class="flex flex-col gap-2.5 flex-1">
-          <div
-            v-for="task in tasksByColumn(column.id)"
-            :key="task.id"
-            class="bg-white rounded-xl border border-gray-100 p-3.5 group hover:shadow-sm hover:border-gray-200 transition-all cursor-pointer"
-            :class="{ 'opacity-60': task.completed }"
-            @click="$emit('task-click', task)"
+        <div class="flex items-center gap-3">
+          <button
+            class="px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
           >
-            <!-- Task name row -->
-            <div class="flex items-start gap-2 mb-2.5">
-              <button
-                class="mt-0.5 w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center flex-shrink-0 transition-colors"
-                :class="
-                  task.completed
-                    ? 'bg-rose-500 border-rose-500'
-                    : 'border-gray-300 hover:border-rose-400'
-                "
-                @click.stop="$emit('toggle-complete', task.id)"
-              >
-                <svg
-                  v-if="task.completed"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  stroke="white"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  class="w-2.5 h-2.5"
-                >
-                  <path d="M1.5 5l2.5 2.5 4.5-4.5" />
-                </svg>
-              </button>
+            Filter
+          </button>
 
-              <p
-                class="flex-1 text-sm leading-snug text-gray-800"
-                :class="{ 'line-through text-gray-400': task.completed }"
-              >
-                {{ task.name }}
+          <button
+            class="px-5 py-2 rounded-xl bg-[#5b2c52] text-white hover:bg-[#4a2242] transition"
+          >
+            + Create Task
+          </button>
+        </div>
+      </div>
+
+      <!-- SEARCH -->
+      <div class="px-6 py-4 bg-white border-b">
+        <div class="bg-[#f3f4f6] rounded-2xl px-4 py-3 flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            class="bg-transparent outline-none w-full text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- BOARD -->
+      <div class="flex-1 overflow-x-auto overflow-y-hidden p-6 flex gap-5">
+        <!-- TODO -->
+        <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
+          <!-- HEADER -->
+          <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+
+              <h2 class="font-semibold text-gray-800">Todo</h2>
+
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 4 </span>
+            </div>
+
+            <button
+              @click="showNewTask"
+              class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
+            >
+              +
+            </button>
+          </div>
+
+          <!-- TASKS -->
+          <div class="px-3 pb-3 flex-1 overflow-y-auto">
+            <!-- EMPTY TASK CARD -->
+            <!-- EMPTY TASK CARD -->
+            <div
+              v-if="openNewTask"
+              class="bg-white rounded-3xl p-4 mb-4 border-2 border-dashed border-gray-200 hover:border-[#5b2c52] transition cursor-pointer"
+            >
+              <!-- TOP -->
+              <div class="flex items-start justify-between">
+                <span class="text-xs px-3 py-1 rounded-full font-medium bg-gray-100 text-gray-400">
+                  Empty
+                </span>
+
+                <button class="text-gray-300 hover:text-gray-500">•••</button>
+              </div>
+
+              <!-- TITLE -->
+              <h3 class="font-semibold text-gray-400 mt-4">Untitled Task</h3>
+
+              <!-- DESCRIPTION -->
+              <p class="text-sm text-gray-300 mt-2 line-clamp-3">
+                Add a description for this task...
               </p>
 
-              <button
-                class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-all"
-                @click.stop="$emit('task-menu', task)"
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5">
-                  <circle cx="4" cy="8" r="1.2" />
-                  <circle cx="8" cy="8" r="1.2" />
-                  <circle cx="12" cy="8" r="1.2" />
-                </svg>
-              </button>
-            </div>
+              <!-- FOOTER -->
+              <div class="mt-5 flex items-center justify-between">
+                <div class="flex -space-x-2">
+                  <div class="w-8 h-8 rounded-full border-2 border-white bg-gray-100"></div>
 
-            <!-- Task meta row -->
-            <div class="flex flex-wrap items-center gap-1.5">
-              <!-- Priority dot -->
-              <span
-                class="w-2 h-2 rounded-full flex-shrink-0"
-                :class="{
-                  'bg-rose-500': task.priority === 'high',
-                  'bg-amber-400': task.priority === 'medium',
-                  'bg-green-500': task.priority === 'low',
-                  'bg-gray-200': task.priority === 'none' || !task.priority
-                }"
-              />
+                  <div class="w-8 h-8 rounded-full border-2 border-white bg-gray-100"></div>
+                </div>
 
-              <!-- Project tag -->
-              <span
-                v-if="task.project"
-                class="text-[11px] font-medium px-1.5 py-0.5 rounded-md"
-                :style="{ background: task.project.bgColor, color: task.project.textColor }"
-              >
-                {{ task.project.name }}
-              </span>
+                <div class="flex items-center gap-4 text-sm text-gray-300">
+                  <div class="flex items-center gap-1">
+                    💬
+                    <span>0</span>
+                  </div>
 
-              <span class="flex-1" />
-
-              <!-- Assignee avatar -->
-              <div
-                v-if="task.assignee"
-                class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold flex-shrink-0"
-                :style="{ background: task.assignee.bgColor, color: task.assignee.textColor }"
-                :title="task.assignee.name"
-              >
-                {{ task.assignee.initials }}
+                  <div class="flex items-center gap-1">
+                    📎
+                    <span>0</span>
+                  </div>
+                </div>
               </div>
 
-              <!-- Due date -->
-              <div
-                v-if="task.dueDate"
-                class="flex items-center gap-0.5 text-[11px]"
-                :class="{
-                  'text-rose-500': task.isOverdue,
-                  'text-amber-600': task.isDueToday && !task.isOverdue,
-                  'text-gray-400': !task.isOverdue && !task.isDueToday
-                }"
-              >
-                <svg
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.4"
-                  class="w-3 h-3"
-                >
-                  <rect x="1" y="2" width="10" height="9" rx="1" />
-                  <path d="M1 5h10M4 2V1M8 2V1" />
-                </svg>
-                <span>{{ task.dueDate }}</span>
-              </div>
+              <!-- DUE -->
+              <div class="mt-4 text-sm font-medium text-gray-300">No due date</div>
             </div>
-          </div>
 
-          <!-- Empty state -->
-          <div
-            v-if="tasksByColumn(column.id).length === 0"
-            class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center"
-          >
-            <p class="text-xs text-gray-400">No tasks</p>
-          </div>
-
-          <!-- Add task row -->
-          <button
-            @click="$emit('add-task', column.id)"
-            class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-gray-400 hover:text-gray-600 hover:bg-white border border-dashed border-gray-200 hover:border-gray-300 transition-all"
-          >
-            <svg
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              class="w-3.5 h-3.5"
+            <!-- CARD -->
+            <div
+              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
             >
-              <path d="M7 1v12M1 7h12" />
-            </svg>
-            Add task
-          </button>
+              <!-- TOP -->
+              <div class="flex items-start justify-between">
+                <span class="text-xs px-3 py-1 rounded-full font-medium bg-red-100 text-red-600">
+                  High
+                </span>
+
+                <button class="text-gray-400 hover:text-gray-700">•••</button>
+              </div>
+
+              <!-- TITLE -->
+              <h3 class="font-semibold text-gray-900 mt-4">Design Dashboard UI</h3>
+
+              <!-- DESCRIPTION -->
+              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
+                Create a clean admin dashboard for the project management app.
+              </p>
+
+              <!-- FOOTER -->
+              <div class="mt-5 flex items-center justify-between">
+                <!-- AVATARS -->
+                <div class="flex -space-x-2">
+                  <img
+                    src="https://i.pravatar.cc/100?img=1"
+                    class="w-8 h-8 rounded-full border-2 border-white object-cover"
+                  />
+
+                  <img
+                    src="https://i.pravatar.cc/100?img=2"
+                    class="w-8 h-8 rounded-full border-2 border-white object-cover"
+                  />
+                </div>
+
+                <!-- COUNTS -->
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <div class="flex items-center gap-1">
+                    💬
+                    <span>5</span>
+                  </div>
+
+                  <div class="flex items-center gap-1">
+                    📎
+                    <span>2</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- DUE -->
+              <div class="mt-4 text-sm font-medium text-red-500">Due Tomorrow</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- IN PROGRESS -->
+        <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
+          <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+
+              <h2 class="font-semibold text-gray-800">In Progress</h2>
+
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 2 </span>
+            </div>
+
+            <button
+              class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <!-- REVIEW -->
+        <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
+          <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+
+              <h2 class="font-semibold text-gray-800">Review</h2>
+
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 1 </span>
+            </div>
+
+            <button
+              class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <!-- DONE -->
+        <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
+          <div class="p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+
+              <h2 class="font-semibold text-gray-800">Done</h2>
+
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 8 </span>
+            </div>
+
+            <button
+              class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
     </div>

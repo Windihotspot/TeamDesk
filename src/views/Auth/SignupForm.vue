@@ -1,10 +1,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { authService } from '@/services/authService.js'
-import { useRouter } from "vue-router";
 
-
-const router = useRouter();
 const show = ref(false)
 const authMode = ref('signup') // toggle state
 
@@ -32,12 +29,41 @@ const submitPage = async () => {
     form.email = ''
     form.teamName = ''
     form.password = ''
-    router.push("/");
+    setTimeout(() => {
+      authMode.value = 'login'   
+    }, 2000)
   } catch (err) {
     console.error('Error:', err)
   } finally {
     loading.value = false
   }
+  //  try {
+
+  //   // fake API success
+  //   const data = await new Promise((resolve) => {
+  //     setTimeout(() => {
+  //       resolve({
+  //         success: true,
+  //         message: 'Signup successful'
+  //       })
+  //     }, 1000)
+  //   })
+
+  //   console.log('✅ Success:', data)
+
+  //   form.firstName = ''
+  //   form.lastName = ''
+  //   form.email = ''
+  //   form.teamName = ''
+  //   form.password = ''
+
+  //   authMode.value = 'login'
+
+  // } catch (err) {
+  //   console.error('Error:', err)
+  // } finally {
+  //   loading.value = false
+  // }
 }
 </script>
 
@@ -122,10 +148,7 @@ const submitPage = async () => {
                 prepend-inner-icon="mdi-account-group"
                 variant="outlined"
                 density="comfortable"
-                :rules="[
-                  (v) => !!v || 'TeamName is required'
-                  
-                ]"
+                :rules="[(v) => !!v || 'TeamName is required']"
                 rounded-md
               />
 
