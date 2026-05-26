@@ -719,12 +719,7 @@
       </v-snackbar>
 
       <!-- Actions Menu -->
-      <v-menu
-        v-model="actionsMenu.show"
-        :position-x="actionsMenu.x"
-        :position-y="actionsMenu.y"
-        absolute
-      >
+      <v-menu v-model="actionsMenu.show" :target="actionsMenu.target" location="bottom end">
         <v-list density="compact" rounded="lg" elevation="4">
           <v-list-item
             prepend-icon="mdi-eye-outline"
@@ -1189,11 +1184,14 @@ async function deleteSupply() {
 }
 
 // ─── ACTIONS MENU ────────────────────────────────────────
-const actionsMenu = reactive({ show: false, x: 0, y: 0, supply: null })
+const actionsMenu = reactive({
+  show: false,
+  target: null,
+  supply: null
+})
 
 function openActionsMenu(event, supply) {
-  actionsMenu.x = event.clientX
-  actionsMenu.y = event.clientY
+  actionsMenu.target = event.currentTarget
   actionsMenu.supply = supply
   actionsMenu.show = true
 }
