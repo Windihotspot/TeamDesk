@@ -2,26 +2,93 @@
 import MainLayout from '@/layouts/full/MainLayout.vue'
 
 import { ref } from 'vue'
-
-// const columns = ref([
-//   { id: 1, title: 'Recently assigned', color: '#64748b' },
-//   { id: 2, title: 'Do today', color: '#ef4444' },
-//   { id: 3, title: 'Do next week', color: '#f59e0b' },
-//   { id: 4, title: 'Do later', color: '#10b981' }
-// ])
-
-// const tasks = ref([])
-
-// const tasksByColumn = (columnId) => {
-//   return tasks.value.filter((t) => t.columnId === columnId)
-// }
-
-// defineEmits(['add-task', 'toggle-complete', 'task-click', 'task-menu'])
+import { supabase } from '@/services/supabase.js'
+import ApiService from '@/services/api'
 
 const openNewTask = ref(false)
+const loading = ref(false)
 
 const showNewTask = () => {
   openNewTask.value = true
+}
+
+const tasks = ref({
+  todo: []
+})
+
+const taskForm = ref({
+  title: '',
+  description: '',
+  status: 'todo',
+  priority: 'medium',
+  project_id: null,
+  team_id: null,
+  start_date: null,
+  due_date: null,
+  assignee_ids: []
+})
+
+const createTask = async () => {
+  try {
+    if (!taskForm.value.title.trim()) {
+      alert('Task title required')
+      return
+    }
+
+    loading.value = true
+
+    const response = await ApiService.post('tasks', {
+      action: 'create',
+
+      project_id: taskForm.value.project_id,
+      title: taskForm.value.title,
+      description: taskForm.value.description,
+      status: taskForm.value.status,
+      priority: taskForm.value.priority,
+      start_date: taskForm.value.start_date,
+      due_date: taskForm.value.due_date,
+      team_id: taskForm.value.team_id,
+      assignee_ids: taskForm.value.assignee_ids
+    })
+
+    console.log('Created:', response.data)
+
+    const newTask = response.data.data
+
+    // Add newly created task into board immediately
+    // if (!tasks.value[newTask.status]) {
+    //   tasks.value[newTask.status] = []
+    // }
+
+    // tasks.value[newTask.status].unshift({
+    //   ...newTask,
+    //   comment_count: 0,
+    //   attachment_count: 0,
+    //   task_assignees: []
+    // })
+
+    openNewTask.value = false
+
+    taskForm.value = {
+      title: '',
+      description: '',
+      status: 'todo',
+      priority: 'medium',
+      project_id: null,
+      team_id: null,
+      start_date: null,
+      due_date: null,
+      assignee_ids: []
+    }
+
+    // refresh list
+    // await fetchTasks()
+  } catch (err) {
+    console.log(err)
+    // alert(err?.response?.data?.error || 'Task creation failed')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -84,110 +151,119 @@ const showNewTask = () => {
             </button>
           </div>
 
-          <!-- TASKS -->
+          <!-- inputing new TASKS -->
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
-            <!-- EMPTY TASK CARD -->
+            
             <!-- EMPTY TASK CARD -->
             <div
               v-if="openNewTask"
-              class="bg-white rounded-3xl p-4 mb-4 border-2 border-dashed border-gray-200 hover:border-[#5b2c52] transition cursor-pointer"
+              class="bg-white rounded-3xl p-4 mb-4 border-2 border-dashed border-gray-200"
             >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span class="text-xs px-3 py-1 rounded-full font-medium bg-gray-100 text-gray-400">
-                  Empty
-                </span>
-
-                <button class="text-gray-300 hover:text-gray-500">•••</button>
+              <!-- STATUS -->
+              <div class="flex justify-between">
+                <select
+                  v-model="taskForm.status"
+                  class="text-xs px-3 py-1 rounded-full bg-gray-100"
+                >
+                  <option value="todo">Todo</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="done">Done</option>
+                </select>
               </div>
 
               <!-- TITLE -->
-              <h3 class="font-semibold text-gray-400 mt-4">Untitled Task</h3>
+              <input
+                v-model="taskForm.title"
+                placeholder="Task title"
+                class="w-full mt-4 font-semibold outline-none"
+              />
 
               <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-300 mt-2 line-clamp-3">
-                Add a description for this task...
-              </p>
+              <textarea
+                v-model="taskForm.description"
+                placeholder="Task description"
+                class="w-full mt-3 text-sm outline-none resize-none"
+              ></textarea>
 
-              <!-- FOOTER -->
-              <div class="mt-5 flex items-center justify-between">
-                <div class="flex -space-x-2">
-                  <div class="w-8 h-8 rounded-full border-2 border-white bg-gray-100"></div>
+              <!-- PRIORITY -->
+              <select v-model="taskForm.priority" class="mt-3 border rounded-lg p-2 w-full">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
 
-                  <div class="w-8 h-8 rounded-full border-2 border-white bg-gray-100"></div>
-                </div>
+              <!-- DUE DATE -->
+              <input
+                type="date"
+                v-model="taskForm.due_date"
+                class="mt-3 border rounded-lg p-2 w-full"
+              />
 
-                <div class="flex items-center gap-4 text-sm text-gray-300">
-                  <div class="flex items-center gap-1">
-                    💬
-                    <span>0</span>
-                  </div>
+              <!-- BUTTONS -->
+              <div class="flex gap-3 mt-4">
+                <button
+                  @click="createTask"
+                  :disabled="loading"
+                  class="bg-[#5b2c52] text-white px-4 py-2 rounded-lg"
+                >
+                  {{ loading ? 'Saving...' : 'Create Task' }}
+                </button>
 
-                  <div class="flex items-center gap-1">
-                    📎
-                    <span>0</span>
-                  </div>
-                </div>
+                <button @click="openNewTask = false" class="border px-4 py-2 rounded-lg">
+                  Cancel
+                </button>
               </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-gray-300">No due date</div>
             </div>
 
             <!-- CARD -->
             <div
+              v-for="task in tasks.todo"
+              :key="task.id"
               class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
             >
               <!-- TOP -->
               <div class="flex items-start justify-between">
-                <span class="text-xs px-3 py-1 rounded-full font-medium bg-red-100 text-red-600">
-                  High
+                <span
+                  class="text-xs px-3 py-1 rounded-full font-medium"
+                  :class="{
+                    'bg-red-100 text-red-600': task.priority === 'high',
+                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                    'bg-green-100 text-green-600': task.priority === 'low'
+                  }"
+                >
+                  {{ task.priority }}
                 </span>
 
-                <button class="text-gray-400 hover:text-gray-700">•••</button>
+                <button class="text-gray-400">•••</button>
               </div>
 
               <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">Design Dashboard UI</h3>
+              <h3 class="font-semibold text-gray-900 mt-4">
+                {{ task.title }}
+              </h3>
 
               <!-- DESCRIPTION -->
               <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                Create a clean admin dashboard for the project management app.
+                {{ task.description }}
               </p>
 
               <!-- FOOTER -->
-              <div class="mt-5 flex items-center justify-between">
-                <!-- AVATARS -->
-                <div class="flex -space-x-2">
-                  <img
-                    src="https://i.pravatar.cc/100?img=1"
-                    class="w-8 h-8 rounded-full border-2 border-white object-cover"
-                  />
-
-                  <img
-                    src="https://i.pravatar.cc/100?img=2"
-                    class="w-8 h-8 rounded-full border-2 border-white object-cover"
-                  />
-                </div>
-
-                <!-- COUNTS -->
+              <div class="mt-5 flex justify-between">
                 <div class="flex items-center gap-4 text-sm text-gray-500">
-                  <div class="flex items-center gap-1">
-                    💬
-                    <span>5</span>
-                  </div>
-
-                  <div class="flex items-center gap-1">
-                    📎
-                    <span>2</span>
-                  </div>
+                  <span>💬 {{ task.comment_count || 0 }}</span>
+                  <span>📎 {{ task.attachment_count || 0 }}</span>
                 </div>
               </div>
 
               <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">Due Tomorrow</div>
+              <div class="mt-4 text-sm font-medium text-red-500">
+                {{ task.due_date || 'No due date' }}
+              </div>
             </div>
           </div>
+
+          <!-- TASK CARDS -->
+          <!-- TASK CARDS -->
         </div>
 
         <!-- IN PROGRESS -->

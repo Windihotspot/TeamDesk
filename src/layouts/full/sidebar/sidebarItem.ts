@@ -15,11 +15,7 @@ const sidebarItems = [
     icon: 'mdi-calendar-check-outline'
   },
   {
-<<<<<<< HEAD
     title: 'Tasks',
-=======
-    title: 'MyTasks',
->>>>>>> abcb2ee3416ada303ded85359f32dcc9b5a271f3
     path: '/tasks',
     icon: 'mdi-format-list-checkbox'
   },
