@@ -2,8 +2,6 @@
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { supabase } from '@/services/supabase.js'
 
-
-
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth.js'
 import { useProjectStore } from '@/stores/project.js'
@@ -20,16 +18,12 @@ const projectStore = useProjectStore()
 
 const isEditMode = ref(false)
 
-
-
 const projects = ref([])
 
 const showProjects = ref(false)
 
-
-
 //make the form an empty array first
-//the syntax in sql editor must match with your form field 
+//the syntax in sql editor must match with your form field
 const form = ref({
   name: '',
   team_id: null,
@@ -42,12 +36,12 @@ const openAddProjects = () => {
   showProjects.value = true
 }
 
-
 //@click submit new projects
 const submitProject = async () => {
   try {
     await projectStore.createProject(form.value)
     console.log('✅ Project created:', showProjects)
+    await fetchProject()
     showProjects.value = false // close dialog after save
     form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
   } catch (err) {
@@ -55,7 +49,7 @@ const submitProject = async () => {
   }
 }
 
-const isLoading = ref(true)    
+const isLoading = ref(true)
 
 //on load of projects page :added a loading feature to it
 const fetchProject = async () => {
@@ -71,6 +65,18 @@ const fetchProject = async () => {
     console.error(err)
   } finally {
     isLoading.value = false
+  }
+}
+
+const deleteProject = async () => {
+  try {
+    const { error } = await supabase.from('projects').delete().eq('id', id)
+
+    if (error) throw error
+
+    console.log('Project deleted')
+  } catch (error) {
+    console.log(error)
   }
 }
 
@@ -172,7 +178,27 @@ const openAddTeams = async () => {
                   </p>
                 </div>
               </div>
-              <v-icon size="18">mdi-dots-vertical</v-icon>
+              <v-menu>
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" size="18" class="cursor-pointer">
+                    mdi-dots-vertical
+                  </v-icon>
+                </template>
+
+                <v-list density="compact">
+                  <v-list-item
+                    prepend-icon="mdi-pencil"
+                    title="Edit"
+                    @click="editProject(project)"
+                  />
+
+                  <v-list-item
+                    prepend-icon="mdi-delete"
+                    title="Delete"
+                    @click="deleteProject(project.id)"
+                  />
+                </v-list>
+              </v-menu>
             </div>
           </div>
         </v-card>

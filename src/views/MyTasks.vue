@@ -1,19 +1,47 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
 
-import { ref } from 'vue'
-import { supabase } from '@/services/supabase.js'
+import { onMounted, ref } from 'vue'
+
 import ApiService from '@/services/api'
 
-const openNewTask = ref(false)
-const loading = ref(false)
+import TaskForm from '@/components/TaskForm.vue'
 
-const showNewTask = () => {
+const openNewTask = ref(false)
+const activeStatus = ref('todo')
+
+const showNewTask = (status) => {
+  activeStatus.value = status
+  taskForm.value.status = status
   openNewTask.value = true
 }
+const loading = ref(false)
+
+const fetchTasks = async () => {
+  try {
+    const response = await ApiService.post('tasks', {
+      action: 'list'
+    })
+    console.log(response)
+    const allTasks = response.data
+    tasks.value = {
+      todo: allTasks.filter((task) => task.status === 'todo')
+      // inProgress: res.data.inProgress || [],
+      // done: res.data.done || []
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+onMounted(() => {
+  fetchTasks()
+})
 
 const tasks = ref({
-  todo: []
+  todo: [],
+  in_progress: [],
+  done: []
 })
 
 const taskForm = ref({
@@ -53,20 +81,6 @@ const createTask = async () => {
 
     console.log('Created:', response.data)
 
-    const newTask = response.data.data
-
-    // Add newly created task into board immediately
-    // if (!tasks.value[newTask.status]) {
-    //   tasks.value[newTask.status] = []
-    // }
-
-    // tasks.value[newTask.status].unshift({
-    //   ...newTask,
-    //   comment_count: 0,
-    //   attachment_count: 0,
-    //   task_assignees: []
-    // })
-
     openNewTask.value = false
 
     taskForm.value = {
@@ -82,10 +96,9 @@ const createTask = async () => {
     }
 
     // refresh list
-    // await fetchTasks()
+    await fetchTasks()
   } catch (err) {
     console.log(err)
-    // alert(err?.response?.data?.error || 'Task creation failed')
   } finally {
     loading.value = false
   }
@@ -96,22 +109,23 @@ const createTask = async () => {
   <MainLayout>
     <div class="h-screen bg-[#f6f7fb] flex flex-col overflow-hidden">
       <!-- HEADER -->
-      <div class="bg-white border-b px-6 py-5 flex items-center justify-between">
+      <div class="bg-white border-b px-4 sm:px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Tasks</h1>
+          <h1 class="text-lg sm:text-2xl font-bold text-gray-900">Tasks</h1>
 
-          <p class="text-sm text-gray-500 mt-1">Manage your team workflow</p>
+          <p class="text-xs sm:text-sm text-gray-500 mt-1">Manage your team workflow</p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3">
           <button
-            class="px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
+            class="px-3 sm:px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition text-sm"
           >
             Filter
           </button>
 
           <button
-            class="px-5 py-2 rounded-xl bg-[#5b2c52] text-white hover:bg-[#4a2242] transition"
+            @click="showNewTask('todo')"
+            class="px-3 sm:px-5 py-2 rounded-xl bg-[#5b2c52] text-white hover:bg-[#4a2242] transition text-sm"
           >
             + Create Task
           </button>
@@ -144,7 +158,7 @@ const createTask = async () => {
             </div>
 
             <button
-              @click="showNewTask"
+              @click="showNewTask('todo')"
               class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
             >
               +
@@ -153,69 +167,16 @@ const createTask = async () => {
 
           <!-- inputing new TASKS -->
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
-            
             <!-- EMPTY TASK CARD -->
-            <div
-              v-if="openNewTask"
-              class="bg-white rounded-3xl p-4 mb-4 border-2 border-dashed border-gray-200"
-            >
-              <!-- STATUS -->
-              <div class="flex justify-between">
-                <select
-                  v-model="taskForm.status"
-                  class="text-xs px-3 py-1 rounded-full bg-gray-100"
-                >
-                  <option value="todo">Todo</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="done">Done</option>
-                </select>
-              </div>
+            <TaskForm
+              v-if="openNewTask && activeStatus === 'todo'"
+              :task-form="taskForm"
+              :loading="loading"
+              @save="createTask"
+              @cancel="openNewTask = false"
+            />
 
-              <!-- TITLE -->
-              <input
-                v-model="taskForm.title"
-                placeholder="Task title"
-                class="w-full mt-4 font-semibold outline-none"
-              />
-
-              <!-- DESCRIPTION -->
-              <textarea
-                v-model="taskForm.description"
-                placeholder="Task description"
-                class="w-full mt-3 text-sm outline-none resize-none"
-              ></textarea>
-
-              <!-- PRIORITY -->
-              <select v-model="taskForm.priority" class="mt-3 border rounded-lg p-2 w-full">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-
-              <!-- DUE DATE -->
-              <input
-                type="date"
-                v-model="taskForm.due_date"
-                class="mt-3 border rounded-lg p-2 w-full"
-              />
-
-              <!-- BUTTONS -->
-              <div class="flex gap-3 mt-4">
-                <button
-                  @click="createTask"
-                  :disabled="loading"
-                  class="bg-[#5b2c52] text-white px-4 py-2 rounded-lg"
-                >
-                  {{ loading ? 'Saving...' : 'Create Task' }}
-                </button>
-
-                <button @click="openNewTask = false" class="border px-4 py-2 rounded-lg">
-                  Cancel
-                </button>
-              </div>
-            </div>
-
-            <!-- CARD -->
+            <!-- card for todo -->
             <div
               v-for="task in tasks.todo"
               :key="task.id"
@@ -261,9 +222,6 @@ const createTask = async () => {
               </div>
             </div>
           </div>
-
-          <!-- TASK CARDS -->
-          <!-- TASK CARDS -->
         </div>
 
         <!-- IN PROGRESS -->
@@ -278,15 +236,26 @@ const createTask = async () => {
             </div>
 
             <button
+              @click="showNewTask('in_progress')"
               class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
             >
               +
             </button>
           </div>
+
+          <div class="px-3 pb-3 flex-1 overflow-y-auto">
+            <TaskForm
+              v-if="openNewTask && activeStatus === 'in_progress'"
+              :task-form="taskForm"
+              :loading="loading"
+              @save="createTask"
+              @cancel="openNewTask = false"
+            />
+          </div>
         </div>
 
         <!-- REVIEW -->
-        <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
+        <!-- <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
           <div class="p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
@@ -302,7 +271,7 @@ const createTask = async () => {
               +
             </button>
           </div>
-        </div>
+        </div> -->
 
         <!-- DONE -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
@@ -316,10 +285,21 @@ const createTask = async () => {
             </div>
 
             <button
+              @click="showNewTask('done')"
               class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
             >
               +
             </button>
+          </div>
+
+          <div class="px-3 pb-3 flex-1 overflow-y-auto">
+            <TaskForm
+              v-if="openNewTask && activeStatus === 'done'"
+              :task-form="taskForm"
+              :loading="loading"
+              @save="createTask"
+              @cancel="openNewTask = false"
+            />
           </div>
         </div>
       </div>
