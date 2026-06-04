@@ -49,11 +49,11 @@ const submitProject = async () => {
   }
 }
 
-const isLoading = ref(true)
+// const isLoading = ref(true)
 
 //on load of projects page :added a loading feature to it
 const fetchProject = async () => {
-  isLoading.value = true
+  // isLoading.value = true
 
   try {
     const { data, error } = await supabase.from('projects').select('*')
@@ -64,7 +64,7 @@ const fetchProject = async () => {
   } catch (err) {
     console.error(err)
   } finally {
-    isLoading.value = false
+    // isLoading.value = false
   }
 }
 
