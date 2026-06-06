@@ -1,40 +1,29 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { supabase } from '@/services/supabase'
+import { computed } from 'vue'
 
 const props = defineProps({
-  selectedCategory: String
+  selectedCategory: {
+    type: [String, Number, null],
+    default: null
+  },
+  teams: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const emit = defineEmits(['update:selectedCategory'])
 
 const selectedCategory = computed({
   get: () => props.selectedCategory,
-  set: (val) => emit('update:selectedCategory', val)
-})
-
-const teams = ref([])
-const loading = ref(false)
-
-const getTeams = async () => {
-  loading.value = true
-  try {
-    const { data, error } = await supabase.from('teams').select('*')
-    if (error) throw error
-    teams.value = data || []
-  } catch (err) {
-    console.error('Error fetching teams:', err)
-  } finally {
-    loading.value = false
+  set: (val) => {
+    console.log('🔄 Filter changed - Selected Team ID:', val)
+    emit('update:selectedCategory', val)
   }
-}
-
-onMounted(() => {
-  getTeams()
 })
 
 const categoryOptions = computed(() =>
-  teams.value.map((team) => ({
+  props.teams.map((team) => ({
     title: team.name,
     value: team.id
   }))
@@ -42,26 +31,21 @@ const categoryOptions = computed(() =>
 </script>
 
 <template>
-  <div class="items-center justify-between bg-white rounded-2xl shadow-sm p-4 w-full">
-    <!-- Left: Heading -->
-    <h2 class="text-lg font-semibold text-gray-800">Category Filter</h2>
+  <div class="bg-white rounded-2xl shadow-sm p-6 w-full">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Category Filter</h2>
 
-    <!-- Right: Select -->
-    <div class="mt-7 items-center">
-      <v-select
-        v-model="selectedCategory"
-        :items="categoryOptions"
-        item-title="title"
-        item-value="value"
-        label="Select Team"
-        :loading="loading"
-        variant="outlined"
-        density="compact"
-        hide-details
-        rounded="lg"
-        style="max-width: 200px"
-        bg-color="white"
-      />
-    </div>
+    <v-select
+      v-model="selectedCategory"
+      :items="categoryOptions"
+      item-title="title"
+      item-value="value"
+      label="Select Team"
+      variant="outlined"
+      density="compact"
+      hide-details
+      rounded="lg"
+      bg-color="white"
+      style="max-width: 280px"
+    />
   </div>
 </template>

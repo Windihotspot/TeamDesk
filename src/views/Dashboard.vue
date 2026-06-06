@@ -10,8 +10,10 @@ import confetti from 'canvas-confetti'
 import { useAuthStore } from '@/stores/auth'
 import ApiService from '@/services/api'
 import taskCard from '@/components/taskCard.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import Filtericon from '@/components/Filtericon.vue'
+import DashboardComment from '@/components/DashboardComment.vue'
+import ActiveMembers from '@/components/ActiveMembers.vue'
+import NewtaskTaskinProgress from '@/components/NewtaskTaskinProgress.vue'
+import Overviewcard from '@/components/overviewcard.vue'
 
 const showFilterModal = ref(false)
 
@@ -23,6 +25,8 @@ const closeFilterModal = () => {
   showFilterModal.value = false
 }
 
+const customers = ref([])
+
 /* ---------------- MONTH DROPDOWN ---------------- */
 const monthStore = useMonthDropdownStore()
 const { open, selected, selectedLabel, months, dropdownWrapper } = storeToRefs(monthStore)
@@ -31,16 +35,6 @@ const { toggle, select } = monthStore
 onMounted(() => monthStore.init())
 onBeforeUnmount(() => monthStore.destroy())
 
-/* ---------------- CUSTOMERS ---------------- */
-const customers = ref([])
-
-const showMembersModal = ref(false)
-const openMembersModal = () => {
-  showMembersModal.value = true
-}
-const closeMembersModal = () => {
-  showMembersModal.value = false
-}
 /* ---------------- NEW TASKS ---------------- */
 const newTasks = ref([])
 
@@ -98,25 +92,7 @@ const visibleTasks = computed(() => (showAllTasks.value ? tasks.value : tasks.va
 const visibleNewTasks = computed(() =>
   showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 3)
 )
-/* ---------------- COMMENTS ---------------- */
-const comments = ref([
-  {
-    id: 1,
-    author: 'ifiok Usanga',
-    product: 'snr dev',
-    time: '09:00 AM',
-    text: '',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Joyce'
-  },
-  {
-    id: 2,
-    author: 'Gladyce',
-    product: 'Food App',
-    time: '08:45 AM',
-    text: 'Love the new update 🎉',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Gladyce'
-  }
-])
+
 // completed tasks
 const completeTask = (task, index) => {
   // 🎉 trigger confetti
@@ -130,7 +106,7 @@ const completeTask = (task, index) => {
   })
 
   // ❌ remove from NEW TASKS
-  NewTasks.value.splice(index, 1)
+  newTasks.value.splice(index, 1)
 }
 
 /* ---------------- CONFETTI (IMPROVED) ---------------- */
@@ -195,8 +171,6 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const error = ref(null)
 const dashboardData = ref(null)
-
-/* ---------------- HELPERS ---------------- */
 
 // extract dashboard safely
 const extractDashboard = (res) => {
@@ -264,7 +238,6 @@ watch(selectedCategory, (newTeamId) => {
 })
 
 /* ---------------- FETCH ---------------- */
-
 const fetchDashboard = async () => {
   loading.value = true
   error.value = null
@@ -301,7 +274,6 @@ const fetchDashboard = async () => {
 }
 
 /* ---------------- LIFECYCLE ---------------- */
-
 onMounted(async () => {
   await authStore.fetchSession()
   await fetchDashboard()
@@ -309,7 +281,6 @@ onMounted(async () => {
     tasks.value = ['Task 1', 'Task 2']
     loading.value = false
   }, 2000)
-
   if (dashboardData.value?.teams?.length) {
     selectedCategory.value = dashboardData.value.teams[0].id
   }
@@ -354,189 +325,18 @@ const selectedTeam = computed(() => {
         <!-- LEFT COLUMN - Main Content -->
         <div class="flex flex-col gap-5">
           <!-- Overview Card -->
-          <div class="bg-blue-50 rounded-2xl border-gray-600 p-6 shadow-lg">
-            <div>
-              <div v-if="loading" class="flex justify-center py-6">
-                <v-progress-circular indeterminate size="40" />
-              </div>
-            </div>
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-gray-800 mb-4">overview card</h2>
-              <font-awesome-icon
-                icon="sliders"
-                class="mr-7 hover:bg-gray-200"
-                @click="openFilterModal"
-              />
-              <!-- Modal -->
-              <div
-                v-if="showFilterModal"
-                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-              >
-                <div class="bg-white p-5 rounded-lg w-[400px] relative">
-                  <!-- close button -->
-                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
-                    ✕
-                  </button>
-
-                  <!-- your component -->
-                  <Filtericon />
-                </div>
-              </div>
-            </div>
-
-            <!-- ... your overview content ... -->
-            <div class="grid grid-cols-2 gap-8">
-              <!-- Total Projects -->
-              <div>
-                <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  <span>Total projects</span>
-                </div>
-                <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">{{ totalProjects }}</span>
-                  <div
-                    class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1"
-                  >
-                    36.8%
-                  </div>
-                </div>
-              </div>
-
-              <!-- Active Tasks -->
-              <div>
-                <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                    />
-                  </svg>
-                  <span>Active tasks</span>
-                </div>
-                <div class="flex items-end gap-3">
-                  <span class="text-4xl font-bold text-gray-900">{{ activeTasksCount }}</span>
-                  <div
-                    class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1"
-                  >
-                    36.8%
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Overviewcard
+            :loading="loading"
+            :total-projects="totalProjects"
+            :active-tasks-count="activeTasksCount"
+          />
 
           <!-- Active Members -->
-          <div class="bg-blue-50 rounded-2xl border-gray-400 p-8 shadow-lg">
-            <!-- ... your active members content ... -->
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-base font-semibold text-gray-800 mb-4">Active Members</h3>
-              <font-awesome-icon
-                icon="sliders"
-                class="mr-7 hover:bg-gray-200"
-                @click="openFilterModal"
-              />
-              <!-- Modal -->
-              <div
-                v-if="showFilterModal"
-                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-              >
-                <div class="bg-white p-5 rounded-lg w-[400px] relative">
-                  <!-- close button -->
-                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
-                    ✕
-                  </button>
-
-                  <!-- your component -->
-                  <Filtericon
-                    :teams="dashboardData?.teams"
-                    v-model:selectedCategory="selectedCategory"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-5">
-              <div
-                v-for="customer in customers"
-                :key="customer.name"
-                class="flex flex-col items-center gap-2"
-              >
-                <img
-                  :src="customer.avatar"
-                  :alt="customer.name"
-                  class="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md"
-                />
-                <span class="text-xs text-gray-500">
-                  {{ customer.name }}
-                </span>
-              </div>
-
-              <div class="flex flex-col items-center gap-2">
-                <button
-                  @click="openMembersModal"
-                  class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-400 hover:bg-gray-50"
-                >
-                  <svg
-                    class="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-                <span class="text-xs text-gray-500">View all</span>
-              </div>
-            </div>
-            <div
-              v-if="showMembersModal"
-              class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-            >
-              <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-4">
-                  <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-semibold text-gray-800">
-                      Active Members ({{ customers.length }})
-                    </h3>
-                  </div>
-
-                  <button @click="closeMembersModal">
-                    <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
-                  </button>
-                </div>
-
-                <!-- Members List -->
-                <div class="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
-                  <div
-                    v-for="member in customers"
-                    :key="member.name"
-                    class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg"
-                  >
-                    <img :src="member.avatar" class="w-10 h-10 rounded-full object-cover" />
-
-                    <span class="text-sm text-gray-700">
-                      {{ member.name }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ActiveMembers
+            :customers="customers"
+            :dashboard-data="dashboardData"
+            v-model:selected-category="selectedCategory"
+          />
 
           <!-- Task Card -->
           <taskCard :tasks="tasks" :projects="projects" />
@@ -545,127 +345,16 @@ const selectedTeam = computed(() => {
         <!-- RIGHT COLUMN -->
         <div class="flex flex-col gap-5">
           <!-- NEW TASK / IN PROGRESS -->
-          <div class="bg-blue-50 rounded-2xl border-gray-400 p-6 shadow-lg">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">Task in progress</h2>
-              <font-awesome-icon
-                icon="sliders"
-                class="mr-7 hover:bg-gray-200"
-                @click="openFilterModal"
-              />
-              <!-- Modal -->
-              <div
-                v-if="showFilterModal"
-                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-              >
-                <div class="bg-white p-5 rounded-lg w-[400px] relative">
-                  <!-- close button -->
-                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
-                    ✕
-                  </button>
-
-                  <!-- your component -->
-                  <Filtericon
-                    :teams="dashboardData?.teams"
-                    v-model:selectedCategory="selectedCategory"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <ul class="flex flex-col gap-2">
-              <li
-                v-for="(task, index) in visibleNewTasks"
-                :key="index"
-                class="border-b pb-2 flex gap-2 items-start justify-between"
-              >
-                <div class="flex gap-2 flex-1">
-                  <img :src="task.avatar" class="w-6 h-6 rounded-full mt-1" />
-
-                  <details class="flex-1 cursor-pointer">
-                    <summary class="text-xs text-gray-700 flex items-center justify-between">
-                      <span>{{ task.name }}</span>
-
-                      <button
-                        @click.stop="openTaskModal(task)"
-                        class="text-gray-400 hover:text-blue-500 transition"
-                        title="View task"
-                      >
-                        <i class="fas fa-eye text-xs"></i>
-                      </button>
-                    </summary>
-
-                    <p class="text-xs text-gray-600 mt-1">
-                      {{ task.description }}
-                    </p>
-                  </details>
-                </div>
-              </li>
-            </ul>
-
-            <!-- BUTTON -->
-            <button
-              @click="showAllNewTasks = !showAllNewTasks"
-              class="mt-3 text-xs text-blue-600 hover:underline"
-            >
-              {{ showAllNewTasks ? 'Show Less' : 'See More' }}
-            </button>
-          </div>
+          <newtask-taskin-progress
+            :visible-new-tasks="visibleNewTasks"
+            :dashboard-data="dashboardData"
+            :selected-category="selectedCategory"
+            @update:selected-category="selectedCategory = $event"
+            @open-task="openTaskModal"
+          />
 
           <!-- COMMENTS -->
-          <div class="bg-blue-50 border-gray-400 rounded-2xl p-6 shadow-lg">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-gray-800 mb-4">Comments</h2>
-              <font-awesome-icon
-                icon="sliders"
-                class="mr-7 hover:bg-gray-200"
-                @click="openFilterModal"
-              />
-              <!-- Modal -->
-              <div
-                v-if="showFilterModal"
-                class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-              >
-                <div class="bg-white p-5 rounded-lg w-[400px] relative">
-                  <!-- close button -->
-                  <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
-                    ✕
-                  </button>
-
-                  <!-- your component -->
-                  <Filtericon
-                    :teams="dashboardData?.teams"
-                    v-model:selectedCategory="selectedCategory"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-col gap-4">
-              <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
-                <img :src="comment.avatar" class="w-9 h-9 rounded-full object-cover" />
-
-                <div>
-                  <div class="flex gap-2">
-                    <span class="text-sm font-semibold">
-                      {{ comment.author }}
-                    </span>
-                    <span class="text-xs text-gray-400">on</span>
-                    <span class="text-xs text-gray-600">
-                      {{ comment.product }}
-                    </span>
-                  </div>
-
-                  <p class="text-xs text-gray-400">
-                    {{ comment.time }}
-                  </p>
-
-                  <p class="text-sm text-gray-600">
-                    {{ comment.text }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <dashboard-comment />
         </div>
       </div>
     </div>
