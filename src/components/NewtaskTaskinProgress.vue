@@ -57,8 +57,8 @@ const openTaskModal = (task) => {
           <!-- your component -->
           <Filtericon
             :teams="props.dashboardData?.teams || []"
-            :selectedCategory="props.selectedCategory"
-            @update:selectedCategory="emit('update:selectedCategory', $event)"
+            :model-value="props.selectedCategory"
+            @update:modelValue="emit('update:selectedCategory', $event)"
           />
         </div>
       </div>

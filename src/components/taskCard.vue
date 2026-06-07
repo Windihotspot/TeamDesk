@@ -1,16 +1,18 @@
 <script setup>
 import { ref, computed } from 'vue'
 import Filtericon from '../components/Filtericon.vue'
-import GetTeams from '../components/GetTeams.vue'
 
 const props = defineProps({
-  tasks: Array,
-  projects: Array
+  tasks: { type: Array, default: () => [] },
+  projects: { type: Array, default: () => [] },
+  // New props coming from Dashboard
+  modelValue: { type: [String, Number, null], default: null },
+  teams: { type: Array, default: () => [] }
 })
 
-const formValid = ref(false)
-const showAllTasks = ref(false)
+const emit = defineEmits(['update:modelValue'])
 
+const showAllTasks = ref(false)
 const showModal = ref(false)
 const selectedTask = ref(null)
 const editableDescription = ref('')
@@ -21,8 +23,9 @@ const openTaskModal = (task) => {
     name: task.title,
     description: task.description
   }
-  editableDescription.value = task.description
+  editableDescription.value = task.description || ''
 }
+
 const isFilterModalOpen = ref(false)
 
 const openFilterModal = () => {
@@ -32,10 +35,18 @@ const openFilterModal = () => {
 const closeFilterModal = () => {
   isFilterModalOpen.value = false
 }
+
 const visibleTasks = computed(() => {
   return showAllTasks.value ? props.tasks : props.tasks.slice(0, 5)
 })
+
+// Two-way binding for team filter
+const selectedCategoryModel = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val)
+})
 </script>
+
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
     <!-- TASKS CARD -->
@@ -43,22 +54,11 @@ const visibleTasks = computed(() => {
       <!-- HEADER (Title + Dropdown) -->
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-gray-800">All Task</h2>
-        <font-awesome-icon icon="sliders" class="mr-7 hover:bg-gray-200" @click="openFilterModal" />
-        <!-- Modal -->
-        <div
-          v-if="isFilterModalOpen"
-          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        >
-          <div class="bg-white p-5 rounded-lg w-[400px] relative">
-            <!-- close button -->
-            <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
-              ✕
-            </button>
-
-            <!-- your component -->
-            <Filtericon />
-          </div>
-        </div>
+        <font-awesome-icon 
+          icon="sliders" 
+          class="mr-7 hover:bg-gray-200 cursor-pointer" 
+          @click="openFilterModal" 
+        />
       </div>
 
       <!-- TASK LIST -->
@@ -95,13 +95,13 @@ const visibleTasks = computed(() => {
       >
         {{ showAllTasks ? 'Show Less' : 'See More' }}
       </button>
+
       <!-- TASK MODAL -->
       <div
         v-if="showModal"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
       >
         <div class="bg-[#f4f4f4] w-full max-w-[500px] rounded-3xl shadow-2xl p-6 relative">
-          <!-- CLOSE BUTTON -->
           <button
             @click="showModal = false"
             class="absolute top-5 right-5 text-gray-400 hover:text-gray-600"
@@ -109,15 +109,12 @@ const visibleTasks = computed(() => {
             <i class="fas fa-times text-lg"></i>
           </button>
 
-          <!-- TITLE -->
           <h2 class="text-2xl font-semibold text-[#2f3443] mb-6">
             {{ selectedTask?.name || selectedTask?.title }}
           </h2>
 
-          <!-- DESCRIPTION -->
           <div class="mb-5">
             <label class="block text-gray-500 text-sm mb-2"> Description </label>
-
             <textarea
               v-model="editableDescription"
               rows="4"
@@ -125,10 +122,8 @@ const visibleTasks = computed(() => {
             ></textarea>
           </div>
 
-          <!-- TAG / ASSIGN -->
           <div class="mb-6">
             <label class="block text-gray-500 text-sm mb-2"> Tag / Assign </label>
-
             <input
               type="text"
               placeholder="Enter email or name"
@@ -136,7 +131,6 @@ const visibleTasks = computed(() => {
             />
           </div>
 
-          <!-- BUTTON -->
           <button
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
           >
@@ -149,24 +143,14 @@ const visibleTasks = computed(() => {
     <!-- PROJECTS CARD -->
     <div class="bg-blue-50 border-gray-400 rounded-2xl p-6 shadow-lg">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">Projects</h2>
-        <font-awesome-icon icon="sliders" class="mr-7 hover:bg-gray-200" @click="openFilterModal" />
-        <!-- Modal -->
-        <div
-          v-if="isFilterModalOpen"
-          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        >
-          <div class="bg-white p-5 rounded-lg w-[400px] relative">
-            <!-- close button -->
-            <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">
-              ✕
-            </button>
-
-            <!-- your component -->
-            <Filtericon />
-          </div>
-        </div>
+        <h2 class="text-lg font-semibold text-gray-800">Projects</h2>
+        <font-awesome-icon 
+          icon="sliders" 
+          class="mr-7 hover:bg-gray-200 cursor-pointer" 
+          @click="openFilterModal" 
+        />
       </div>
+
       <ul class="flex flex-col gap-2">
         <li
           v-for="(project, index) in projects"
@@ -176,6 +160,26 @@ const visibleTasks = computed(() => {
           {{ project.name }}
         </li>
       </ul>
+    </div>
+
+    <!-- Filter Modal (Shared) -->
+    <div
+      v-if="isFilterModalOpen"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white p-5 rounded-lg w-[400px] relative">
+        <button 
+          class="absolute top-2 right-2 text-gray-600" 
+          @click="closeFilterModal"
+        >
+          ✕
+        </button>
+
+        <Filtericon 
+          v-model="selectedCategoryModel"
+          :teams="teams"
+        />
+      </div>
     </div>
   </div>
 </template>

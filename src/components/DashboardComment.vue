@@ -36,6 +36,27 @@ const comments = ref([
     avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Gladyce'
   }
 ])
+const newComment = ref('')
+
+const addComment = () => {
+  const text = newComment.value.trim()
+  if (!text) return
+
+  const comment = {
+    id: Date.now(),
+    author: 'You',
+    product: 'Current Project',
+    time: new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    }),
+    text,
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=You'
+  }
+
+  comments.value.unshift(comment)
+  newComment.value = ''
+}
 </script>
 
 <template>
@@ -82,5 +103,22 @@ const comments = ref([
         </div>
       </div>
     </div>
+    <!-- Input box -->
+<div class="mt-6 flex gap-2">
+  <input
+    v-model="newComment"
+    type="text"
+    placeholder="Write a comment..."
+    class="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+    @keyup.enter="addComment"
+  />
+
+  <button
+    @click="addComment"
+    class="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+  >
+    Send
+  </button>
+</div>
   </div>
 </template>

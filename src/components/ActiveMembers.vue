@@ -13,9 +13,6 @@ const closeFilterModal = () => {
   showFilterModal.value = false
 }
 
-/* ---------------- CUSTOMERS ---------------- */
-// const customers = ref([])
-
 const showMembersModal = ref(false)
 const openMembersModal = () => {
   showMembersModal.value = true
@@ -44,26 +41,33 @@ const emit = defineEmits(['update:selectedCategory'])
 
 <template>
   <div class="bg-blue-50 rounded-2xl border-gray-400 p-8 shadow-lg">
-    <!-- ... your active members content ... -->
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-semibold text-gray-800 mb-4">Active Members</h3>
-      <font-awesome-icon icon="sliders" class="mr-7 hover:bg-gray-200" @click="openFilterModal" />
-      <!-- Modal -->
-      <div
-        v-if="showFilterModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      >
-        <div class="bg-white p-5 rounded-lg w-[400px] relative">
-          <!-- close button -->
-          <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">✕</button>
+      <h3 class="text-base font-semibold text-gray-800">Active Members</h3>
+      <font-awesome-icon 
+        icon="sliders" 
+        class="mr-7 hover:bg-gray-200 cursor-pointer" 
+        @click="openFilterModal" 
+      />
+    </div>
 
-          <!-- your component -->
-          <Filtericon
-            :teams="props.dashboardData?.teams || []"
-            :selectedCategory="props.selectedCategory"
-            @update:selectedCategory="emit('update:selectedCategory', $event)"
-          />
-        </div>
+    <!-- Filter Modal -->
+    <div
+      v-if="showFilterModal"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white p-5 rounded-lg w-[400px] relative">
+        <button 
+          class="absolute top-2 right-2 text-gray-600 hover:text-gray-900" 
+          @click="closeFilterModal"
+        >
+          ✕
+        </button>
+
+        <Filtericon
+          :model-value="selectedCategory"
+          :teams="props.dashboardData?.teams || []"
+          @update:model-value="emit('update:selectedCategory', $event)"
+        />
       </div>
     </div>
 
@@ -100,25 +104,22 @@ const emit = defineEmits(['update:selectedCategory'])
         <span class="text-xs text-gray-500">View all</span>
       </div>
     </div>
+
+    <!-- Members Modal -->
     <div
       v-if="showMembersModal"
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
     >
       <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
-        <!-- Header -->
         <div class="flex justify-between items-center mb-4">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-semibold text-gray-800">
-              Active Members ({{ customers.length }})
-            </h3>
-          </div>
-
+          <h3 class="text-sm font-semibold text-gray-800">
+            Active Members ({{ customers.length }})
+          </h3>
           <button @click="closeMembersModal">
             <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
           </button>
         </div>
 
-        <!-- Members List -->
         <div class="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
           <div
             v-for="member in customers"
@@ -126,10 +127,7 @@ const emit = defineEmits(['update:selectedCategory'])
             class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg"
           >
             <img :src="member.avatar" class="w-10 h-10 rounded-full object-cover" />
-
-            <span class="text-sm text-gray-700">
-              {{ member.name }}
-            </span>
+            <span class="text-sm text-gray-700">{{ member.name }}</span>
           </div>
         </div>
       </div>

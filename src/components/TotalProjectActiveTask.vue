@@ -1,4 +1,5 @@
 <script setup>
+
 defineProps({
   totalProjects: {
     type: Number,
@@ -12,50 +13,42 @@ defineProps({
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-8">
-    <!-- Total Projects -->
-    <div>
-      <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          />
-        </svg>
-        <span>Total projects</span>
-      </div>
-      <div class="flex items-end gap-3">
-        <span class="text-4xl font-bold text-gray-900">{{ totalProjects }}</span>
-        <div
-          class="flex items-center gap-1 bg-red-50 text-red-500 text-xs px-2 py-0.5 rounded-full mb-1"
-        >
-          36.8%
+  <div class="grid grid-cols-2 gap-6">
+    <!-- Total Projects Card -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <div class="flex items-center gap-3 text-gray-500 text-sm mb-3">
+        <div class="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
+          <span class="text-blue-600 text-xl">📁</span>
         </div>
+        <span class="font-medium">Total Projects</span>
+      </div>
+      
+      <div class="flex items-baseline gap-2">
+        <span class="text-5xl font-bold text-gray-900">{{ totalProjects }}</span>
+      </div>
+      
+      <div class="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+        <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full"></span>
+        +12% from last month
       </div>
     </div>
 
-    <!-- Active Tasks -->
-    <div>
-      <div class="flex items-center gap-2 text-gray-500 text-sm mb-1">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-          />
-        </svg>
-        <span>Active tasks</span>
-      </div>
-      <div class="flex items-end gap-3">
-        <span class="text-4xl font-bold text-gray-900">{{ activeTasksCount }}</span>
-        <div
-          class="flex items-center gap-1 bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full mb-1"
-        >
-          36.8%
+    <!-- Active Tasks Card -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <div class="flex items-center gap-3 text-gray-500 text-sm mb-3">
+        <div class="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
+          <span class="text-amber-600 text-xl">⚡</span>
         </div>
+        <span class="font-medium">Active Tasks</span>
+      </div>
+      
+      <div class="flex items-baseline gap-2">
+        <span class="text-5xl font-bold text-gray-900">{{ activeTasksCount }}</span>
+      </div>
+      
+      <div class="text-xs text-amber-600 mt-1 flex items-center gap-1">
+        <span class="inline-block w-2 h-2 bg-amber-500 rounded-full"></span>
+        Currently in progress
       </div>
     </div>
   </div>
