@@ -1,107 +1,9 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
+import { useRoute } from 'vue-router'
 
-import { onMounted, ref } from 'vue'
-
-import ApiService from '@/services/api'
-
-import TaskForm from '@/components/TaskForm.vue'
-
-const openNewTask = ref(false)
-const activeStatus = ref('todo')
-
-const showNewTask = (status) => {
-  activeStatus.value = status
-  taskForm.value.status = status
-  openNewTask.value = true
-}
-const loading = ref(true)
-
-const fetchTasks = async () => {
-  loading.value = true
-  try {
-    const response = await ApiService.post('tasks', {
-      action: 'list'
-    })
-    console.log(response)
-    const allTasks = response.data
-    tasks.value = {
-      todo: allTasks.filter((task) => task.status === 'todo'),
-      in_progress: allTasks.filter((task) => task.status === 'in_progress'),
-      done: allTasks.filter((task) => task.status === 'done')
-    }
-  } catch (error) {
-    console.log(error)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  fetchTasks()
-})
-
-const tasks = ref({
-  todo: [],
-  in_progress: [],
-  done: []
-})
-
-const taskForm = ref({
-  title: '',
-  description: '',
-  status: 'todo',
-  priority: 'medium',
-  project_id: null,
-  team_id: null,
-  start_date: null,
-  due_date: null,
-  assignee_ids: []
-})
-
-const createTask = async () => {
-  try {
-    if (!taskForm.value.title.trim()) {
-      alert('Task title required')
-      return
-    }
-
-    const response = await ApiService.post('tasks', {
-      action: 'create',
-
-      project_id: taskForm.value.project_id,
-      title: taskForm.value.title,
-      description: taskForm.value.description,
-      status: taskForm.value.status,
-      priority: taskForm.value.priority,
-      start_date: taskForm.value.start_date,
-      due_date: taskForm.value.due_date,
-      team_id: taskForm.value.team_id,
-      assignee_ids: taskForm.value.assignee_ids
-    })
-
-    console.log('Created:', response.data)
-
-    openNewTask.value = false
-
-    taskForm.value = {
-      title: '',
-      description: '',
-      status: 'todo',
-      priority: 'medium',
-      project_id: '',
-      team_id: null,
-      start_date: null,
-      due_date: null,
-      assignee_ids: []
-    }
-
-    // refresh list
-    await fetchTasks()
-  } catch (err) {
-    console.log(err)
-  }
-}
+const route = useRoute()
+const projectId = route.params.id
 </script>
 
 <template>
@@ -163,10 +65,9 @@ const createTask = async () => {
               +
             </button>
           </div>
-          
+
           <!-- inputing new TASKS -->
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
-
             <!-- EMPTY TASK CARD -->
             <TaskForm
               v-if="openNewTask && activeStatus === 'todo'"
@@ -175,7 +76,7 @@ const createTask = async () => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
-             
+
             <!-- SKELETON CARDS -->
             <div v-if="loading" class="d-flex flex-column gap-3">
               <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
@@ -204,49 +105,8 @@ const createTask = async () => {
               </v-card>
             </div>
 
-            
-
             <!-- REAL CARDS -->
-            <div
-              v-else
-              v-for="task in tasks.todo"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-                <button class="text-gray-400">•••</button>
-              </div>
-
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
-                  <span>💬 {{ task.comment_count || 0 }}</span>
-                  <span>📎 {{ task.attachment_count || 0 }}</span>
-                </div>
-              </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
+            
           </div>
         </div>
 
@@ -278,7 +138,6 @@ const createTask = async () => {
               @cancel="openNewTask = false"
             />
 
-
             <!-- SKELETON CARDS -->
             <div v-if="loading" class="d-flex flex-column gap-3">
               <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
@@ -307,72 +166,11 @@ const createTask = async () => {
               </v-card>
             </div>
 
-            <div
-              v-else
-              v-for="task in tasks.in_progress"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-
-                <button class="text-gray-400">•••</button>
-              </div>
-
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">
-                {{ task.title }}
-              </h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                {{ task.description }}
-              </p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
-                  <span>💬 {{ task.comment_count || 0 }}</span>
-                  <span>📎 {{ task.attachment_count || 0 }}</span>
-                </div>
-              </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
+            
           </div>
         </div>
 
-        <!-- REVIEW -->
-        <!-- <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
-          <div class="p-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-
-              <h2 class="font-semibold text-gray-800">Review</h2>
-
-              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 1 </span>
-            </div>
-
-            <button
-              class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
-            >
-              +
-            </button>
-          </div>
-        </div> -->
+        
 
         <!-- DONE -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
@@ -430,52 +228,7 @@ const createTask = async () => {
               </v-card>
             </div>
 
-
-            <div
-              v-else
-              v-for="task in tasks.done"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-
-                <button class="text-gray-400">•••</button>
-              </div>
-
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">
-                {{ task.title }}
-              </h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                {{ task.description }}
-              </p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
-                  <span>💬 {{ task.comment_count || 0 }}</span>
-                  <span>📎 {{ task.attachment_count || 0 }}</span>
-                </div>
-              </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>

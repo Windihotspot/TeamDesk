@@ -6,6 +6,10 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth.js'
 import { useProjectStore } from '@/stores/project.js'
 import GetTeams from '@/components/GetTeams.vue'
+
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 // import TeamSelect from '@/components/GetTeams.vue'
 
 // declare var for authStore in auth.js
@@ -66,6 +70,12 @@ const fetchProject = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+
+//pushes to a new page inside projects 
+const openFullProjects = (project) => {
+  router.push(`/projects/${project.id}`)
 }
 
 const deleteProject = async () => {
@@ -174,6 +184,7 @@ const openAddTeams = async () => {
             <div
               v-for="project in projects"
               :key="project.id"
+              @click="openFullProjects"
               class="flex items-center justify-between bg-gray-100 rounded-sm p-3 mb-5"
             >
               <div class="flex items-center gap-3">
