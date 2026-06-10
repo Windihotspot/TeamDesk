@@ -18,6 +18,7 @@ const showNewTask = (status) => {
 const loading = ref(true)
 
 const fetchTasks = async () => {
+  loading.value = true
   try {
     const response = await ApiService.post('tasks', {
       action: 'list'
@@ -31,6 +32,8 @@ const fetchTasks = async () => {
     }
   } catch (error) {
     console.log(error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -62,8 +65,6 @@ const createTask = async () => {
       alert('Task title required')
       return
     }
-
-    loading.value = true
 
     const response = await ApiService.post('tasks', {
       action: 'create',
@@ -99,8 +100,6 @@ const createTask = async () => {
     await fetchTasks()
   } catch (err) {
     console.log(err)
-  } finally {
-    loading.value = false
   }
 }
 </script>
@@ -164,9 +163,10 @@ const createTask = async () => {
               +
             </button>
           </div>
-
+          
           <!-- inputing new TASKS -->
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
+
             <!-- EMPTY TASK CARD -->
             <TaskForm
               v-if="openNewTask && activeStatus === 'todo'"
@@ -175,43 +175,40 @@ const createTask = async () => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
-
+             
             <!-- SKELETON CARDS -->
-            <div
-              v-if="loading"
-              v-for="n in 3"
-              :key="`skeleton-${n}`"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <v-skeleton-loader type="chip" width="64" />
-                <v-skeleton-loader type="text" width="24" />
-              </div>
+            <div v-if="loading" class="d-flex flex-column gap-3">
+              <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
+                <!-- Header -->
+                <div class="flex justify-between items-start mb-6">
+                  <div class="h-7 w-20 rounded-full bg-gray-200"></div>
 
-              <!-- TITLE -->
-              <v-skeleton-loader type="text" width="75%" class="mt-4" />
+                  <div class="flex gap-1">
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                  </div>
+                </div>
 
-              <!-- DESCRIPTION -->
-              <div class="mt-2">
-                <v-skeleton-loader type="text" width="100%" />
-                <v-skeleton-loader type="text" width="85%" />
-                <v-skeleton-loader type="text" width="65%" />
-              </div>
+                <!-- Task Title -->
+                <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
 
-              <!-- FOOTER -->
-              <div class="mt-5 flex gap-4">
-                <v-skeleton-loader type="text" width="40" />
-                <v-skeleton-loader type="text" width="40" />
-              </div>
+                <!-- Stats -->
+                <div class="flex gap-6 mb-6">
+                  <div class="h-4 w-10 bg-gray-200 rounded"></div>
+                  <div class="h-4 w-10 bg-gray-200 rounded"></div>
+                </div>
 
-              <!-- DUE -->
-              <v-skeleton-loader type="text" width="96" class="mt-4" />
+                <!-- Due Date -->
+                <div class="h-5 w-24 bg-gray-200 rounded"></div>
+              </v-card>
             </div>
+
+            
 
             <!-- REAL CARDS -->
             <div
-              v-else=""
+              v-else
               v-for="task in tasks.todo"
               :key="task.id"
               class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
@@ -281,7 +278,37 @@ const createTask = async () => {
               @cancel="openNewTask = false"
             />
 
+
+            <!-- SKELETON CARDS -->
+            <div v-if="loading" class="d-flex flex-column gap-3">
+              <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
+                <!-- Header -->
+                <div class="flex justify-between items-start mb-6">
+                  <div class="h-7 w-20 rounded-full bg-gray-200"></div>
+
+                  <div class="flex gap-1">
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                  </div>
+                </div>
+
+                <!-- Task Title -->
+                <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
+
+                <!-- Stats -->
+                <div class="flex gap-6 mb-6">
+                  <div class="h-4 w-10 bg-gray-200 rounded"></div>
+                  <div class="h-4 w-10 bg-gray-200 rounded"></div>
+                </div>
+
+                <!-- Due Date -->
+                <div class="h-5 w-24 bg-gray-200 rounded"></div>
+              </v-card>
+            </div>
+
             <div
+              v-else
               v-for="task in tasks.in_progress"
               :key="task.id"
               class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
@@ -375,7 +402,37 @@ const createTask = async () => {
               @cancel="openNewTask = false"
             />
 
+            <!-- SKELETON CARDS -->
+            <div v-if="loading" class="d-flex flex-column gap-3">
+              <v-card v-for="i in 1" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
+                <!-- Header -->
+                <div class="flex justify-between items-start mb-6">
+                  <div class="h-7 w-20 rounded-full bg-gray-200"></div>
+
+                  <div class="flex gap-1">
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                    <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                  </div>
+                </div>
+
+                <!-- Task Title -->
+                <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
+
+                <!-- Stats -->
+                <div class="flex gap-6 mb-6">
+                  <div class="h-4 w-10 bg-gray-200 rounded"></div>
+                  <div class="h-4 w-10 bg-gray-200 rounded"></div>
+                </div>
+
+                <!-- Due Date -->
+                <div class="h-5 w-24 bg-gray-200 rounded"></div>
+              </v-card>
+            </div>
+
+
             <div
+              v-else
               v-for="task in tasks.done"
               :key="task.id"
               class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
