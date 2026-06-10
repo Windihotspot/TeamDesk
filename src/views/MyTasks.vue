@@ -15,7 +15,7 @@ const showNewTask = (status) => {
   taskForm.value.status = status
   openNewTask.value = true
 }
-const loading = ref(false)
+const loading = ref(true)
 
 const fetchTasks = async () => {
   try {
@@ -25,9 +25,9 @@ const fetchTasks = async () => {
     console.log(response)
     const allTasks = response.data
     tasks.value = {
-      todo: allTasks.filter((task) => task.status === 'todo')
-      // inProgress: res.data.inProgress || [],
-      // done: res.data.done || []
+      todo: allTasks.filter((task) => task.status === 'todo'),
+      in_progress: allTasks.filter((task) => task.status === 'in_progress'),
+      done: allTasks.filter((task) => task.status === 'done')
     }
   } catch (error) {
     console.log(error)
@@ -176,8 +176,42 @@ const createTask = async () => {
               @cancel="openNewTask = false"
             />
 
-            <!-- card for todo -->
+            <!-- SKELETON CARDS -->
             <div
+              v-if="loading"
+              v-for="n in 3"
+              :key="`skeleton-${n}`"
+              class="bg-white rounded-3xl p-4 mb-4 shadow-sm"
+            >
+              <!-- TOP -->
+              <div class="flex items-start justify-between">
+                <v-skeleton-loader type="chip" width="64" />
+                <v-skeleton-loader type="text" width="24" />
+              </div>
+
+              <!-- TITLE -->
+              <v-skeleton-loader type="text" width="75%" class="mt-4" />
+
+              <!-- DESCRIPTION -->
+              <div class="mt-2">
+                <v-skeleton-loader type="text" width="100%" />
+                <v-skeleton-loader type="text" width="85%" />
+                <v-skeleton-loader type="text" width="65%" />
+              </div>
+
+              <!-- FOOTER -->
+              <div class="mt-5 flex gap-4">
+                <v-skeleton-loader type="text" width="40" />
+                <v-skeleton-loader type="text" width="40" />
+              </div>
+
+              <!-- DUE -->
+              <v-skeleton-loader type="text" width="96" class="mt-4" />
+            </div>
+
+            <!-- REAL CARDS -->
+            <div
+              v-else=""
               v-for="task in tasks.todo"
               :key="task.id"
               class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
@@ -194,19 +228,14 @@ const createTask = async () => {
                 >
                   {{ task.priority }}
                 </span>
-
                 <button class="text-gray-400">•••</button>
               </div>
 
               <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">
-                {{ task.title }}
-              </h3>
+              <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
 
               <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                {{ task.description }}
-              </p>
+              <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
 
               <!-- FOOTER -->
               <div class="mt-5 flex justify-between">
@@ -251,6 +280,51 @@ const createTask = async () => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
+
+            <div
+              v-for="task in tasks.in_progress"
+              :key="task.id"
+              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+            >
+              <!-- TOP -->
+              <div class="flex items-start justify-between">
+                <span
+                  class="text-xs px-3 py-1 rounded-full font-medium"
+                  :class="{
+                    'bg-red-100 text-red-600': task.priority === 'high',
+                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                    'bg-green-100 text-green-600': task.priority === 'low'
+                  }"
+                >
+                  {{ task.priority }}
+                </span>
+
+                <button class="text-gray-400">•••</button>
+              </div>
+
+              <!-- TITLE -->
+              <h3 class="font-semibold text-gray-900 mt-4">
+                {{ task.title }}
+              </h3>
+
+              <!-- DESCRIPTION -->
+              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
+                {{ task.description }}
+              </p>
+
+              <!-- FOOTER -->
+              <div class="mt-5 flex justify-between">
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <span>💬 {{ task.comment_count || 0 }}</span>
+                  <span>📎 {{ task.attachment_count || 0 }}</span>
+                </div>
+              </div>
+
+              <!-- DUE -->
+              <div class="mt-4 text-sm font-medium text-red-500">
+                {{ task.due_date || 'No due date' }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -300,6 +374,51 @@ const createTask = async () => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
+
+            <div
+              v-for="task in tasks.done"
+              :key="task.id"
+              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+            >
+              <!-- TOP -->
+              <div class="flex items-start justify-between">
+                <span
+                  class="text-xs px-3 py-1 rounded-full font-medium"
+                  :class="{
+                    'bg-red-100 text-red-600': task.priority === 'high',
+                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                    'bg-green-100 text-green-600': task.priority === 'low'
+                  }"
+                >
+                  {{ task.priority }}
+                </span>
+
+                <button class="text-gray-400">•••</button>
+              </div>
+
+              <!-- TITLE -->
+              <h3 class="font-semibold text-gray-900 mt-4">
+                {{ task.title }}
+              </h3>
+
+              <!-- DESCRIPTION -->
+              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
+                {{ task.description }}
+              </p>
+
+              <!-- FOOTER -->
+              <div class="mt-5 flex justify-between">
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <span>💬 {{ task.comment_count || 0 }}</span>
+                  <span>📎 {{ task.attachment_count || 0 }}</span>
+                </div>
+              </div>
+
+              <!-- DUE -->
+              <div class="mt-4 text-sm font-medium text-red-500">
+                {{ task.due_date || 'No due date' }}
+              </div>
+            </div>
           </div>
         </div>
       </div>

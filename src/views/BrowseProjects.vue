@@ -49,11 +49,11 @@ const submitProject = async () => {
   }
 }
 
-// const isLoading = ref(true)
+const isLoading = ref(true)
 
 //on load of projects page :added a loading feature to it
 const fetchProject = async () => {
-  // isLoading.value = true
+  isLoading.value = true
 
   try {
     const { data, error } = await supabase.from('projects').select('*')
@@ -64,7 +64,7 @@ const fetchProject = async () => {
   } catch (err) {
     console.error(err)
   } finally {
-    // isLoading.value = false
+    isLoading.value = false
   }
 }
 
@@ -127,22 +127,11 @@ const openAddTeams = async () => {
 
 <template>
   <MainLayout>
-    <div
-      v-if="isLoading"
-      class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
-    >
-      <v-progress-circular indeterminate color="blue" size="60" width="2" />
-
-      <p class="mt-4 text-sm text-gray-500 font-medium">Loading Project data...</p>
-    </div>
-
-    <div v-else>
+    <div>
       <div class="grid grid-cols-1 lg:grid-cols-1">
-        <!-- Active Projects -->
         <v-card class="rounded-2xl shadow-sm pa-4">
           <div class="flex justify-between items-center mb-4">
             <h2 class="font-bold text-md">Browse Projects</h2>
-
             <div class="flex items-center gap-2">
               <v-select
                 density="compact"
@@ -155,13 +144,21 @@ const openAddTeams = async () => {
               <v-btn @click="openAddProjects" icon size="small" class="text-black rounded-lg">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
-              <!-- <v-btn icon size="small" variant="text">
-                <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn> -->
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-1">
+          <!-- Loading Skeleton -->
+          <div  v-if="isLoading" class="d-flex flex-column gap-3">
+            <v-skeleton-loader
+              v-for="i in 11"
+              :key="i"
+              type="list-item-avatar-two-line"
+              class="rounded-lg"
+            />
+          </div>
+
+          <!-- Actual Content -->
+          <div v-else class="grid grid-cols-1 sm:grid-cols-1">
             <div
               v-for="project in projects"
               :key="project.id"
@@ -174,7 +171,6 @@ const openAddTeams = async () => {
                   <p class="font-medium text-sm">{{ project.name }}</p>
                   <p class="text-xs text-gray-500">
                     {{ project.description }}
-                    {{ project.description }}
                   </p>
                 </div>
               </div>
@@ -184,14 +180,12 @@ const openAddTeams = async () => {
                     mdi-dots-vertical
                   </v-icon>
                 </template>
-
                 <v-list density="compact">
                   <v-list-item
                     prepend-icon="mdi-pencil"
                     title="Edit"
                     @click="editProject(project)"
                   />
-
                   <v-list-item
                     prepend-icon="mdi-delete"
                     title="Delete"
