@@ -49,11 +49,15 @@ const submitProject = async () => {
   }
 }
 
+<<<<<<< HEAD
 const isLoading = ref(true)
+=======
+// const isLoading = ref(true)
+>>>>>>> 5e40c17fcde56b64ed51757059ecb76e493a8348
 
 //on load of projects page :added a loading feature to it
 const fetchProject = async () => {
-  isLoading.value = true
+  // isLoading.value = true
 
   try {
     const { data, error } = await supabase.from('projects').select('*')
@@ -64,7 +68,19 @@ const fetchProject = async () => {
   } catch (err) {
     console.error(err)
   } finally {
-    isLoading.value = false
+    // isLoading.value = false
+  }
+}
+
+const deleteProject = async () => {
+  try {
+    const { error } = await supabase.from('projects').delete().eq('id', id)
+
+    if (error) throw error
+
+    console.log('Project deleted')
+  } catch (error) {
+    console.log(error)
   }
 }
 
@@ -180,12 +196,20 @@ const openAddTeams = async () => {
                     mdi-dots-vertical
                   </v-icon>
                 </template>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5e40c17fcde56b64ed51757059ecb76e493a8348
                 <v-list density="compact">
                   <v-list-item
                     prepend-icon="mdi-pencil"
                     title="Edit"
                     @click="editProject(project)"
                   />
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5e40c17fcde56b64ed51757059ecb76e493a8348
                   <v-list-item
                     prepend-icon="mdi-delete"
                     title="Delete"
