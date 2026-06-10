@@ -38,33 +38,29 @@ const displayedTasks = computed(() =>
 const openTaskModal = (task) => {
   emit('openTask', task)
 }
+
+const hasTeamSelected = computed(() => !!props.selectedCategory)
 </script>
 
 <template>
   <div class="bg-blue-50 rounded-2xl border-gray-400 p-6 shadow-lg">
+    <!-- HEADER -->
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-800 text-center mb-4">Task in progress</h2>
-      <font-awesome-icon icon="sliders" class="mr-7 hover:bg-gray-200" @click="openFilterModal" />
-      <!-- Modal -->
-      <div
-        v-if="showFilterModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      >
-        <div class="bg-white p-5 rounded-lg w-[400px] relative">
-          <!-- close button -->
-          <button class="absolute top-2 right-2 text-gray-600" @click="closeFilterModal">✕</button>
-
-          <!-- your component -->
-          <Filtericon
-            :teams="props.dashboardData?.teams || []"
-            :model-value="props.selectedCategory"
-            @update:modelValue="emit('update:selectedCategory', $event)"
-          />
-        </div>
-      </div>
+      <h2 class="text-lg font-semibold text-gray-800">Task in Progress</h2>
+      <font-awesome-icon 
+        icon="sliders" 
+        class="text-gray-500 hover:text-gray-700 cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition"
+        @click="openFilterModal" 
+      />
     </div>
 
-    <ul class="flex flex-col gap-2">
+    <!-- EMPTY STATE -->
+    <div v-if="!hasTeamSelected" class="text-center text-gray-500 py-10 text-sm">
+      Select a team to view tasks
+    </div>
+
+    <!-- TASK LIST -->
+    <ul v-else class="flex flex-col gap-2">
       <li
         v-for="(task, index) in displayedTasks"
         :key="index"
@@ -75,7 +71,7 @@ const openTaskModal = (task) => {
 
           <details class="flex-1 cursor-pointer">
             <summary class="text-xs text-gray-700 flex items-center justify-between">
-              <span>{{ task.title }} </span>
+              <span>{{ task.title }}</span>
 
               <button
                 @click.stop="openTaskModal(task)"
@@ -94,12 +90,39 @@ const openTaskModal = (task) => {
       </li>
     </ul>
 
-    <!-- BUTTON -->
+    <!-- See More Button -->
     <button
+      v-if="hasTeamSelected && visibleNewTasks.length > 3"
       @click="showAllNewTasks = !showAllNewTasks"
       class="mt-3 text-xs text-blue-600 hover:underline"
     >
       {{ showAllNewTasks ? 'Show Less' : 'See More' }}
     </button>
+
+    <!-- ==================== FILTER MODAL ==================== -->
+    <Teleport to="body">
+      <div
+        v-if="showFilterModal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      >
+        <div class="bg-white rounded-2xl w-full max-w-md mx-4 shadow-xl relative">
+          <!-- Close Button -->
+          <button 
+            class="absolute -top-4 -right-4 bg-white w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700 text-xl font-bold border border-gray-200"
+            @click="closeFilterModal"
+          >
+            ✕
+          </button>
+
+          <div class="p-6">
+            <Filtericon
+              :teams="dashboardData?.teams || []"
+              :model-value="selectedCategory"
+              @update:modelValue="emit('update:selectedCategory', $event)"
+            />
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

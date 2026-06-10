@@ -18,7 +18,7 @@ const selectedCategoryModel = computed({
   get: () => props.modelValue,
   set: (val) => {
     console.log('🔄 Team selected in FilterIcon:', val)
-    emit('update:modelValue', val)
+    emit('update:modelValue', val || null)
   }
 })
 

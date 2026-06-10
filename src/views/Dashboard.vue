@@ -73,9 +73,7 @@ const showAllNewTasks = ref(false)
 const visibleNewTasks = computed(() => {
   if (!selectedCategory.value) return []
 
-  return showAllNewTasks.value
-    ? newTasks.value
-    : newTasks.value.slice( '')
+  return showAllNewTasks.value ? newTasks.value : newTasks.value.slice('')
 })
 const completeTask = (task, index) => {
   launchConfetti()
@@ -160,10 +158,17 @@ const selectedTeam = computed(() =>
 const filteredTasks = computed(() => {
   if (!selectedCategory.value) return []
 
-  return (selectedTeam.value?.projects || []).flatMap((project) =>
+  const team = dashboardData.value?.teams?.find(
+    (t) => t.id === selectedCategory.value
+  )
+
+  if (!team) return []
+
+  return (team.projects || []).flatMap((project) =>
     (project.tasks || []).map((task) => ({
       title: task.title,
-      description: task.status,
+      description: task.description || task.status,
+      status: task.status,
       avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task',
       ...task
     }))
@@ -235,9 +240,7 @@ watch(selectedCategory, async (teamId) => {
     }
 
     // ✅ ONLY map tasks for selected team (NOT all teams)
-    const selectedTeam = dashboardData.value?.teams?.find(
-      (t) => t.id === teamId
-    )
+    const selectedTeam = dashboardData.value?.teams?.find((t) => t.id === teamId)
 
     const teamTasks = mapTasks(selectedTeam ? [selectedTeam] : [])
 
@@ -248,7 +251,6 @@ watch(selectedCategory, async (teamId) => {
     console.log('📊 Active Tasks:', newTasks.value.length)
     console.log('📊 Updated Total Projects:', totalProjects.value)
     console.log('📊 Updated Active Tasks:', activeTasksCount.value)
-
   } catch (err) {
     console.error('Failed to load team details:', err)
   } finally {
@@ -351,7 +353,12 @@ onMounted(async () => {
           />
 
           <!-- Task Card -->
-          <taskCard :tasks="filteredTasks" :projects="projects"  />
+          <taskCard
+            :tasks="filteredTasks"
+            :projects="projects"
+            :teams="dashboardData?.teams || []"
+            v-model="selectedCategory"
+          />
         </div>
 
         <!-- RIGHT COLUMN -->
