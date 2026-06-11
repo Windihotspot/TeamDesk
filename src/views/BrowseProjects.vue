@@ -6,6 +6,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth.js'
 import { useProjectStore } from '@/stores/project.js'
 import GetTeams from '@/components/GetTeams.vue'
+import ApiService from '@/services/api'
 
 import { useRouter } from 'vue-router'
 
@@ -78,33 +79,28 @@ const openFullProjects = (project) => {
   router.push(`/projects/${project.id}`)
 }
 
-const deleteProject = async () => {
-  try {
-    const { error } = await supabase.from('projects').delete().eq('id', id)
-
-    if (error) throw error
-
-    console.log('Project deleted')
-  } catch (error) {
-    console.log(error)
-  }
-}
-
-// const deleteProject = async () => {
-//   try {
-//     const { error } = await supabase.from('projects').delete().eq('id', id)
-
-//     if (error) throw error
-
-//     console.log('Project deleted')
-//   } catch (error) {
-//     console.log(error)
-//   }
-// }
 
 onMounted(() => {
   fetchProject()
 })
+
+
+const deleteProject = async (projectId) => {
+  try {
+    await ApiService.post('projects', {
+      action: 'delete',
+      project_id: projectId
+    })
+
+    console.log('Task deleted')
+
+    // Refresh projects after deleting
+    await fetchProject()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 
 // shows teams dropdown as an empty array
 // const teams = ref([])

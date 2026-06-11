@@ -1,9 +1,114 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { useRoute } from 'vue-router'
+import { onMounted, ref } from 'vue'
+
+import ApiService from '@/services/api'
+
+import TaskForm from '@/components/TaskForm.vue'
 
 const route = useRoute()
 const projectId = route.params.id
+
+//openNewTask starts as false
+const openNewTask = ref(false)
+//since I'm passing status as a parameters..it starts with todo
+const activeStatus = ref('todo')
+
+//passing the status parameters @click of showNewTask
+const showNewTask = (status) => {
+  activeStatus.value = status
+  taskForm.value.status = status
+  openNewTask.value = true
+}
+
+const tasks = ref({
+  todo: [],
+  in_progress: [],
+  done: []
+})
+
+const taskForm = ref({
+  title: '',
+  description: '',
+  status: 'todo',
+  priority: 'medium',
+  project_id: '',
+  team_id: null,
+  start_date: null,
+  due_date: null,
+  assignee_ids: []
+})
+
+const loading = ref(true)
+
+const fetchTasks = async () => {
+  loading.value = true
+  try {
+    const response = await ApiService.post('tasks', {
+      action: 'list'
+    })
+    console.log(response)
+    const allTasks = response.data
+    tasks.value = {
+      todo: allTasks.filter((task) => task.status === 'todo'),
+      in_progress: allTasks.filter((task) => task.status === 'in_progress'),
+      done: allTasks.filter((task) => task.status === 'done')
+    }
+  } catch (error) {
+    console.log(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchTasks()
+})
+
+const createTask = async () => {
+  try {
+    if (!taskForm.value.title.trim()) {
+      alert('Task title required')
+      return
+    }
+
+    const response = await ApiService.post('tasks', {
+      action: 'create',
+
+      project_id: taskForm.value.project_id,
+      title: taskForm.value.title,
+      description: taskForm.value.description,
+      status: taskForm.value.status,
+      priority: taskForm.value.priority,
+      start_date: taskForm.value.start_date,
+      due_date: taskForm.value.due_date,
+      team_id: taskForm.value.team_id,
+      assignee_ids: taskForm.value.assignee_ids
+    })
+
+    console.log('Created:', response.data)
+
+    openNewTask.value = false
+
+    taskForm.value = {
+      title: '',
+      description: '',
+      status: 'todo',
+      priority: 'medium',
+      project_id: '',
+      team_id: null,
+      start_date: null,
+      due_date: null,
+      assignee_ids: []
+    }
+
+    // refresh list
+    await fetchTasks()
+  } catch (err) {
+    console.log(err)
+  }
+}
 </script>
 
 <template>
@@ -106,7 +211,46 @@ const projectId = route.params.id
             </div>
 
             <!-- REAL CARDS -->
-            
+            <div
+              v-else
+              v-for="task in tasks.todo"
+              :key="task.id"
+              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+            >
+              <!-- TOP -->
+              <div class="flex items-start justify-between">
+                <span
+                  class="text-xs px-3 py-1 rounded-full font-medium"
+                  :class="{
+                    'bg-red-100 text-red-600': task.priority === 'high',
+                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                    'bg-green-100 text-green-600': task.priority === 'low'
+                  }"
+                >
+                  {{ task.priority }}
+                </span>
+                <button class="text-gray-400">•••</button>
+              </div>
+
+              <!-- TITLE -->
+              <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
+
+              <!-- DESCRIPTION -->
+              <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
+
+              <!-- FOOTER -->
+              <div class="mt-5 flex justify-between">
+                <div class="flex items-center gap-4 text-sm text-gray-500">
+                  <span>💬 {{ task.comment_count || 0 }}</span>
+                  <span>📎 {{ task.attachment_count || 0 }}</span>
+                </div>
+              </div>
+
+              <!-- DUE -->
+              <div class="mt-4 text-sm font-medium text-red-500">
+                {{ task.due_date || 'No due date' }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -165,12 +309,8 @@ const projectId = route.params.id
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
               </v-card>
             </div>
-
-            
           </div>
         </div>
-
-        
 
         <!-- DONE -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
@@ -227,8 +367,6 @@ const projectId = route.params.id
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
               </v-card>
             </div>
-
-            
           </div>
         </div>
       </div>

@@ -7,14 +7,36 @@ import ApiService from '@/services/api'
 
 import TaskForm from '@/components/TaskForm.vue'
 
+//openNewTask starts as false
 const openNewTask = ref(false)
+//since I'm passing status as a parameters..it starts with todo
 const activeStatus = ref('todo')
 
+//passing the status parameters @click of showNewTask
 const showNewTask = (status) => {
   activeStatus.value = status
   taskForm.value.status = status
   openNewTask.value = true
 }
+
+const tasks = ref({
+  todo: [],
+  in_progress: [],
+  done: []
+})
+
+const taskForm = ref({
+  title: '',
+  description: '',
+  status: 'todo',
+  priority: 'medium',
+  project_id: null,
+  team_id: null,
+  start_date: null,
+  due_date: null,
+  assignee_ids: []
+})
+
 const loading = ref(true)
 
 const fetchTasks = async () => {
@@ -39,24 +61,6 @@ const fetchTasks = async () => {
 
 onMounted(() => {
   fetchTasks()
-})
-
-const tasks = ref({
-  todo: [],
-  in_progress: [],
-  done: []
-})
-
-const taskForm = ref({
-  title: '',
-  description: '',
-  status: 'todo',
-  priority: 'medium',
-  project_id: null,
-  team_id: null,
-  start_date: null,
-  due_date: null,
-  assignee_ids: []
 })
 
 const createTask = async () => {
@@ -100,6 +104,22 @@ const createTask = async () => {
     await fetchTasks()
   } catch (err) {
     console.log(err)
+  }
+}
+
+const deleteTask = async (taskId) => {
+  try {
+    await ApiService.post('tasks', {
+      action: 'delete',
+      task_id: taskId
+    })
+
+    console.log('Task deleted')
+
+    // Refresh tasks after deleting
+    await fetchTasks()
+  } catch (error) {
+    console.error(error)
   }
 }
 </script>
@@ -163,10 +183,9 @@ const createTask = async () => {
               +
             </button>
           </div>
-          
+
           <!-- inputing new TASKS -->
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
-
             <!-- EMPTY TASK CARD -->
             <TaskForm
               v-if="openNewTask && activeStatus === 'todo'"
@@ -175,7 +194,7 @@ const createTask = async () => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
-             
+
             <!-- SKELETON CARDS -->
             <div v-if="loading" class="d-flex flex-column gap-3">
               <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
@@ -204,8 +223,6 @@ const createTask = async () => {
               </v-card>
             </div>
 
-            
-
             <!-- REAL CARDS -->
             <div
               v-else
@@ -225,7 +242,21 @@ const createTask = async () => {
                 >
                   {{ task.priority }}
                 </span>
-                <button class="text-gray-400">•••</button>
+                <v-menu>
+                  <template #activator="{ props }">
+                    <button v-bind="props" class="text-gray-400">•••</button>
+                  </template>
+
+                  <v-list>
+                    <v-list-item @click="editTask(task)">
+                      <v-list-item-title>Edit</v-list-item-title>
+                    </v-list-item>
+
+                    <v-list-item @click="deleteTask(task.id)">
+                      <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
               </div>
 
               <!-- TITLE -->
@@ -278,7 +309,6 @@ const createTask = async () => {
               @cancel="openNewTask = false"
             />
 
-
             <!-- SKELETON CARDS -->
             <div v-if="loading" class="d-flex flex-column gap-3">
               <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
@@ -326,7 +356,21 @@ const createTask = async () => {
                   {{ task.priority }}
                 </span>
 
-                <button class="text-gray-400">•••</button>
+                <v-menu>
+                  <template #activator="{ props }">
+                    <button v-bind="props" class="text-gray-400">•••</button>
+                  </template>
+
+                  <v-list>
+                    <v-list-item @click="editTask(task)">
+                      <v-list-item-title>Edit</v-list-item-title>
+                    </v-list-item>
+
+                    <v-list-item @click="deleteTask(task.id)">
+                      <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
               </div>
 
               <!-- TITLE -->
@@ -430,7 +474,6 @@ const createTask = async () => {
               </v-card>
             </div>
 
-
             <div
               v-else
               v-for="task in tasks.done"
@@ -450,7 +493,21 @@ const createTask = async () => {
                   {{ task.priority }}
                 </span>
 
-                <button class="text-gray-400">•••</button>
+                <v-menu>
+                  <template #activator="{ props }">
+                    <button v-bind="props" class="text-gray-400">•••</button>
+                  </template>
+
+                  <v-list>
+                    <v-list-item @click="editTask(task)">
+                      <v-list-item-title>Edit</v-list-item-title>
+                    </v-list-item>
+
+                    <v-list-item @click="deleteTask(task.id)">
+                      <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
               </div>
 
               <!-- TITLE -->
