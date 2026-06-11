@@ -85,6 +85,8 @@ onMounted(() => {
 })
 
 
+
+//projectId is the parameters i am passing....project_id is the name of the var for action delete
 const deleteProject = async (projectId) => {
   try {
     await ApiService.post('projects', {
