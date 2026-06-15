@@ -38,6 +38,7 @@ onMounted(() => {
     item-title="name"
     item-value="id"
     :label="label"
+    placeholder="Select Team"
     variant="outlined"
     :loading="loading"
     clearable
