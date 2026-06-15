@@ -64,6 +64,12 @@ const menuItems = [
     route: '/dashboard'
   },
   {
+    nav: 'attendance',
+    label: 'Attendance',
+    icon: 'mdi mdi-calendar-check-outline',
+    route: '/attendance'
+  },
+  {
     nav: 'teams',
     label: 'Teams',
     icon: 'mdi mdi-account-group',
@@ -134,13 +140,6 @@ const menuItems = [
     label: 'Suppliers',
     icon: 'mdi mdi-domain',
     route: '/suppliers'
-  },
-
-  {
-    nav: 'attendance',
-    label: 'Attendance',
-    icon: 'mdi mdi-calendar-check-outline',
-    route: '/attendance'
   },
 
   {
