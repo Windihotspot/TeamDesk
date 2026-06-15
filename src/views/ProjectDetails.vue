@@ -33,7 +33,7 @@ const taskForm = ref({
   description: '',
   status: 'todo',
   priority: 'medium',
-  project_id: '',
+  project_id: projectId,
   team_id: null,
   start_date: null,
   due_date: null,
@@ -46,9 +46,11 @@ const fetchTasks = async () => {
   loading.value = true
   try {
     const response = await ApiService.post('tasks', {
-      action: 'list'
+      action: 'list',
+      project_id: projectId
     })
     console.log(response)
+    console.log(projectId)
     const allTasks = response.data
     tasks.value = {
       todo: allTasks.filter((task) => task.status === 'todo'),
@@ -76,7 +78,7 @@ const createTask = async () => {
     const response = await ApiService.post('tasks', {
       action: 'create',
 
-      project_id: taskForm.value.project_id,
+      project_id: projectId,
       title: taskForm.value.title,
       description: taskForm.value.description,
       status: taskForm.value.status,
@@ -96,7 +98,7 @@ const createTask = async () => {
       description: '',
       status: 'todo',
       priority: 'medium',
-      project_id: '',
+      project_id: projectId,
       team_id: null,
       start_date: null,
       due_date: null,
