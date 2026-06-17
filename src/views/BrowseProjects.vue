@@ -75,8 +75,10 @@ const fetchProject = async () => {
 
 
 //pushes to a new page inside projects 
+//project is passed into the function openFullProjects: must also be passed 
 const openFullProjects = (project) => {
   console.log(project)
+  //without projects being passed: this wont happen router.push('/projects/2')
   router.push(`/projects/${project.id}`)
 
 }
