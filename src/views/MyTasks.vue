@@ -122,6 +122,25 @@ const deleteTask = async (taskId) => {
     console.error(error)
   }
 }
+
+const drawer = ref(false)
+
+const selectedTask = ref(null)
+
+// const task = {
+//   id: 1,
+//   title: "Build Login Page",
+//   description: "Create authentication flow using Supabase.",
+//   status: "In Progress",
+//   assignee: "Everjoy",
+//   due_date: "2026-06-30",
+//   priority: "High"
+// }
+
+function openTask(task) {
+  selectedTask.value = task
+  drawer.value = true
+}
 </script>
 
 <template>
@@ -228,6 +247,7 @@ const deleteTask = async (taskId) => {
               v-else
               v-for="task in tasks.todo"
               :key="task.id"
+              @click="openTask"
               class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
             >
               <!-- TOP -->
@@ -536,6 +556,156 @@ const deleteTask = async (taskId) => {
           </div>
         </div>
       </div>
+
+      <!-- navigation drawer display -->
+
+      <div>
+        <!-- Task Card -->
+        <!-- <v-card class="mb-2" @click="openTask(tasks)">
+          <v-card-title>{{ tasks.title }}</v-card-title>
+        </v-card> -->
+
+        <!-- Task Details Drawer -->
+        <v-navigation-drawer
+          v-for="task in tasks.todo"
+          :key="task.id"
+          v-model="drawer"
+          location="right"
+          temporary
+          width="750"
+        >
+          <div v-if="selectedTask" class="task-drawer pa-6">
+            <!-- Title -->
+            <h3 class="font-semibold text-gray-900 mt-4">{{ task.title}}</h3>
+
+            <!-- Properties -->
+            <v-row dense>
+              <v-col cols="12">
+                <div class="property-row">
+                  <v-icon size="18">mdi-check-circle-outline</v-icon>
+
+                  <span class="property-label"> Status </span>
+
+                  <v-select
+                    v-model="selectedTask.status"
+                    :items="['Todo', 'In Progress', 'Done']"
+                    variant="underlined"
+                    hide-details
+                  />
+                </div>
+              </v-col>
+
+              <v-col cols="12">
+                <div class="property-row">
+                  <v-icon size="18">mdi-account-outline</v-icon>
+
+                  <span class="property-label"> Assignee </span>
+
+                  <v-text-field v-model="selectedTask.assignee" variant="underlined" hide-details />
+                </div>
+              </v-col>
+
+              <v-col cols="12">
+                <div class="property-row">
+                  <v-icon size="18">mdi-calendar-outline</v-icon>
+
+                  <span class="property-label"> Due Date </span>
+
+                  <v-text-field
+                    v-model="selectedTask.due_date"
+                    type="date"
+                    variant="underlined"
+                    hide-details
+                  />
+                </div>
+              </v-col>
+
+              <v-col cols="12">
+                <div class="property-row">
+                  <v-icon size="18">mdi-flag-outline</v-icon>
+
+                  <span class="property-label"> Priority </span>
+
+                  <v-select
+                    v-model="selectedTask.priority"
+                    :items="['Low', 'Medium', 'High']"
+                    variant="underlined"
+                    hide-details
+                  />
+                </div>
+              </v-col>
+            </v-row>
+
+            <v-divider class="my-5" />
+
+            <!-- Description -->
+            <div class="section-title mb-2">Description</div>
+
+            <v-textarea
+              v-model="selectedTask.description"
+              auto-grow
+              rows="3"
+              variant="plain"
+              placeholder="Write a description..."
+              hide-details
+              class="description-box"
+            />
+
+            <v-divider class="my-5" />
+
+            <!-- Comments -->
+            <div class="section-title mb-2">Comments</div>
+
+            <v-textarea
+              v-model="newComment"
+              auto-grow
+              rows="2"
+              variant="outlined"
+              placeholder="Write a comment..."
+            />
+
+            <div class="d-flex justify-end mt-2">
+              <v-btn color="primary" rounded="lg"> Comment </v-btn>
+            </div>
+          </div>
+        </v-navigation-drawer>
+      </div>
     </div>
   </MainLayout>
 </template>
+
+<style scoped>
+.task-drawer {
+  background: white;
+}
+
+.task-title :deep(input) {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.property-label {
+  width: 90px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.description-box {
+  border-radius: 8px;
+  padding: 8px;
+}
+</style>
