@@ -81,9 +81,13 @@ const dialogs = ref({
 
 const teamForm = ref({ name: '', description: '' })
 const editTeamForm = ref({ name: '', description: '' })
-const memberForm = ref({ user_id: '', role: 'member' as 'admin' | 'member' | 'viewer' })
+// update the ref type
+const memberForm = ref<{ user_id: string | null; role: 'admin' | 'member' | 'viewer' }>({
+  user_id: null,
+  role: 'member'
+})
 const editMemberForm = ref({
-  user_id: '',
+  user_id: null,
   role: 'member' as 'admin' | 'member' | 'viewer',
   member_id: ''
 })
@@ -163,21 +167,34 @@ async function fetchTeams() {
     loading.value = false
   }
 }
-
+const detailLoading = ref(false)
 async function openTeamDetail(team: Team) {
+  // pre-populate from list data so cards show immediately
   selectedTeam.value = team
+  teamMembers.value = team.team_members ?? []
+  teamProjects.value = team.projects ?? []
+  teamStats.value = null
   dialogs.value.teamDetail = true
   activeTab.value = 'members'
-  await Promise.all([fetchTeamDetail(team.id), fetchTeamStats(team.id)])
+
+  // then fetch fresh detail + stats in background
+  detailLoading.value = true
+  try {
+    await Promise.all([fetchTeamDetail(team.id), fetchTeamStats(team.id)])
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 async function fetchTeamDetail(teamId: string) {
   try {
     const res = await ApiService.post('/teams', { action: 'get_team', team_id: teamId })
+    console.log("team details response:", res)
     selectedTeam.value = res.data
     teamMembers.value = res.data?.team_members ?? []
     teamProjects.value = res.data?.projects ?? []
   } catch (e: any) {
+    console.log("team details error:", e)
     toast(e?.response?.data?.error ?? 'Failed to load team details', 'error')
   }
 }
@@ -273,10 +290,10 @@ async function addMember() {
       user_id: memberForm.value.user_id,
       role: memberForm.value.role
     })
-    teamMembers.value.push(res.data)
+    fetchTeams()
     toast('Member added')
     dialogs.value.addMember = false
-    memberForm.value = { user_id: '', role: 'member' }
+    memberForm.value = { user_id: null as any, role: 'member' }
     await fetchTeamStats(selectedTeam.value.id)
   } catch (e: any) {
     toast(e?.response?.data?.error ?? 'Failed to add member', 'error')
@@ -406,6 +423,60 @@ async function unassignProject() {
   }
 }
 
+// ── Inline member management (used inside create/edit team dialogs) ──────────
+
+async function inlineAddMember() {
+  if (!selectedTeam.value || !memberForm.value.user_id) return
+  actionLoading.value = true
+  try {
+    const res = await ApiService.post('/teams', {
+      action: 'add_member',
+      team_id: selectedTeam.value.id,
+      user_id: memberForm.value.user_id,
+      role: memberForm.value.role
+    })
+    teamMembers.value.push(res.data)
+    memberForm.value = { user_id: null, role: 'member' }
+    toast('Member added')
+  } catch (e: any) {
+    toast(e?.response?.data?.error ?? 'Failed to add member', 'error')
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function inlineUpdateMemberRole(member: TeamMember, newRole: string) {
+  if (!selectedTeam.value) return
+  try {
+    await ApiService.post('/teams', {
+      action: 'update_member',
+      team_id: selectedTeam.value.id,
+      user_id: member.user.id,
+      role: newRole
+    })
+    const idx = teamMembers.value.findIndex((m) => m.id === member.id)
+    if (idx !== -1) teamMembers.value[idx] = { ...teamMembers.value[idx], role: newRole as TeamMember['role'] }
+    toast('Role updated')
+  } catch (e: any) {
+    toast(e?.response?.data?.error ?? 'Failed to update role', 'error')
+  }
+}
+
+async function inlineRemoveMember(member: TeamMember) {
+  if (!selectedTeam.value) return
+  try {
+    await ApiService.post('/teams', {
+      action: 'remove_member',
+      team_id: selectedTeam.value.id,
+      user_id: member.user.id
+    })
+    teamMembers.value = teamMembers.value.filter((m) => m.id !== member.id)
+    toast('Member removed')
+  } catch (e: any) {
+    toast(e?.response?.data?.error ?? 'Failed to remove member', 'error')
+  }
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 onMounted(async () => {
@@ -471,6 +542,7 @@ onMounted(async () => {
       </div>
 
       <!-- ── Teams Grid ───────────────────────────────────────────────────── -->
+       
       <v-row v-else>
         <v-col v-for="team in filteredTeams" :key="team.id" cols="12" sm="6" md="4" lg="3">
           <v-card class="team-card" rounded="xl" elevation="0" border @click="openTeamDetail(team)">
@@ -616,156 +688,169 @@ onMounted(async () => {
             <v-tabs-window v-model="activeTab">
               <!-- ── Members Tab ─────────────────────────────────────────── -->
               <v-tabs-window-item value="members">
-                <div class="tab-toolbar d-flex justify-end px-5 py-3">
-                  <v-btn
-                    color="primary"
-                    variant="tonal"
-                    size="small"
-                    prepend-icon="mdi-account-plus"
-                    rounded="lg"
-                    @click="dialogs.addMember = true"
-                  >
-                    Add Member
-                  </v-btn>
-                </div>
+  <div class="tab-toolbar d-flex justify-end px-5 py-3">
+    <v-btn
+      color="primary"
+      variant="tonal"
+      size="small"
+      prepend-icon="mdi-account-plus"
+      rounded="lg"
+      @click="dialogs.addMember = true"
+    >
+      Add Member
+    </v-btn>
+  </div>
 
-                <v-list lines="two" class="px-2">
-                  <v-list-item
-                    v-for="member in teamMembers"
-                    :key="member.id"
-                    rounded="lg"
-                    class="mb-1"
-                  >
-                    <template #prepend>
-                      <v-avatar :color="roleColor(member.role)" size="40">
-                        <img
-                          v-if="member.user.avatar_url"
-                          :src="member.user.avatar_url"
-                          :alt="member.user.first_name"
-                        />
-                        <span v-else class="text-caption font-weight-bold text-white">
-                          {{ memberInitials(member.user) }}
-                        </span>
-                      </v-avatar>
-                    </template>
+  <!-- Skeleton while refreshing -->
+  <div v-if="detailLoading" class="px-4 pb-4">
+    <v-skeleton-loader
+      v-for="n in (teamMembers.length || 3)"
+      :key="n"
+      type="list-item-avatar-two-line"
+      class="mb-1"
+    />
+  </div>
 
-                    <v-list-item-title class="font-weight-medium">
-                      {{ member.user.first_name }} {{ member.user.last_name }}
-                      <v-chip
-                        :color="roleColor(member.role)"
-                        size="x-small"
-                        class="ml-2"
-                        variant="tonal"
-                      >
-                        {{ member.role }}
-                      </v-chip>
-                    </v-list-item-title>
-                    <v-list-item-subtitle>{{ member.user.email }}</v-list-item-subtitle>
+  <v-list v-else lines="two" class="px-2">
+    <v-list-item
+      v-for="member in teamMembers"
+      :key="member.id"
+      rounded="lg"
+      class="mb-1"
+    >
+      <template #prepend>
+        <v-avatar :color="roleColor(member.role)" size="40">
+          <img
+            v-if="member.user?.avatar_url"
+            :src="member.user.avatar_url"
+            :alt="member.user.first_name"
+          />
+          <span v-else class="text-caption font-weight-bold text-white">
+            {{ memberInitials(member.user) }}
+          </span>
+        </v-avatar>
+      </template>
 
-                    <template #append>
-                      <v-btn icon size="x-small" variant="text" @click="openEditMember(member)">
-                        <v-icon size="16">mdi-pencil-outline</v-icon>
-                        <v-tooltip activator="parent">Change role</v-tooltip>
-                      </v-btn>
-                      <v-btn
-                        icon
-                        size="x-small"
-                        variant="text"
-                        color="error"
-                        :disabled="member.user.id === selectedTeam.owner_id"
-                        @click="openRemoveMember(member)"
-                      >
-                        <v-icon size="16">mdi-account-remove-outline</v-icon>
-                        <v-tooltip activator="parent">
-                          {{
-                            member.user.id === selectedTeam.owner_id
-                              ? 'Cannot remove owner'
-                              : 'Remove member'
-                          }}
-                        </v-tooltip>
-                      </v-btn>
-                    </template>
-                  </v-list-item>
+      <v-list-item-title class="font-weight-medium">
+        {{ member.user?.first_name }} {{ member.user?.last_name }}
+        <v-chip
+          :color="roleColor(member.role)"
+          size="x-small"
+          class="ml-2"
+          variant="tonal"
+        >
+          {{ member.role }}
+        </v-chip>
+      </v-list-item-title>
+      <v-list-item-subtitle>{{ member.user?.email }}</v-list-item-subtitle>
 
-                  <div v-if="teamMembers.length === 0" class="text-center py-10">
-                    <v-icon size="48" color="grey-lighten-2">mdi-account-off-outline</v-icon>
-                    <p class="text-body-2 text-disabled mt-2">No members yet</p>
-                  </div>
-                </v-list>
-              </v-tabs-window-item>
+      <template #append>
+        <v-btn icon size="x-small" variant="text" @click="openEditMember(member)">
+          <v-icon size="16">mdi-pencil-outline</v-icon>
+          <v-tooltip activator="parent">Change role</v-tooltip>
+        </v-btn>
+        <v-btn
+          icon
+          size="x-small"
+          variant="text"
+          color="error"
+          :disabled="member.user?.id === selectedTeam?.owner_id"
+          @click="openRemoveMember(member)"
+        >
+          <v-icon size="16">mdi-account-remove-outline</v-icon>
+          <v-tooltip activator="parent">
+            {{ member.user?.id === selectedTeam?.owner_id ? 'Cannot remove owner' : 'Remove member' }}
+          </v-tooltip>
+        </v-btn>
+      </template>
+    </v-list-item>
+
+    <div v-if="teamMembers.length === 0" class="text-center py-10">
+      <v-icon size="48" color="grey-lighten-2">mdi-account-off-outline</v-icon>
+      <p class="text-body-2 text-disabled mt-2">No members yet</p>
+    </div>
+  </v-list>
+</v-tabs-window-item>
 
               <!-- ── Projects Tab ──────────────────────────────────────────── -->
               <v-tabs-window-item value="projects">
-                <div class="tab-toolbar d-flex justify-end gap-2 px-5 py-3">
-                  <v-btn
-                    variant="tonal"
-                    size="small"
-                    prepend-icon="mdi-link-variant"
-                    rounded="lg"
-                    @click="dialogs.assignProject = true"
-                  >
-                    Assign Existing
-                  </v-btn>
-                  <v-btn
-                    color="primary"
-                    variant="tonal"
-                    size="small"
-                    prepend-icon="mdi-folder-plus-outline"
-                    rounded="lg"
-                    @click="dialogs.createProject = true"
-                  >
-                    New Project
-                  </v-btn>
-                </div>
+  <div class="tab-toolbar d-flex justify-end gap-2 px-5 py-3">
+    <v-btn
+      variant="tonal"
+      size="small"
+      prepend-icon="mdi-link-variant"
+      rounded="lg"
+      @click="dialogs.assignProject = true"
+    >
+      Assign Existing
+    </v-btn>
+    <v-btn
+      color="primary"
+      variant="tonal"
+      size="small"
+      prepend-icon="mdi-folder-plus-outline"
+      rounded="lg"
+      @click="dialogs.createProject = true"
+    >
+      New Project
+    </v-btn>
+  </div>
 
-                <v-list lines="two" class="px-2">
-                  <v-list-item
-                    v-for="project in teamProjects"
-                    :key="project.id"
-                    rounded="lg"
-                    class="mb-1"
-                  >
-                    <template #prepend>
-                      <v-avatar :color="statusColor(project.status)" size="38" variant="tonal">
-                        <v-icon size="18">mdi-folder-outline</v-icon>
-                      </v-avatar>
-                    </template>
+  <div v-if="detailLoading" class="px-4 pb-4">
+    <v-skeleton-loader
+      v-for="n in (teamProjects.length || 2)"
+      :key="n"
+      type="list-item-avatar-two-line"
+      class="mb-1"
+    />
+  </div>
 
-                    <v-list-item-title class="font-weight-medium">
-                      {{ project.name }}
-                      <v-chip
-                        :color="statusColor(project.status)"
-                        size="x-small"
-                        class="ml-2"
-                        variant="tonal"
-                      >
-                        {{ project.status }}
-                      </v-chip>
-                    </v-list-item-title>
-                    <v-list-item-subtitle>{{
-                      project.description ?? 'No description'
-                    }}</v-list-item-subtitle>
+  <v-list v-else lines="two" class="px-2">
+    <v-list-item
+      v-for="project in teamProjects"
+      :key="project.id"
+      rounded="lg"
+      class="mb-1"
+    >
+      <template #prepend>
+        <v-avatar :color="statusColor(project.status)" size="38" variant="tonal">
+          <v-icon size="18">mdi-folder-outline</v-icon>
+        </v-avatar>
+      </template>
 
-                    <template #append>
-                      <v-btn
-                        icon
-                        size="x-small"
-                        variant="text"
-                        color="error"
-                        @click="openUnassignProject(project)"
-                      >
-                        <v-icon size="16">mdi-link-variant-off</v-icon>
-                        <v-tooltip activator="parent">Unassign from team</v-tooltip>
-                      </v-btn>
-                    </template>
-                  </v-list-item>
+      <v-list-item-title class="font-weight-medium">
+        {{ project.name }}
+        <v-chip
+          :color="statusColor(project.status)"
+          size="x-small"
+          class="ml-2"
+          variant="tonal"
+        >
+          {{ project.status }}
+        </v-chip>
+      </v-list-item-title>
+      <v-list-item-subtitle>{{ project.description ?? 'No description' }}</v-list-item-subtitle>
 
-                  <div v-if="teamProjects.length === 0" class="text-center py-10">
-                    <v-icon size="48" color="grey-lighten-2">mdi-folder-open-outline</v-icon>
-                    <p class="text-body-2 text-disabled mt-2">No projects assigned</p>
-                  </div>
-                </v-list>
-              </v-tabs-window-item>
+      <template #append>
+        <v-btn
+          icon
+          size="x-small"
+          variant="text"
+          color="error"
+          @click="openUnassignProject(project)"
+        >
+          <v-icon size="16">mdi-link-variant-off</v-icon>
+          <v-tooltip activator="parent">Unassign from team</v-tooltip>
+        </v-btn>
+      </template>
+    </v-list-item>
+
+    <div v-if="teamProjects.length === 0" class="text-center py-10">
+      <v-icon size="48" color="grey-lighten-2">mdi-folder-open-outline</v-icon>
+      <p class="text-body-2 text-disabled mt-2">No projects assigned</p>
+    </div>
+  </v-list>
+</v-tabs-window-item>
             </v-tabs-window>
           </v-card-text>
         </v-card>
@@ -800,6 +885,108 @@ onMounted(async () => {
               rows="3"
               no-resize
             />
+
+            <v-divider class="my-4" />
+<!-- <p class="text-subtitle-2 font-weight-semibold mb-3">
+  <v-icon start size="16" color="primary">mdi-account-multiple-outline</v-icon>
+  Members
+</p> -->
+
+<!-- Current members list (edit mode only — bind to teamMembers ref) -->
+<!-- <v-list v-if="teamMembers.length" density="compact" class="mb-3 rounded-lg border">
+  <v-list-item
+    v-for="member in teamMembers"
+    :key="member.id"
+    density="compact"
+    rounded="lg"
+  >
+    <template #prepend>
+      <v-avatar :color="roleColor(member.role)" size="32">
+        <img v-if="member.user.avatar_url" :src="member.user.avatar_url" />
+        <span v-else class="text-caption text-white font-weight-bold">
+          {{ memberInitials(member.user) }}
+        </span>
+      </v-avatar>
+    </template>
+
+    <v-list-item-title class="text-body-2">
+      {{ member.user.first_name }} {{ member.user.last_name }}
+      <v-chip :color="roleColor(member.role)" size="x-small" variant="tonal" class="ml-1">
+        {{ member.role }}
+      </v-chip>
+    </v-list-item-title>
+    <v-list-item-subtitle class="text-caption">{{ member.user.email }}</v-list-item-subtitle>
+
+    <template #append>
+      <v-select
+        :model-value="member.role"
+        :items="[
+          { title: 'Admin', value: 'admin' },
+          { title: 'Member', value: 'member' },
+          { title: 'Viewer', value: 'viewer' }
+        ]"
+        density="compact"
+        variant="plain"
+        hide-details
+        style="max-width: 100px"
+        @update:model-value="(role) => inlineUpdateMemberRole(member, role)"
+      />
+      <v-btn
+        icon
+        size="x-small"
+        variant="text"
+        color="error"
+        :disabled="member.user.id === selectedTeam?.owner_id"
+        @click="inlineRemoveMember(member)"
+      >
+        <v-icon size="14">mdi-close</v-icon>
+      </v-btn>
+    </template>
+  </v-list-item>
+</v-list> -->
+
+<!-- Add member inline -->
+   <v-autocomplete
+  v-model="memberForm.user_id"
+  :items="availableUsersToAdd"
+  item-value="id"
+  :item-title="(u: User) => u ? `${u.first_name} ${u.last_name} (${u.email})` : ''"
+  label="Select user"
+  variant="outlined"
+  density="comfortable"
+  rounded="lg"
+  class="mb-3"
+  clearable
+  no-data-text="No users available"
+/>
+<div class="d-flex gap-2 align-center">
+
+  <v-select
+    v-model="memberForm.role"
+    :items="[
+      { title: 'Admin', value: 'admin' },
+      { title: 'Member', value: 'member' },
+      { title: 'Viewer', value: 'viewer' }
+    ]"
+    variant="outlined"
+    density="compact"
+    rounded="lg"
+    hide-details
+   
+  />
+  <v-btn
+    color="primary"
+    variant="tonal"
+    size="small"
+    icon
+    rounded="lg"
+    :disabled="!memberForm.user_id"
+    :loading="actionLoading"
+    @click="inlineAddMember"
+  >
+    <v-icon>mdi-plus</v-icon>
+  </v-btn>
+</div>
           </v-card-text>
           <v-card-actions class="px-6 pb-6 pt-2">
             <v-spacer />
@@ -846,6 +1033,109 @@ onMounted(async () => {
               rows="3"
               no-resize
             />
+
+            <v-divider class="my-4" />
+<!-- <p class="text-subtitle-2 font-weight-semibold mb-3">
+  <v-icon start size="16" color="primary">mdi-account-multiple-outline</v-icon>
+  Members
+</p> -->
+
+<!-- Current members list (edit mode only — bind to teamMembers ref) -->
+<!-- <v-list v-if="teamMembers.length" density="compact" class="mb-3 rounded-lg border">
+  <v-list-item
+    v-for="member in teamMembers"
+    :key="member.id"
+    density="compact"
+    rounded="lg"
+  >
+    <template #prepend>
+      <v-avatar :color="roleColor(member.role)" size="32">
+        <img v-if="member.user.avatar_url" :src="member.user.avatar_url" />
+        <span v-else class="text-caption text-white font-weight-bold">
+          {{ memberInitials(member.user) }}
+        </span>
+      </v-avatar>
+    </template>
+
+    <v-list-item-title class="text-body-2">
+      {{ member.user.first_name }} {{ member.user.last_name }}
+      <v-chip :color="roleColor(member.role)" size="x-small" variant="tonal" class="ml-1">
+        {{ member.role }}
+      </v-chip>
+    </v-list-item-title>
+    <v-list-item-subtitle class="text-caption">{{ member.user.email }}</v-list-item-subtitle>
+
+    <template #append>
+      <v-select
+        :model-value="member.role"
+        :items="[
+          { title: 'Admin', value: 'admin' },
+          { title: 'Member', value: 'member' },
+          { title: 'Viewer', value: 'viewer' }
+        ]"
+        density="compact"
+        variant="plain"
+        hide-details
+        style="max-width: 100px"
+        @update:model-value="(role) => inlineUpdateMemberRole(member, role)"
+      />
+      <v-btn
+        icon
+        size="x-small"
+        variant="text"
+        color="error"
+        :disabled="member.user.id === selectedTeam?.owner_id"
+        @click="inlineRemoveMember(member)"
+      >
+        <v-icon size="14">mdi-close</v-icon>
+      </v-btn>
+    </template>
+  </v-list-item>
+</v-list> -->
+
+<!-- Add member inline -->
+    <v-autocomplete
+  v-model="memberForm.user_id"
+  :items="availableUsersToAdd"
+  item-value="id"
+  :item-title="(u: User) => u ? `${u.first_name} ${u.last_name} (${u.email})` : ''"
+  label="Select user"
+  variant="outlined"
+  density="comfortable"
+  rounded="lg"
+  class="mb-3"
+  clearable
+  no-data-text="No users available"
+/>
+<div class="flex justify-between align-center">
+
+  <v-select
+    v-model="memberForm.role"
+    :items="[
+      { title: 'Admin', value: 'admin' },
+      { title: 'Member', value: 'member' },
+      { title: 'Viewer', value: 'viewer' }
+    ]"
+    variant="outlined"
+    density="compact"
+    rounded="lg"
+    hide-details
+   
+  />
+  <v-btn
+    color="primary"
+    variant="tonal"
+    size="small"
+    icon
+    rounded="lg"
+    :disabled="!memberForm.user_id"
+    :loading="actionLoading"
+    @click="inlineAddMember"
+  >
+    <v-icon>mdi-plus</v-icon>
+  </v-btn>
+</div>
+
           </v-card-text>
           <v-card-actions class="px-6 pb-6 pt-2">
             <v-spacer />
@@ -904,18 +1194,19 @@ onMounted(async () => {
             Add Member
           </v-card-title>
           <v-card-text class="px-6 pb-2">
-            <v-autocomplete
-              v-model="memberForm.user_id"
-              :items="availableUsersToAdd"
-              item-value="id"
-              :item-title="(u: User) => `${u.first_name} ${u.last_name} (${u.email})`"
-              label="Select user"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              class="mb-3"
-              no-data-text="No users available"
-            />
+           <v-autocomplete
+  v-model="memberForm.user_id"
+  :items="availableUsersToAdd"
+  item-value="id"
+  :item-title="(u: User) => u ? `${u.first_name} ${u.last_name} (${u.email})` : ''"
+  label="Select user"
+  variant="outlined"
+  density="comfortable"
+  rounded="lg"
+  class="mb-3"
+  clearable
+  no-data-text="No users available"
+/>
             <v-select
               v-model="memberForm.role"
               :items="[
@@ -1173,6 +1464,9 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.v-btn{
+  text-transform: none;
+}
 .teams-page {
   min-height: 100vh;
 }
