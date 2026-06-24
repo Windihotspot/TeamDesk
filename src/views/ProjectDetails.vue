@@ -46,17 +46,29 @@ const loading = ref(true)
 const fetchTasks = async () => {
   loading.value = true
   try {
-    const response = await ApiService.post('projects', {
-      action: 'get',
-      project_id: projectId
-    })
-    console.log(response)    
-    const allTasks = response.data.tasks
-    console.log('checking allTasks per project', allTasks)
+    // const response = await ApiService.post('projects', {
+    //   action: 'get',
+    //   project_id: projectId
+    // })
+
+    const [todoRes, inProgressRes, doneRes] = await Promise.all([
+      ApiService.post('projects', { action: 'get', status: 'todo', project_id: projectId }),
+      ApiService.post('projects', { action: 'get', status: 'in_progress', project_id: projectId }),
+      ApiService.post('projects', { action: 'get', status: 'done', project_id: projectId })
+    ])
+    // console.log(response)
+    // const allTasks = response.data.tasks
+    // console.log('checking allTasks per project', allTasks)
+    // tasks.value = {
+    //   todo: allTasks.filter((task) => task.status === 'todo'),
+    //   in_progress: allTasks.filter((task) => task.status === 'in_progress'),
+    //   done: allTasks.filter((task) => task.status === 'done')
+    // }
+
     tasks.value = {
-      todo: allTasks.filter((task) => task.status === 'todo'),
-      in_progress: allTasks.filter((task) => task.status === 'in_progress'),
-      done: allTasks.filter((task) => task.status === 'done')
+      todo: [...(todoRes.data.created_tasks ?? [])],
+      in_progress: [...(inProgressRes.data.created_tasks ?? [])],
+      done: [...(doneRes.data.created_tasks ?? [])]
     }
   } catch (error) {
     console.log(error)
@@ -186,74 +198,68 @@ const createTask = async () => {
             />
 
             <!-- SKELETON CARDS -->
-            <div v-if="loading" class="d-flex flex-column gap-3">
-              <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
-                <!-- Header -->
+            <template v-if="loading">
+              <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
                 <div class="flex justify-between items-start mb-6">
                   <div class="h-7 w-20 rounded-full bg-gray-200"></div>
-
                   <div class="flex gap-1">
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                   </div>
                 </div>
-
-                <!-- Task Title -->
                 <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
-
-                <!-- Stats -->
                 <div class="flex gap-6 mb-6">
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                 </div>
-
-                <!-- Due Date -->
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
-              </v-card>
-            </div>
+              </div>
+            </template>
 
             <!-- REAL CARDS -->
-            <div
-              v-else
-              v-for="task in tasks.todo"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-                <button class="text-gray-400">•••</button>
-              </div>
-
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
+            <template v-else>
+              <div
+                v-for="task in tasks.todo"
+                :key="task.id"
+                @click="openTask(task)"
+                class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <span
+                    class="text-xs px-3 py-1 rounded-full font-medium"
+                    :class="{
+                      'bg-red-100 text-red-600': task.priority === 'high',
+                      'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                      'bg-green-100 text-green-600': task.priority === 'low'
+                    }"
+                    >{{ task.priority }}</span
+                  >
+                  <v-menu>
+                    <template #activator="{ props }">
+                      <button v-bind="props" class="text-gray-400">•••</button>
+                    </template>
+                    <v-list>
+                      <v-list-item @click.stop="editTask(task)"
+                        ><v-list-item-title>Edit</v-list-item-title></v-list-item
+                      >
+                      <v-list-item @click.stop="deleteTask(task.id)"
+                        ><v-list-item-title>Delete</v-list-item-title></v-list-item
+                      >
+                    </v-list>
+                  </v-menu>
+                </div>
+                <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
+                <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
+                <div class="mt-5 flex items-center gap-4 text-sm text-gray-500">
                   <span>💬 {{ task.comment_count || 0 }}</span>
                   <span>📎 {{ task.attachment_count || 0 }}</span>
                 </div>
+                <div class="mt-4 text-sm font-medium text-red-500">
+                  {{ task.due_date || 'No due date' }}
+                </div>
               </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
+            </template>
           </div>
         </div>
 
@@ -286,32 +292,68 @@ const createTask = async () => {
             />
 
             <!-- SKELETON CARDS -->
-            <div v-if="loading" class="d-flex flex-column gap-3">
-              <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
-                <!-- Header -->
+            <template v-if="loading">
+              <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
                 <div class="flex justify-between items-start mb-6">
                   <div class="h-7 w-20 rounded-full bg-gray-200"></div>
-
                   <div class="flex gap-1">
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                   </div>
                 </div>
-
-                <!-- Task Title -->
                 <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
-
-                <!-- Stats -->
                 <div class="flex gap-6 mb-6">
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                 </div>
-
-                <!-- Due Date -->
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
-              </v-card>
-            </div>
+              </div>
+            </template>
+
+            <!-- REAL CARDS -->
+            <template v-else>
+              <div
+                v-for="task in tasks.in_progress"
+                :key="task.id"
+                @click="openTask(task)"
+                class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <span
+                    class="text-xs px-3 py-1 rounded-full font-medium"
+                    :class="{
+                      'bg-red-100 text-red-600': task.priority === 'high',
+                      'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                      'bg-green-100 text-green-600': task.priority === 'low'
+                    }"
+                    >{{ task.priority }}</span
+                  >
+                  <v-menu>
+                    <template #activator="{ props }">
+                      <button v-bind="props" class="text-gray-400">•••</button>
+                    </template>
+                    <v-list>
+                      <v-list-item @click.stop="editTask(task)"
+                        ><v-list-item-title>Edit</v-list-item-title></v-list-item
+                      >
+                      <v-list-item @click.stop="deleteTask(task.id)"
+                        ><v-list-item-title>Delete</v-list-item-title></v-list-item
+                      >
+                    </v-list>
+                  </v-menu>
+                </div>
+                <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
+                <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
+                <div class="mt-5 flex items-center gap-4 text-sm text-gray-500">
+                  <span>💬 {{ task.comment_count || 0 }}</span>
+                  <span>📎 {{ task.attachment_count || 0 }}</span>
+                </div>
+                <div class="mt-4 text-sm font-medium text-red-500">
+                  {{ task.due_date || 'No due date' }}
+                </div>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -344,32 +386,68 @@ const createTask = async () => {
             />
 
             <!-- SKELETON CARDS -->
-            <div v-if="loading" class="d-flex flex-column gap-3">
-              <v-card v-for="i in 1" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
-                <!-- Header -->
+            <template v-if="loading">
+              <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
                 <div class="flex justify-between items-start mb-6">
                   <div class="h-7 w-20 rounded-full bg-gray-200"></div>
-
                   <div class="flex gap-1">
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                   </div>
                 </div>
-
-                <!-- Task Title -->
                 <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
-
-                <!-- Stats -->
                 <div class="flex gap-6 mb-6">
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                 </div>
-
-                <!-- Due Date -->
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
-              </v-card>
-            </div>
+              </div>
+            </template>
+
+            <!-- REAL CARDS -->
+            <template v-else>
+              <div
+                v-for="task in tasks.done"
+                :key="task.id"
+                @click="openTask(task)"
+                class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <span
+                    class="text-xs px-3 py-1 rounded-full font-medium"
+                    :class="{
+                      'bg-red-100 text-red-600': task.priority === 'high',
+                      'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                      'bg-green-100 text-green-600': task.priority === 'low'
+                    }"
+                    >{{ task.priority }}</span
+                  >
+                  <v-menu>
+                    <template #activator="{ props }">
+                      <button v-bind="props" class="text-gray-400">•••</button>
+                    </template>
+                    <v-list>
+                      <v-list-item @click.stop="editTask(task)"
+                        ><v-list-item-title>Edit</v-list-item-title></v-list-item
+                      >
+                      <v-list-item @click.stop="deleteTask(task.id)"
+                        ><v-list-item-title>Delete</v-list-item-title></v-list-item
+                      >
+                    </v-list>
+                  </v-menu>
+                </div>
+                <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
+                <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
+                <div class="mt-5 flex items-center gap-4 text-sm text-gray-500">
+                  <span>💬 {{ task.comment_count || 0 }}</span>
+                  <span>📎 {{ task.attachment_count || 0 }}</span>
+                </div>
+                <div class="mt-4 text-sm font-medium text-red-500">
+                  {{ task.due_date || 'No due date' }}
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>

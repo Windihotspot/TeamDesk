@@ -1,11 +1,14 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
 
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 import ApiService from '@/services/api'
 
 import TaskForm from '@/components/TaskForm.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 //openNewTask starts as false
 const openNewTask = ref(false)
@@ -32,25 +35,57 @@ const taskForm = ref({
   priority: 'medium',
   project_id: null,
   team_id: null,
-  start_date: null,
+  start_date: '',
   due_date: null,
   assignee_ids: []
 })
 
 const loading = ref(true)
 
+// const fetchTasks = async () => {
+//   loading.value = true
+//   try {
+//     const userId = authStore.user?.id || authStore.session?.user?.id
+//     const userStatus = 'todo'
+//     const response = await ApiService.post('tasks', {
+//       action: 'list',
+//       user_id: userId,
+//       status: userStatus
+//     })
+//     console.log(response)
+//     tasks.value = response.data.created_tasks
+//     // const allTasks = response.data
+//     // console.log(allTasks)
+//     // tasks.value = {
+//     //   todo: allTasks.filter((task) => task.status === 'todo'),
+//     //   in_progress: allTasks.filter((task) => task.status === 'in_progress'),
+//     //   done: allTasks.filter((task) => task.status === 'done')
+//     // }
+//   } catch (error) {
+//     console.log(error)
+//   } finally {
+//     loading.value = false
+//   }
+// }
+
 const fetchTasks = async () => {
   loading.value = true
   try {
-    const response = await ApiService.post('tasks', {
-      action: 'list'
-    })
-    console.log(response)
-    const allTasks = response.data
+    const userId = authStore.user?.id || authStore.session?.user?.id
+
+    const [todoRes, inProgressRes, doneRes] = await Promise.all([
+      ApiService.post('tasks', { action: 'list', user_id: userId, status: 'todo' }),
+      ApiService.post('tasks', { action: 'list', user_id: userId, status: 'in_progress' }),
+      ApiService.post('tasks', { action: 'list', user_id: userId, status: 'done' })
+    ])
+
     tasks.value = {
-      todo: allTasks.filter((task) => task.status === 'todo'),
-      in_progress: allTasks.filter((task) => task.status === 'in_progress'),
-      done: allTasks.filter((task) => task.status === 'done')
+      todo: [...(todoRes.data.created_tasks ?? []), ...(todoRes.data.assigned_tasks ?? [])],
+      in_progress: [
+        ...(inProgressRes.data.created_tasks ?? []),
+        ...(inProgressRes.data.assigned_tasks ?? [])
+      ],
+      done: [...(doneRes.data.created_tasks ?? []), ...(doneRes.data.assigned_tasks ?? [])]
     }
   } catch (error) {
     console.log(error)
@@ -59,9 +94,18 @@ const fetchTasks = async () => {
   }
 }
 
-onMounted(() => {
-  fetchTasks()
-})
+// onMounted(() => {
+//   fetchTasks()
+// })
+
+// Replace onMounted with a watcher
+watch(
+  () => authStore.user?.id || authStore.session?.user?.id,
+  (userId) => {
+    if (userId) fetchTasks()
+  },
+  { immediate: true } // runs once on mount too
+)
 
 const createTask = async () => {
   try {
@@ -69,8 +113,7 @@ const createTask = async () => {
       alert('Task title required')
       return
     }
-
-    const response = await ApiService.post('tasks', {
+    const payload = {
       action: 'create',
 
       project_id: taskForm.value.project_id,
@@ -82,16 +125,19 @@ const createTask = async () => {
       due_date: taskForm.value.due_date,
       team_id: taskForm.value.team_id,
       assignee_ids: taskForm.value.assignee_ids
-    })
-
+    }
+    const response = await ApiService.post('tasks', payload)
+    console.log('payload', payload)
     console.log('Created:', response.data)
+    console.log('🚀 Creating task with status:', taskForm.value.status) // add this
+    console.log('🚀 Active status:', activeStatus.value)
 
     openNewTask.value = false
 
     taskForm.value = {
       title: '',
       description: '',
-      status: 'todo',
+      status: activeStatus.value,
       priority: 'medium',
       project_id: '',
       team_id: null,
@@ -139,6 +185,7 @@ const selectedTask = ref(null)
 
 function openTask(task) {
   selectedTask.value = task
+  console.log(task)
   drawer.value = true
 }
 </script>
@@ -150,17 +197,14 @@ function openTask(task) {
       <div class="bg-white border-b px-4 sm:px-6 py-4 flex items-center justify-between">
         <div>
           <h1 class="text-lg sm:text-2xl font-bold text-gray-900">Tasks</h1>
-
           <p class="text-xs sm:text-sm text-gray-500 mt-1">Manage your team workflow</p>
         </div>
-
         <div class="flex items-center gap-2 sm:gap-3">
           <button
             class="px-3 sm:px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition text-sm"
           >
             Filter
           </button>
-
           <button
             @click="showNewTask('todo')"
             class="px-3 sm:px-5 py-2 rounded-xl bg-[#5b2c52] text-white hover:bg-[#4a2242] transition text-sm"
@@ -185,16 +229,14 @@ function openTask(task) {
       <div class="flex-1 overflow-x-auto overflow-y-hidden p-6 flex gap-5">
         <!-- TODO -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
-          <!-- HEADER -->
           <div class="p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 rounded-full bg-gray-400"></div>
-
               <h2 class="font-semibold text-gray-800">Todo</h2>
-
-              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 4 </span>
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500">
+                {{ tasks.todo.length }}
+              </span>
             </div>
-
             <button
               @click="showNewTask('todo')"
               class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
@@ -203,9 +245,7 @@ function openTask(task) {
             </button>
           </div>
 
-          <!-- inputing new TASKS -->
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
-            <!-- EMPTY TASK CARD -->
             <TaskForm
               v-if="openNewTask && activeStatus === 'todo'"
               :task-form="taskForm"
@@ -214,90 +254,69 @@ function openTask(task) {
               @cancel="openNewTask = false"
             />
 
-            <!-- SKELETON CARDS -->
-            <div v-if="loading" class="d-flex flex-column gap-3">
-              <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
-                <!-- Header -->
+            <!-- SKELETON -->
+            <template v-if="loading">
+              <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
                 <div class="flex justify-between items-start mb-6">
                   <div class="h-7 w-20 rounded-full bg-gray-200"></div>
-
                   <div class="flex gap-1">
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                   </div>
                 </div>
-
-                <!-- Task Title -->
                 <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
-
-                <!-- Stats -->
                 <div class="flex gap-6 mb-6">
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                 </div>
-
-                <!-- Due Date -->
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
-              </v-card>
-            </div>
+              </div>
+            </template>
 
             <!-- REAL CARDS -->
-            <div
-              v-else
-              v-for="task in tasks.todo"
-              :key="task.id"
-              @click="openTask"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-                <v-menu>
-                  <template #activator="{ props }">
-                    <button v-bind="props" class="text-gray-400">•••</button>
-                  </template>
-
-                  <v-list>
-                    <v-list-item @click="editTask(task)">
-                      <v-list-item-title>Edit</v-list-item-title>
-                    </v-list-item>
-
-                    <v-list-item @click="deleteTask(task.id)">
-                      <v-list-item-title>Delete</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </div>
-
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
+            <template v-else>
+              <div
+                v-for="task in tasks.todo"
+                :key="task.id"
+                @click="openTask(task)"
+                class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <span
+                    class="text-xs px-3 py-1 rounded-full font-medium"
+                    :class="{
+                      'bg-red-100 text-red-600': task.priority === 'high',
+                      'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                      'bg-green-100 text-green-600': task.priority === 'low'
+                    }"
+                    >{{ task.priority }}</span
+                  >
+                  <v-menu>
+                    <template #activator="{ props }">
+                      <button v-bind="props" class="text-gray-400">•••</button>
+                    </template>
+                    <v-list>
+                      <v-list-item @click.stop="editTask(task)"
+                        ><v-list-item-title>Edit</v-list-item-title></v-list-item
+                      >
+                      <v-list-item @click.stop="deleteTask(task.id)"
+                        ><v-list-item-title>Delete</v-list-item-title></v-list-item
+                      >
+                    </v-list>
+                  </v-menu>
+                </div>
+                <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
+                <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
+                <div class="mt-5 flex items-center gap-4 text-sm text-gray-500">
                   <span>💬 {{ task.comment_count || 0 }}</span>
                   <span>📎 {{ task.attachment_count || 0 }}</span>
                 </div>
+                <div class="mt-4 text-sm font-medium text-red-500">
+                  {{ task.due_date || 'No due date' }}
+                </div>
               </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
+            </template>
           </div>
         </div>
 
@@ -306,12 +325,11 @@ function openTask(task) {
           <div class="p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-
               <h2 class="font-semibold text-gray-800">In Progress</h2>
-
-              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 2 </span>
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500">
+                {{ tasks.in_progress.length }}
+              </span>
             </div>
-
             <button
               @click="showNewTask('in_progress')"
               class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
@@ -329,126 +347,82 @@ function openTask(task) {
               @cancel="openNewTask = false"
             />
 
-            <!-- SKELETON CARDS -->
-            <div v-if="loading" class="d-flex flex-column gap-3">
-              <v-card v-for="i in 8" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
-                <!-- Header -->
+            <!-- SKELETON -->
+            <template v-if="loading">
+              <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
                 <div class="flex justify-between items-start mb-6">
                   <div class="h-7 w-20 rounded-full bg-gray-200"></div>
-
                   <div class="flex gap-1">
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                   </div>
                 </div>
-
-                <!-- Task Title -->
                 <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
-
-                <!-- Stats -->
                 <div class="flex gap-6 mb-6">
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                 </div>
-
-                <!-- Due Date -->
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
-              </v-card>
-            </div>
-
-            <div
-              v-else
-              v-for="task in tasks.in_progress"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-
-                <v-menu>
-                  <template #activator="{ props }">
-                    <button v-bind="props" class="text-gray-400">•••</button>
-                  </template>
-
-                  <v-list>
-                    <v-list-item @click="editTask(task)">
-                      <v-list-item-title>Edit</v-list-item-title>
-                    </v-list-item>
-
-                    <v-list-item @click="deleteTask(task.id)">
-                      <v-list-item-title>Delete</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
               </div>
+            </template>
 
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">
-                {{ task.title }}
-              </h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                {{ task.description }}
-              </p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
+            <!-- REAL CARDS -->
+            <template v-else>
+              <div
+                v-for="task in tasks.in_progress"
+                :key="task.id"
+                @click="openTask(task)"
+                class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <span
+                    class="text-xs px-3 py-1 rounded-full font-medium"
+                    :class="{
+                      'bg-red-100 text-red-600': task.priority === 'high',
+                      'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                      'bg-green-100 text-green-600': task.priority === 'low'
+                    }"
+                    >{{ task.priority }}</span
+                  >
+                  <v-menu>
+                    <template #activator="{ props }">
+                      <button v-bind="props" class="text-gray-400">•••</button>
+                    </template>
+                    <v-list>
+                      <v-list-item @click.stop="editTask(task)"
+                        ><v-list-item-title>Edit</v-list-item-title></v-list-item
+                      >
+                      <v-list-item @click.stop="deleteTask(task.id)"
+                        ><v-list-item-title>Delete</v-list-item-title></v-list-item
+                      >
+                    </v-list>
+                  </v-menu>
+                </div>
+                <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
+                <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
+                <div class="mt-5 flex items-center gap-4 text-sm text-gray-500">
                   <span>💬 {{ task.comment_count || 0 }}</span>
                   <span>📎 {{ task.attachment_count || 0 }}</span>
                 </div>
+                <div class="mt-4 text-sm font-medium text-red-500">
+                  {{ task.due_date || 'No due date' }}
+                </div>
               </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
+            </template>
           </div>
         </div>
-
-        <!-- REVIEW -->
-        <!-- <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
-          <div class="p-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-
-              <h2 class="font-semibold text-gray-800">Review</h2>
-
-              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 1 </span>
-            </div>
-
-            <button
-              class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
-            >
-              +
-            </button>
-          </div>
-        </div> -->
 
         <!-- DONE -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
           <div class="p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 rounded-full bg-green-500"></div>
-
               <h2 class="font-semibold text-gray-800">Done</h2>
-
-              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 8 </span>
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500">
+                {{ tasks.done.length }}
+              </span>
             </div>
-
             <button
               @click="showNewTask('done')"
               class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
@@ -466,210 +440,151 @@ function openTask(task) {
               @cancel="openNewTask = false"
             />
 
-            <!-- SKELETON CARDS -->
-            <div v-if="loading" class="d-flex flex-column gap-3">
-              <v-card v-for="i in 1" :key="i" class="rounded-3xl pa-4 mb-4" elevation="0">
-                <!-- Header -->
+            <!-- SKELETON -->
+            <template v-if="loading">
+              <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
                 <div class="flex justify-between items-start mb-6">
                   <div class="h-7 w-20 rounded-full bg-gray-200"></div>
-
                   <div class="flex gap-1">
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                   </div>
                 </div>
-
-                <!-- Task Title -->
                 <div class="h-6 w-32 bg-gray-200 rounded mb-6"></div>
-
-                <!-- Stats -->
                 <div class="flex gap-6 mb-6">
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                   <div class="h-4 w-10 bg-gray-200 rounded"></div>
                 </div>
-
-                <!-- Due Date -->
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
-              </v-card>
-            </div>
-
-            <div
-              v-else
-              v-for="task in tasks.done"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-
-                <v-menu>
-                  <template #activator="{ props }">
-                    <button v-bind="props" class="text-gray-400">•••</button>
-                  </template>
-
-                  <v-list>
-                    <v-list-item @click="editTask(task)">
-                      <v-list-item-title>Edit</v-list-item-title>
-                    </v-list-item>
-
-                    <v-list-item @click="deleteTask(task.id)">
-                      <v-list-item-title>Delete</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
               </div>
+            </template>
 
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">
-                {{ task.title }}
-              </h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                {{ task.description }}
-              </p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
+            <!-- REAL CARDS -->
+            <template v-else>
+              <div
+                v-for="task in tasks.done"
+                :key="task.id"
+                @click="openTask(task)"
+                class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <span
+                    class="text-xs px-3 py-1 rounded-full font-medium"
+                    :class="{
+                      'bg-red-100 text-red-600': task.priority === 'high',
+                      'bg-yellow-100 text-yellow-600': task.priority === 'medium',
+                      'bg-green-100 text-green-600': task.priority === 'low'
+                    }"
+                    >{{ task.priority }}</span
+                  >
+                  <v-menu>
+                    <template #activator="{ props }">
+                      <button v-bind="props" class="text-gray-400">•••</button>
+                    </template>
+                    <v-list>
+                      <v-list-item @click.stop="editTask(task)"
+                        ><v-list-item-title>Edit</v-list-item-title></v-list-item
+                      >
+                      <v-list-item @click.stop="deleteTask(task.id)"
+                        ><v-list-item-title>Delete</v-list-item-title></v-list-item
+                      >
+                    </v-list>
+                  </v-menu>
+                </div>
+                <h3 class="font-semibold text-gray-900 mt-4">{{ task.title }}</h3>
+                <p class="text-sm text-gray-500 mt-2 line-clamp-3">{{ task.description }}</p>
+                <div class="mt-5 flex items-center gap-4 text-sm text-gray-500">
                   <span>💬 {{ task.comment_count || 0 }}</span>
                   <span>📎 {{ task.attachment_count || 0 }}</span>
                 </div>
+                <div class="mt-4 text-sm font-medium text-red-500">
+                  {{ task.due_date || 'No due date' }}
+                </div>
               </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
 
-      <!-- navigation drawer display -->
+      <!-- TASK DETAIL DRAWER (single, no v-for) -->
+      <v-navigation-drawer v-model="drawer" location="right" temporary width="750">
+        <div v-if="selectedTask" class="pa-6">
+          <h3 class="font-semibold text-gray-900 mt-4">{{ selectedTask.title }}</h3>
 
-      <div>
-        <!-- Task Card -->
-        <!-- <v-card class="mb-2" @click="openTask(tasks)">
-          <v-card-title>{{ tasks.title }}</v-card-title>
-        </v-card> -->
+          <v-row dense class="mt-4">
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-check-circle-outline</v-icon>
+                <span class="property-label">Status</span>
+                <v-select
+                  v-model="selectedTask.status"
+                  :items="['todo', 'in_progress', 'done']"
+                  variant="underlined"
+                  hide-details
+                />
+              </div>
+            </v-col>
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-account-outline</v-icon>
+                <span class="property-label">Assignee</span>
+                <v-text-field v-model="selectedTask.assignee" variant="underlined" hide-details />
+              </div>
+            </v-col>
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-calendar-outline</v-icon>
+                <span class="property-label">Due Date</span>
+                <v-text-field
+                  v-model="selectedTask.due_date"
+                  type="date"
+                  variant="underlined"
+                  hide-details
+                />
+              </div>
+            </v-col>
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-flag-outline</v-icon>
+                <span class="property-label">Priority</span>
+                <v-select
+                  v-model="selectedTask.priority"
+                  :items="['low', 'medium', 'high']"
+                  variant="underlined"
+                  hide-details
+                />
+              </div>
+            </v-col>
+          </v-row>
 
-        <!-- Task Details Drawer -->
-        <v-navigation-drawer
-          v-for="task in tasks.todo"
-          :key="task.id"
-          v-model="drawer"
-          location="right"
-          temporary
-          width="750"
-        >
-          <div v-if="selectedTask" class="task-drawer pa-6">
-            <!-- Title -->
-            <h3 class="font-semibold text-gray-900 mt-4">{{ task.title}}</h3>
+          <v-divider class="my-5" />
 
-            <!-- Properties -->
-            <v-row dense>
-              <v-col cols="12">
-                <div class="property-row">
-                  <v-icon size="18">mdi-check-circle-outline</v-icon>
+          <div class="section-title mb-2">Description</div>
+          <v-textarea
+            v-model="selectedTask.description"
+            auto-grow
+            rows="3"
+            variant="plain"
+            placeholder="Write a description..."
+            hide-details
+          />
 
-                  <span class="property-label"> Status </span>
+          <v-divider class="my-5" />
 
-                  <v-select
-                    v-model="selectedTask.status"
-                    :items="['Todo', 'In Progress', 'Done']"
-                    variant="underlined"
-                    hide-details
-                  />
-                </div>
-              </v-col>
-
-              <v-col cols="12">
-                <div class="property-row">
-                  <v-icon size="18">mdi-account-outline</v-icon>
-
-                  <span class="property-label"> Assignee </span>
-
-                  <v-text-field v-model="selectedTask.assignee" variant="underlined" hide-details />
-                </div>
-              </v-col>
-
-              <v-col cols="12">
-                <div class="property-row">
-                  <v-icon size="18">mdi-calendar-outline</v-icon>
-
-                  <span class="property-label"> Due Date </span>
-
-                  <v-text-field
-                    v-model="selectedTask.due_date"
-                    type="date"
-                    variant="underlined"
-                    hide-details
-                  />
-                </div>
-              </v-col>
-
-              <v-col cols="12">
-                <div class="property-row">
-                  <v-icon size="18">mdi-flag-outline</v-icon>
-
-                  <span class="property-label"> Priority </span>
-
-                  <v-select
-                    v-model="selectedTask.priority"
-                    :items="['Low', 'Medium', 'High']"
-                    variant="underlined"
-                    hide-details
-                  />
-                </div>
-              </v-col>
-            </v-row>
-
-            <v-divider class="my-5" />
-
-            <!-- Description -->
-            <div class="section-title mb-2">Description</div>
-
-            <v-textarea
-              v-model="selectedTask.description"
-              auto-grow
-              rows="3"
-              variant="plain"
-              placeholder="Write a description..."
-              hide-details
-              class="description-box"
-            />
-
-            <v-divider class="my-5" />
-
-            <!-- Comments -->
-            <div class="section-title mb-2">Comments</div>
-
-            <v-textarea
-              v-model="newComment"
-              auto-grow
-              rows="2"
-              variant="outlined"
-              placeholder="Write a comment..."
-            />
-
-            <div class="d-flex justify-end mt-2">
-              <v-btn color="primary" rounded="lg"> Comment </v-btn>
-            </div>
+          <div class="section-title mb-2">Comments</div>
+          <v-textarea
+            v-model="newComment"
+            auto-grow
+            rows="2"
+            variant="outlined"
+            placeholder="Write a comment..."
+          />
+          <div class="d-flex justify-end mt-2">
+            <v-btn color="primary" rounded="lg">Comment</v-btn>
           </div>
-        </v-navigation-drawer>
-      </div>
+        </div>
+      </v-navigation-drawer>
     </div>
   </MainLayout>
 </template>

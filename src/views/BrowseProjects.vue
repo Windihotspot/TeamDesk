@@ -33,7 +33,7 @@ const form = ref({
   name: '',
   team_id: null,
   description: '',
-  status: 'active'
+  status: 'active'   
 })
 
 //@click of add projects
@@ -91,14 +91,14 @@ onMounted(() => {
 
 
 //projectId is the parameters i am passing....project_id is the name of the var for action delete
-const deleteProject = async (projectId) => {
+const deleteProject = async (projectId) => {   
   try {
     await ApiService.post('projects', {
       action: 'delete',
       project_id: projectId
     })
 
-    console.log('Task deleted')
+    console.log('Task deleted')      
 
     // Refresh projects after deleting
     await fetchProject()
