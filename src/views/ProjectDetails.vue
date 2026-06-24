@@ -1,11 +1,14 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-
+import { useRoute } from 'vue-router'
 import { onMounted, ref } from 'vue'
 
 import ApiService from '@/services/api'
 
 import TaskForm from '@/components/TaskForm.vue'
+
+const route = useRoute()
+const projectId = route.params.id
 
 //openNewTask starts as false
 const openNewTask = ref(false)
@@ -30,7 +33,7 @@ const taskForm = ref({
   description: '',
   status: 'todo',
   priority: 'medium',
-  project_id: null,
+  project_id: '',
   team_id: null,
   start_date: null,
   due_date: null,
@@ -104,22 +107,6 @@ const createTask = async () => {
     await fetchTasks()
   } catch (err) {
     console.log(err)
-  }
-}
-
-const deleteTask = async (taskId) => {
-  try {
-    await ApiService.post('tasks', {
-      action: 'delete',
-      task_id: taskId
-    })
-
-    console.log('Task deleted')
-
-    // Refresh tasks after deleting
-    await fetchTasks()
-  } catch (error) {
-    console.error(error)
   }
 }
 </script>
@@ -242,21 +229,7 @@ const deleteTask = async (taskId) => {
                 >
                   {{ task.priority }}
                 </span>
-                <v-menu>
-                  <template #activator="{ props }">
-                    <button v-bind="props" class="text-gray-400">•••</button>
-                  </template>
-
-                  <v-list>
-                    <v-list-item @click="editTask(task)">
-                      <v-list-item-title>Edit</v-list-item-title>
-                    </v-list-item>
-
-                    <v-list-item @click="deleteTask(task.id)">
-                      <v-list-item-title>Delete</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
+                <button class="text-gray-400">•••</button>
               </div>
 
               <!-- TITLE -->
@@ -336,87 +309,8 @@ const deleteTask = async (taskId) => {
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
               </v-card>
             </div>
-
-            <div
-              v-else
-              v-for="task in tasks.in_progress"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-
-                <v-menu>
-                  <template #activator="{ props }">
-                    <button v-bind="props" class="text-gray-400">•••</button>
-                  </template>
-
-                  <v-list>
-                    <v-list-item @click="editTask(task)">
-                      <v-list-item-title>Edit</v-list-item-title>
-                    </v-list-item>
-
-                    <v-list-item @click="deleteTask(task.id)">
-                      <v-list-item-title>Delete</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </div>
-
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">
-                {{ task.title }}
-              </h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                {{ task.description }}
-              </p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
-                  <span>💬 {{ task.comment_count || 0 }}</span>
-                  <span>📎 {{ task.attachment_count || 0 }}</span>
-                </div>
-              </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
-            </div>
           </div>
         </div>
-
-        <!-- REVIEW -->
-        <!-- <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
-          <div class="p-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-
-              <h2 class="font-semibold text-gray-800">Review</h2>
-
-              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500"> 1 </span>
-            </div>
-
-            <button
-              class="w-8 h-8 rounded-xl hover:bg-white transition flex items-center justify-center"
-            >
-              +
-            </button>
-          </div>
-        </div> -->
 
         <!-- DONE -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
@@ -472,66 +366,6 @@ const deleteTask = async (taskId) => {
                 <!-- Due Date -->
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
               </v-card>
-            </div>
-
-            <div
-              v-else
-              v-for="task in tasks.done"
-              :key="task.id"
-              class="bg-white rounded-3xl p-4 mb-4 shadow-sm hover:shadow-md transition cursor-pointer"
-            >
-              <!-- TOP -->
-              <div class="flex items-start justify-between">
-                <span
-                  class="text-xs px-3 py-1 rounded-full font-medium"
-                  :class="{
-                    'bg-red-100 text-red-600': task.priority === 'high',
-                    'bg-yellow-100 text-yellow-600': task.priority === 'medium',
-                    'bg-green-100 text-green-600': task.priority === 'low'
-                  }"
-                >
-                  {{ task.priority }}
-                </span>
-
-                <v-menu>
-                  <template #activator="{ props }">
-                    <button v-bind="props" class="text-gray-400">•••</button>
-                  </template>
-
-                  <v-list>
-                    <v-list-item @click="editTask(task)">
-                      <v-list-item-title>Edit</v-list-item-title>
-                    </v-list-item>
-
-                    <v-list-item @click="deleteTask(task.id)">
-                      <v-list-item-title>Delete</v-list-item-title>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </div>
-
-              <!-- TITLE -->
-              <h3 class="font-semibold text-gray-900 mt-4">
-                {{ task.title }}
-              </h3>
-
-              <!-- DESCRIPTION -->
-              <p class="text-sm text-gray-500 mt-2 line-clamp-3">
-                {{ task.description }}
-              </p>
-
-              <!-- FOOTER -->
-              <div class="mt-5 flex justify-between">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
-                  <span>💬 {{ task.comment_count || 0 }}</span>
-                  <span>📎 {{ task.attachment_count || 0 }}</span>
-                </div>
-              </div>
-
-              <!-- DUE -->
-              <div class="mt-4 text-sm font-medium text-red-500">
-                {{ task.due_date || 'No due date' }}
-              </div>
             </div>
           </div>
         </div>

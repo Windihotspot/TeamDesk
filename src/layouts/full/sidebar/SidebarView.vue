@@ -64,6 +64,12 @@ const menuItems = [
     route: '/dashboard'
   },
   {
+    nav: 'teams',
+    label: 'Teams',
+    icon: 'mdi mdi-account-group',
+    route: '/teams'
+  },
+  {
     nav: 'projects',
     label: 'Projects',
     icon: 'mdi mdi-briefcase-outline',

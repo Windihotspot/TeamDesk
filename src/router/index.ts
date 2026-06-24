@@ -13,6 +13,7 @@ import SuppliesApproval from '@/views/SuppliesApproval.vue'
 import PurchaseOrders from '@/views/PurchaseOrders.vue'
 import SuppliesDeliveries from '@/views/SuppliesDeliveries.vue'
 import SuppliesPayment from '@/views/SuppliesPayment.vue'
+import TeamsPage from '@/views/TeamsPage.vue'
 
 // import LoginForm from '@/views/Auth/LoginForm.vue'
 
@@ -90,6 +91,16 @@ const router = createRouter({
       path: '/payments',
       name: 'payments',
       component: SuppliesPayment
+    },
+    {
+      path: '/teams',
+      name: 'teams',
+      component: TeamsPage
+    },
+    {
+      path: '/projects/:id',
+      name: 'ProjectDetails',
+      component: () => import('@/views/ProjectDetails.vue')
     }
   ]
 })

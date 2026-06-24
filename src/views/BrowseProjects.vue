@@ -2,12 +2,15 @@
 import MainLayout from '@/layouts/full/MainLayout.vue'
 import { supabase } from '@/services/supabase.js'
 
-
-
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth.js'
 import { useProjectStore } from '@/stores/project.js'
 import GetTeams from '@/components/GetTeams.vue'
+import ApiService from '@/services/api'
+
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 // import TeamSelect from '@/components/GetTeams.vue'
 
 // declare var for authStore in auth.js
@@ -20,16 +23,12 @@ const projectStore = useProjectStore()
 
 const isEditMode = ref(false)
 
-
-
 const projects = ref([])
 
 const showProjects = ref(false)
 
-
-
 //make the form an empty array first
-//the syntax in sql editor must match with your form field 
+//the syntax in sql editor must match with your form field
 const form = ref({
   name: '',
   team_id: null,
@@ -42,12 +41,12 @@ const openAddProjects = () => {
   showProjects.value = true
 }
 
-
 //@click submit new projects
 const submitProject = async () => {
   try {
     await projectStore.createProject(form.value)
     console.log('✅ Project created:', showProjects)
+    await fetchProject()
     showProjects.value = false // close dialog after save
     form.value = { name: '', team_id: null, description: '', status: 'active' } // reset form
   } catch (err) {
@@ -55,7 +54,7 @@ const submitProject = async () => {
   }
 }
 
-const isLoading = ref(true)    
+const isLoading = ref(true)
 
 //on load of projects page :added a loading feature to it
 const fetchProject = async () => {
@@ -74,9 +73,36 @@ const fetchProject = async () => {
   }
 }
 
+
+//pushes to a new page inside projects 
+const openFullProjects = (project) => {
+  router.push(`/projects/${project.id}`)
+}
+
+
 onMounted(() => {
   fetchProject()
 })
+
+
+
+//projectId is the parameters i am passing....project_id is the name of the var for action delete
+const deleteProject = async (projectId) => {
+  try {
+    await ApiService.post('projects', {
+      action: 'delete',
+      project_id: projectId
+    })
+
+    console.log('Task deleted')
+
+    // Refresh projects after deleting
+    await fetchProject()
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 
 // shows teams dropdown as an empty array
 // const teams = ref([])
@@ -121,22 +147,11 @@ const openAddTeams = async () => {
 
 <template>
   <MainLayout>
-    <div
-      v-if="isLoading"
-      class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50"
-    >
-      <v-progress-circular indeterminate color="blue" size="60" width="2" />
-
-      <p class="mt-4 text-sm text-gray-500 font-medium">Loading Project data...</p>
-    </div>
-
-    <div v-else>
+    <div>
       <div class="grid grid-cols-1 lg:grid-cols-1">
-        <!-- Active Projects -->
         <v-card class="rounded-2xl shadow-sm pa-4">
           <div class="flex justify-between items-center mb-4">
             <h2 class="font-bold text-md">Browse Projects</h2>
-
             <div class="flex items-center gap-2">
               <v-select
                 density="compact"
@@ -149,16 +164,25 @@ const openAddTeams = async () => {
               <v-btn @click="openAddProjects" icon size="small" class="text-black rounded-lg">
                 <v-icon>mdi-plus</v-icon>
               </v-btn>
-              <!-- <v-btn icon size="small" variant="text">
-                <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn> -->
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-1">
+          <!-- Loading Skeleton -->
+          <div  v-if="isLoading" class="d-flex flex-column gap-3">
+            <v-skeleton-loader
+              v-for="i in 11"
+              :key="i"
+              type="list-item-avatar-two-line"
+              class="rounded-lg"
+            />
+          </div>
+
+          <!-- Actual Content -->
+          <div v-else class="grid grid-cols-1 sm:grid-cols-1">
             <div
               v-for="project in projects"
               :key="project.id"
+              @click="openFullProjects"
               class="flex items-center justify-between bg-gray-100 rounded-sm p-3 mb-5"
             >
               <div class="flex items-center gap-3">
@@ -168,11 +192,28 @@ const openAddTeams = async () => {
                   <p class="font-medium text-sm">{{ project.name }}</p>
                   <p class="text-xs text-gray-500">
                     {{ project.description }}
-                    {{ project.description }}
                   </p>
                 </div>
               </div>
-              <v-icon size="18">mdi-dots-vertical</v-icon>
+              <v-menu>
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" size="18" class="cursor-pointer">
+                    mdi-dots-vertical
+                  </v-icon>
+                </template>
+                <v-list density="compact">
+                  <v-list-item
+                    prepend-icon="mdi-pencil"
+                    title="Edit"
+                    @click="editProject(project)"
+                  />
+                  <v-list-item
+                    prepend-icon="mdi-delete"
+                    title="Delete"
+                    @click="deleteProject(project.id)"
+                  />
+                </v-list>
+              </v-menu>
             </div>
           </div>
         </v-card>
