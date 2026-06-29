@@ -73,6 +73,9 @@ const fetchTasks = async () => {
   try {
     const userId = authStore.user?.id || authStore.session?.user?.id
 
+
+    //we can pass multiuple properties inside a request 
+    //we can also use promise.all to make multiple request calls 
     const [todoRes, inProgressRes, doneRes] = await Promise.all([
       ApiService.post('tasks', { action: 'list', user_id: userId, status: 'todo' }),
       ApiService.post('tasks', { action: 'list', user_id: userId, status: 'in_progress' }),
