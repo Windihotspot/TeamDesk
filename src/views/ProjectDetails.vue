@@ -4,29 +4,29 @@ import { useRoute } from 'vue-router'
 import { onMounted, ref } from 'vue'
 import ApiService from '@/services/api'
 import TaskForm from '@/components/TaskForm.vue'
- 
+
 const route = useRoute()
 const projectId = route.params.id
- 
+
 // ─── New Task Form State ──────────────────────────────────────────────────────
- 
+
 const openNewTask = ref(false)
 const activeStatus = ref('todo')
- 
+
 const showNewTask = (status) => {
   activeStatus.value = status
-  taskForm.value.status = status  // keeps the created task in the correct column
+  taskForm.value.status = status // keeps the created task in the correct column
   openNewTask.value = true
 }
- 
+
 // ─── Tasks State ─────────────────────────────────────────────────────────────
- 
+
 const tasks = ref({
   todo: [],
   in_progress: [],
   done: []
 })
- 
+
 const taskForm = ref({
   title: '',
   description: '',
@@ -38,11 +38,11 @@ const taskForm = ref({
   due_date: null,
   assignee_ids: []
 })
- 
+
 const loading = ref(true)
- 
+
 // ─── Fetch Tasks ─────────────────────────────────────────────────────────────
- 
+
 const fetchTasks = async () => {
   loading.value = true
   try {
@@ -51,7 +51,7 @@ const fetchTasks = async () => {
       ApiService.post('projects', { action: 'get', status: 'in_progress', project_id: projectId }),
       ApiService.post('projects', { action: 'get', status: 'done', project_id: projectId })
     ])
- 
+
     tasks.value = {
       todo: todoRes.data.tasks ?? [],
       in_progress: inProgressRes.data.tasks ?? [],
@@ -63,15 +63,15 @@ const fetchTasks = async () => {
     loading.value = false
   }
 }
- 
+
 // ─── Create Task ─────────────────────────────────────────────────────────────
- 
+
 // const createTask = async () => {
 //   if (!taskForm.value.title.trim()) {
 //     alert('Task title required')
 //     return
 //   }
- 
+
 //   try {
 //     await ApiService.post('tasks', {
 //       action: 'create',
@@ -85,9 +85,9 @@ const fetchTasks = async () => {
 //       team_id: taskForm.value.team_id,
 //       assignee_ids: taskForm.value.assignee_ids
 //     })
- 
+
 //     openNewTask.value = false
- 
+
 //     // Reset form but preserve project_id and active status
 //     taskForm.value = {
 //       title: '',
@@ -100,13 +100,12 @@ const fetchTasks = async () => {
 //       due_date: null,
 //       assignee_ids: []
 //     }
- 
+
 //     await fetchTasks()
 //   } catch (err) {
 //     console.error('❌ Error creating task:', err)
 //   }
 // }
-
 
 const createTask = async () => {
   try {
@@ -132,12 +131,12 @@ const createTask = async () => {
 
     console.log('payload', payload)
     console.log('Created:', response.data)
- 
+
     // Reset form but preserve project_id and active status
     taskForm.value = {
       title: '',
       description: '',
-      status: activeStatus.value, 
+      status: activeStatus.value,
       priority: 'medium',
       project_id: projectId,
       team_id: null,
@@ -147,24 +146,23 @@ const createTask = async () => {
     }
 
     await fetchTasks()
-  } catch (error){
+  } catch (error) {
     console.log('Error creating task', error)
   }
+}
 
-}
- 
 // ─── Edit / Delete ───────────────────────────────────────────────────────────
- 
-const openTask = (task) => {
-  console.log('Opened task:', task)
-  // hook up your detail panel / drawer here
-}
- 
+
+// const openTask = (task) => {
+//   console.log('Opened task:', task)
+//   // hook up your detail panel / drawer here
+// }
+
 const editTask = (task) => {
   console.log('Edit task:', task)
   // populate taskForm and open edit dialog here
 }
- 
+
 const deleteTask = async (taskId) => {
   try {
     await ApiService.post('tasks', {
@@ -176,12 +174,28 @@ const deleteTask = async (taskId) => {
     console.error('❌ Error deleting task:', err)
   }
 }
- 
+
 // ─── Lifecycle ───────────────────────────────────────────────────────────────
- 
+
 onMounted(() => {
   fetchTasks()
 })
+
+const drawer = ref(false)
+
+const selectedTask = ref(null)
+
+// function openTask(task) {
+//   selectedTask.value = task
+//   console.log(task)
+//   drawer.value = true
+// }
+
+const openTask = (task) => {
+  selectedTask.value = task
+  console.log(task)
+  drawer.value = true
+}
 </script>
 
 <template>
@@ -193,14 +207,14 @@ onMounted(() => {
           <h1 class="text-lg sm:text-2xl font-bold text-gray-900">Tasks</h1>
           <p class="text-xs sm:text-sm text-gray-500 mt-1">Manage your team workflow</p>
         </div>
- 
+
         <div class="flex items-center gap-2 sm:gap-3">
           <button
             class="px-3 sm:px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition text-sm"
           >
             Filter
           </button>
- 
+
           <button
             @click="showNewTask('todo')"
             class="px-3 sm:px-5 py-2 rounded-xl bg-[#5b2c52] text-white hover:bg-[#4a2242] transition text-sm"
@@ -209,7 +223,7 @@ onMounted(() => {
           </button>
         </div>
       </div>
- 
+
       <!-- SEARCH -->
       <div class="px-6 py-4 bg-white border-b">
         <div class="bg-[#f3f4f6] rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -220,10 +234,9 @@ onMounted(() => {
           />
         </div>
       </div>
- 
+
       <!-- BOARD -->
       <div class="flex-1 overflow-x-auto overflow-y-hidden p-6 flex gap-5">
- 
         <!-- TODO -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
           <div class="p-4 flex items-center justify-between">
@@ -241,7 +254,7 @@ onMounted(() => {
               +
             </button>
           </div>
- 
+
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
             <TaskForm
               v-if="openNewTask && activeStatus === 'todo'"
@@ -250,7 +263,7 @@ onMounted(() => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
- 
+
             <!-- SKELETON -->
             <template v-if="loading">
               <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
@@ -270,7 +283,7 @@ onMounted(() => {
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
               </div>
             </template>
- 
+
             <!-- REAL CARDS -->
             <template v-else>
               <div
@@ -287,7 +300,8 @@ onMounted(() => {
                       'bg-yellow-100 text-yellow-600': task.priority === 'medium',
                       'bg-green-100 text-green-600': task.priority === 'low'
                     }"
-                  >{{ task.priority }}</span>
+                    >{{ task.priority }}</span
+                  >
                   <v-menu>
                     <template #activator="{ props }">
                       <button v-bind="props" class="text-gray-400">•••</button>
@@ -315,7 +329,7 @@ onMounted(() => {
             </template>
           </div>
         </div>
- 
+
         <!-- IN PROGRESS -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
           <div class="p-4 flex items-center justify-between">
@@ -333,7 +347,7 @@ onMounted(() => {
               +
             </button>
           </div>
- 
+
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
             <TaskForm
               v-if="openNewTask && activeStatus === 'in_progress'"
@@ -342,7 +356,7 @@ onMounted(() => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
- 
+
             <!-- SKELETON -->
             <template v-if="loading">
               <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
@@ -362,7 +376,7 @@ onMounted(() => {
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
               </div>
             </template>
- 
+
             <!-- REAL CARDS -->
             <template v-else>
               <div
@@ -379,7 +393,8 @@ onMounted(() => {
                       'bg-yellow-100 text-yellow-600': task.priority === 'medium',
                       'bg-green-100 text-green-600': task.priority === 'low'
                     }"
-                  >{{ task.priority }}</span>
+                    >{{ task.priority }}</span
+                  >
                   <v-menu>
                     <template #activator="{ props }">
                       <button v-bind="props" class="text-gray-400">•••</button>
@@ -407,7 +422,7 @@ onMounted(() => {
             </template>
           </div>
         </div>
- 
+
         <!-- DONE -->
         <div class="w-[340px] min-w-[340px] bg-[#edf1f7] rounded-3xl flex flex-col">
           <div class="p-4 flex items-center justify-between">
@@ -425,7 +440,7 @@ onMounted(() => {
               +
             </button>
           </div>
- 
+
           <div class="px-3 pb-3 flex-1 overflow-y-auto">
             <TaskForm
               v-if="openNewTask && activeStatus === 'done'"
@@ -434,7 +449,7 @@ onMounted(() => {
               @save="createTask"
               @cancel="openNewTask = false"
             />
- 
+
             <!-- SKELETON -->
             <template v-if="loading">
               <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-4 mb-4">
@@ -454,7 +469,7 @@ onMounted(() => {
                 <div class="h-5 w-24 bg-gray-200 rounded"></div>
               </div>
             </template>
- 
+
             <!-- REAL CARDS -->
             <template v-else>
               <div
@@ -471,7 +486,8 @@ onMounted(() => {
                       'bg-yellow-100 text-yellow-600': task.priority === 'medium',
                       'bg-green-100 text-green-600': task.priority === 'low'
                     }"
-                  >{{ task.priority }}</span>
+                    >{{ task.priority }}</span
+                  >
                   <v-menu>
                     <template #activator="{ props }">
                       <button v-bind="props" class="text-gray-400">•••</button>
@@ -499,8 +515,122 @@ onMounted(() => {
             </template>
           </div>
         </div>
- 
       </div>
+
+      <v-navigation-drawer v-model="drawer" location="right" temporary width="750">
+        <div v-if="selectedTask" class="pa-6">
+          <h3 class="font-semibold text-gray-900 mt-4">{{ selectedTask.title }}</h3>
+
+          <v-row dense class="mt-4">
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-check-circle-outline</v-icon>
+                <span class="property-label">Status</span>
+                <v-select
+                  v-model="selectedTask.status"
+                  :items="['todo', 'in_progress', 'done']"
+                  variant="underlined"
+                  hide-details
+                />
+              </div>
+            </v-col>
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-account-outline</v-icon>
+                <span class="property-label">Assignee</span>
+                <v-text-field v-model="selectedTask.assignee" variant="underlined" hide-details />
+              </div>
+            </v-col>
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-calendar-outline</v-icon>
+                <span class="property-label">Due Date</span>
+                <v-text-field
+                  v-model="selectedTask.due_date"
+                  type="date"
+                  variant="underlined"
+                  hide-details
+                />
+              </div>
+            </v-col>
+            <v-col cols="12">
+              <div class="property-row">
+                <v-icon size="18">mdi-flag-outline</v-icon>
+                <span class="property-label">Priority</span>
+                <v-select
+                  v-model="selectedTask.priority"
+                  :items="['low', 'medium', 'high']"
+                  variant="underlined"
+                  hide-details
+                />
+              </div>
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-5" />
+
+          <div class="section-title mb-2">Description</div>
+          <v-textarea
+            v-model="selectedTask.description"
+            auto-grow
+            rows="3"
+            variant="plain"
+            placeholder="Write a description..."
+            hide-details
+          />
+
+          <v-divider class="my-5" />
+
+          <div class="section-title mb-2">Comments</div>
+          <v-textarea
+            v-model="newComment"
+            auto-grow
+            rows="2"
+            variant="outlined"
+            placeholder="Write a comment..."
+          />
+          <div class="d-flex justify-end mt-2">
+            <v-btn color="primary" rounded="lg">Comment</v-btn>
+          </div>
+        </div>
+      </v-navigation-drawer>
     </div>
   </MainLayout>
 </template>
+
+
+<style scoped>
+.task-drawer {
+  background: white;
+}
+
+.task-title :deep(input) {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.property-label {
+  width: 90px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.description-box {
+  border-radius: 8px;
+  padding: 8px;
+}
+</style>
