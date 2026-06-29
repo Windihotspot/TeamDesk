@@ -33,7 +33,7 @@ const form = ref({
   name: '',
   team_id: null,
   description: '',
-  status: 'active'
+  status: 'active'   
 })
 
 //@click of add projects
@@ -75,8 +75,10 @@ const fetchProject = async () => {
 
 
 //pushes to a new page inside projects 
+//project is passed into the function openFullProjects: must also be passed 
 const openFullProjects = (project) => {
   console.log(project)
+  //without projects being passed: this wont happen router.push('/projects/2')
   router.push(`/projects/${project.id}`)
 
 }
@@ -89,14 +91,14 @@ onMounted(() => {
 
 
 //projectId is the parameters i am passing....project_id is the name of the var for action delete
-const deleteProject = async (projectId) => {
+const deleteProject = async (projectId) => {   
   try {
     await ApiService.post('projects', {
       action: 'delete',
       project_id: projectId
     })
 
-    console.log('Task deleted')
+    console.log('Task deleted')      
 
     // Refresh projects after deleting
     await fetchProject()

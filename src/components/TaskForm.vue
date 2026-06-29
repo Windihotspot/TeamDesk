@@ -45,6 +45,8 @@ const emit = defineEmits(['save', 'cancel'])
       <option value="high">High</option>
     </select>
 
+
+    <!-- //figure out how i will call this from the parent here and send it to my createTask func -->
     <!-- DUE DATE -->
     <input
       type="date"
