@@ -1,10 +1,16 @@
 <script setup>
 import MainLayout from '@/layouts/full/MainLayout.vue'
-import { ref, onBeforeUnmount  } from 'vue'
-import { onMounted } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
+import { onMounted, watch } from 'vue'
 // import { useProfile } from '@/composables/useProfile.js'
 import { supabase } from '@/services/supabase.js'
+import ApiService from '@/services/api'
+import { useProjectStore } from '@/stores/project.js'
 
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const projectStore = useProjectStore()
 // const { profile, loading, error } = useProfile()
 
 const profiles = ref([])
@@ -55,64 +61,118 @@ const profile = ref({
   bio: ''
 })
 
-
-
-const cameraDialog = ref(false);
-const video = ref(null);
-const canvas = ref(null);
+const cameraDialog = ref(false)
+const video = ref(null)
+const canvas = ref(null)
 const imageUrl = ref('')
 
-let stream = null;
+let stream = null
 
 // Open Camera
 const startCamera = async () => {
-  cameraDialog.value = true;
+  cameraDialog.value = true
 
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: "user", // front camera
+        facingMode: 'user' // front camera
       },
-      audio: false,
-    });
+      audio: false
+    })
 
-    video.value.srcObject = stream;
+    video.value.srcObject = stream
   } catch (error) {
-    console.error("Camera access denied:", error);
+    console.error('Camera access denied:', error)
   }
-};
+}
 
 // Take Photo
 const capturePhoto = () => {
-  const context = canvas.value.getContext("2d");
+  const context = canvas.value.getContext('2d')
 
-  canvas.value.width = video.value.videoWidth;
-  canvas.value.height = video.value.videoHeight;
+  canvas.value.width = video.value.videoWidth
+  canvas.value.height = video.value.videoHeight
 
-  context.drawImage(
-    video.value,
-    0,
-    0,
-    canvas.value.width,
-    canvas.value.height
-  );
+  context.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
 
-  imageUrl.value = canvas.value.toDataURL("image/png");
+  imageUrl.value = canvas.value.toDataURL('image/png')
 
-  stopCamera();
-  cameraDialog.value = false;
-};
+  stopCamera()
+  cameraDialog.value = false
+}
 
 // Stop Camera
 const stopCamera = () => {
   if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
+    stream.getTracks().forEach((track) => track.stop())
   }
-};
+}
 
 onBeforeUnmount(() => {
-  stopCamera();
-});
+  stopCamera()
+})
+
+// const allTasks = ref([tasks])
+
+const tasks = ref({})
+
+const loading = ref(true)
+
+const fetchTasks = async () => {
+  loading.value = true
+  try {
+    const userId = authStore.user?.id || authStore.session?.user?.id
+
+    //we can pass multiuple properties inside a request
+    //we can also use promise.all to make multiple request calls
+    const res = await ApiService.post('tasks', { action: 'list', user_id: userId })
+
+    tasks.value = {
+      ...(res.data.created_tasks ?? []),
+      ...(res.data.assigned_tasks ?? [])
+    }
+  } catch (error) {
+    console.log(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// onMounted(() => {
+//   fetchTasks()
+// })
+
+watch(
+  () => authStore.user?.id || authStore.session?.user?.id,
+  (userId) => {
+    if (userId) fetchTasks()
+  },
+  { immediate: true } // runs once on mount too
+)
+
+const isLoading = ref(true)
+
+const projects = ref([])
+
+const fetchProject = async () => {
+  isLoading.value = true
+
+  try {
+    const { data, error } = await supabase.from('projects').select('*')
+    console.log('Projects:', data)
+    if (!error) {
+      projects.value = data
+    }
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProject()
+})
 </script>
 
 <template>
@@ -302,70 +362,36 @@ onBeforeUnmount(() => {
 
         <!-- List -->
         <div class="max-h-[420px] overflow-y-auto">
-          <!-- Item -->
-          <div
-            class="px-8 py-5 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
-          >
-            <div class="flex items-center gap-4">
-              <div
-                class="w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center"
-              >
-                <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-              </div>
+          <!-- Empty state -->
+          <div v-if="loading" class="px-8 py-10 text-center text-gray-500">No tasks available.</div>
 
-              <p class="text-lg">Alert: Asana invitation could not be delivered</p>
-            </div>
-
-            <span class="text-pink-400 text-sm">Apr 21</span>
-          </div>
-
-          <!-- Item -->
-          <div
-            class="px-8 py-5 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
-          >
-            <div class="flex items-center gap-4">
-              <div class="w-5 h-5 rounded-full border border-gray-400"></div>
-
-              <p class="text-lg">Write endpoints for the Projects and tasks for team desk</p>
-            </div>
-
+          <!-- Task List -->
+          <template v-else>
             <div
-              class="bg-pink-50 border border-pink-100 rounded-md px-3 py-1 text-sm flex items-center gap-2"
+              v-for="task in tasks"
+              :key="task.id"
+              class="px-8 py-5 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
             >
-              <div class="w-2 h-2 rounded-full bg-pink-400"></div>
-              2026-...
-            </div>
-          </div>
+              <div class="flex items-center gap-4">
+                <div
+                  class="w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center"
+                >
+                  <div v-if="task.completed" class="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                </div>
 
-          <!-- Item -->
-          <div
-            class="px-8 py-5 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 transition"
-          >
-            <div class="flex items-center gap-4">
-              <div class="w-5 h-5 rounded-full border border-gray-400"></div>
-
-              <p class="text-lg">Search settlements data</p>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <div
-                class="bg-purple-50 border border-purple-100 rounded-md px-3 py-1 text-sm flex items-center gap-2"
-              >
-                <div class="w-2 h-2 rounded-full bg-purple-400"></div>
-                2025...
+                <p class="text-lg">{{ task.title }}</p>
               </div>
 
-              <div
-                class="bg-pink-50 border border-pink-100 rounded-md px-3 py-1 text-sm flex items-center gap-2"
-              >
-                <div class="w-2 h-2 rounded-full bg-pink-300"></div>
-                Quidly...
-              </div>
+              <span class="text-sm text-pink-400">
+                {{ task.due_date }}
+              </span>
             </div>
-          </div>
 
-          <!-- Show More -->
-          <button class="w-full text-left px-8 py-6 hover:bg-gray-50 transition">Show more</button>
+            <!-- Show More -->
+            <button class="w-full text-left px-8 py-6 hover:bg-gray-50 transition">
+              Show more
+            </button>
+          </template>
         </div>
       </div>
 
@@ -373,59 +399,44 @@ onBeforeUnmount(() => {
       <div class="mt-10 border border-gray-200 rounded-2xl p-8">
         <h2 class="text-4xl font-semibold text-gray-600 mb-8">My recent projects</h2>
 
-        <!-- Project -->
-        <div
-          class="flex items-center justify-between hover:bg-gray-50 rounded-xl px-4 py-3 transition"
-        >
-          <div class="flex items-center gap-4">
-            <!-- Icon -->
-            <div class="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="w-5 h-5 text-pink-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M4 7h16M4 12h8m-8 5h16"
-                />
-              </svg>
-            </div>
-
-            <span class="text-lg"> 2026-General Tasks </span>
-          </div>
-
-          <!-- Users -->
-          <div class="flex items-center -space-x-2">
-            <div
-              class="w-10 h-10 rounded-full bg-purple-200 border-2 border-white flex items-center justify-center text-sm text-gray-700"
-            >
-              TE
-            </div>
-
-            <div
-              class="w-10 h-10 rounded-full bg-pink-200 border-2 border-white flex items-center justify-center text-sm text-gray-700"
-            >
-              lu
-            </div>
-
-            <div
-              class="w-10 h-10 rounded-full bg-blue-200 border-2 border-white flex items-center justify-center text-sm text-gray-700"
-            >
-              JO
-            </div>
-
-            <button
-              class="w-10 h-10 rounded-full border border-gray-300 bg-white flex items-center justify-center"
-            >
-              ...
-            </button>
-          </div>
+        <!-- Empty state -->
+        <div v-if="isLoading" class="py-10 text-center text-gray-500">
+          No projects available.
         </div>
+
+        <!-- Project List -->
+        <template v-else>
+          <div
+            v-for="project in projects"
+            :key="project.id"
+            class="flex items-center justify-between hover:bg-gray-50 rounded-xl px-4 py-3 transition"
+          >
+            <div class="flex items-center gap-4">
+              <!-- Icon -->
+              <div class="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-5 h-5 text-pink-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M4 7h16M4 12h8m-8 5h16"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <h3 class="text-lg font-medium">{{ project.name }}</h3>
+                <p class="text-sm text-gray-500">{{ project.description }}</p>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </section>
   </MainLayout>
