@@ -9,6 +9,7 @@ import TaskForm from '@/components/TaskForm.vue'
 
 const route = useRoute()
 const projectId = route.params.id
+console.log(projectId)
 
 //openNewTask starts as false
 const openNewTask = ref(false)
@@ -33,7 +34,7 @@ const taskForm = ref({
   description: '',
   status: 'todo',
   priority: 'medium',
-  project_id: '',
+  project_id: projectId,
   team_id: null,
   start_date: null,
   due_date: null,
@@ -45,11 +46,13 @@ const loading = ref(true)
 const fetchTasks = async () => {
   loading.value = true
   try {
-    const response = await ApiService.post('tasks', {
-      action: 'list'
+    const response = await ApiService.post('projects', {
+      action: 'get',
+      project_id: projectId
     })
-    console.log(response)
-    const allTasks = response.data
+    console.log(response)    
+    const allTasks = response.data.tasks
+    console.log('checking allTasks per project', allTasks)
     tasks.value = {
       todo: allTasks.filter((task) => task.status === 'todo'),
       in_progress: allTasks.filter((task) => task.status === 'in_progress'),
@@ -76,7 +79,7 @@ const createTask = async () => {
     const response = await ApiService.post('tasks', {
       action: 'create',
 
-      project_id: taskForm.value.project_id,
+      project_id: projectId,
       title: taskForm.value.title,
       description: taskForm.value.description,
       status: taskForm.value.status,
@@ -96,7 +99,7 @@ const createTask = async () => {
       description: '',
       status: 'todo',
       priority: 'medium',
-      project_id: '',
+      project_id: projectId,
       team_id: null,
       start_date: null,
       due_date: null,

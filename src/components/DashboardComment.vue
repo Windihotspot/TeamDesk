@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Filtericon from '@/components/Filtericon.vue'
-// import { supabase } from '../supabase'  
+ 
 
 const props = defineProps({
   dashboardData: {

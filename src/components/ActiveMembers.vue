@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Filtericon from '@/components/Filtericon.vue'
 
@@ -26,27 +26,42 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  dashboardData: {
-    type: Object,
-    default: null
-  },
-  selectedCategory: {
+  modelValue: {
     type: [String, Number, null],
     default: null
   }
 })
 
-const emit = defineEmits(['update:selectedCategory'])
+const emit = defineEmits(['update:modelValue', 'team-loaded'])
+
+const selectedCategoryModel = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
+
+watch(selectedCategoryModel, (value) => {
+  if (value != null) {
+    showFilterModal.value = false
+  }
+})
+
+const displayedCustomers = computed(() => {
+  return props.customers.slice(0, 3)
+})
+
+const hasMoreMembers = computed(() => {
+  return props.customers.length > 3
+})
 </script>
 
 <template>
   <div class="bg-blue-50 rounded-2xl border-gray-400 p-8 shadow-lg">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-base font-semibold text-gray-800">Active Members</h3>
-      <font-awesome-icon 
-        icon="sliders" 
-        class="mr-7 hover:bg-gray-200 cursor-pointer" 
-        @click="openFilterModal" 
+      <font-awesome-icon
+        icon="sliders"
+        class="mr-7 hover:bg-gray-200 cursor-pointer"
+        @click="openFilterModal"
       />
     </div>
 
@@ -56,25 +71,21 @@ const emit = defineEmits(['update:selectedCategory'])
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
     >
       <div class="bg-white p-5 rounded-lg w-[400px] relative">
-        <button 
-          class="absolute top-2 right-2 text-gray-600 hover:text-gray-900" 
+        <button
+          class="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
           @click="closeFilterModal"
         >
           ✕
         </button>
 
-        <Filtericon
-          :model-value="selectedCategory"
-          :teams="props.dashboardData?.teams || []"
-          @update:model-value="emit('update:selectedCategory', $event)"
-        />
+        <Filtericon v-model="selectedCategoryModel" @team-loaded="emit('team-loaded', $event)" />
       </div>
     </div>
 
     <div class="flex items-center gap-5">
       <div
-        v-for="customer in customers"
-        :key="customer.name"
+        v-for="customer in displayedCustomers"
+        :key="customer.id"
         class="flex flex-col items-center gap-2"
       >
         <img
@@ -87,7 +98,7 @@ const emit = defineEmits(['update:selectedCategory'])
         </span>
       </div>
 
-      <div class="flex flex-col items-center gap-2">
+      <div v-if="hasMoreMembers" class="flex flex-col items-center justify-center">
         <button
           @click="openMembersModal"
           class="w-12 h-12 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-400 hover:bg-gray-50"
@@ -101,6 +112,7 @@ const emit = defineEmits(['update:selectedCategory'])
             />
           </svg>
         </button>
+
         <span class="text-xs text-gray-500">View all</span>
       </div>
     </div>
@@ -108,26 +120,25 @@ const emit = defineEmits(['update:selectedCategory'])
     <!-- Members Modal -->
     <div
       v-if="showMembersModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     >
-      <div class="bg-white w-[90%] max-w-md rounded-2xl p-5 shadow-lg">
+      <div class="bg-white rounded-xl w-[95%] max-w-lg p-6 max-h-[80vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-sm font-semibold text-gray-800">
-            Active Members ({{ customers.length }})
-          </h3>
-          <button @click="closeMembersModal">
-            <i class="fas fa-times text-gray-400 hover:text-red-500"></i>
-          </button>
+          <h2 class="text-lg font-semibold">Team Members ({{ customers.length }})</h2>
+
+          <button @click="closeMembersModal">✕</button>
         </div>
 
-        <div class="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
-          <div
-            v-for="member in customers"
-            :key="member.name"
-            class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg"
-          >
-            <img :src="member.avatar" class="w-10 h-10 rounded-full object-cover" />
-            <span class="text-sm text-gray-700">{{ member.name }}</span>
+        <div
+          v-for="member in customers"
+          :key="member.id"
+          class="flex items-center gap-3 py-3 border-b"
+        >
+          <img :src="member.avatar" class="w-10 h-10 rounded-full" />
+
+          <div>
+            <p class="font-medium">{{ member.name }}</p>
+            <p class="text-sm text-gray-500">{{ member.email }}</p>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
-import LoginForm from '@/views/Auth/LoginForm.vue'
-import SignupForm from '@/views/Auth/SignupForm.vue'
+import LoginForm from '@/components/LoginForm.vue'
+import SignupForm from '@/components/SignupForm.vue'
 
 const authMode = ref('login')
 </script>
@@ -49,8 +49,8 @@ const authMode = ref('login')
         leave-from-class="opacity-100"
         leave-to-class="opacity-0 scale-95"
       >
-        <component :is="authMode === 'login' ? LoginForm : SignupForm" :key="authMode" />
+        <component :is="authMode === 'login' ? LoginForm : SignupForm" :key="authMode" @switch-mode="authMode = $event"/>
       </transition>
     </div>
   </div>
-</template>
+</template> 

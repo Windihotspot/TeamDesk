@@ -12,23 +12,27 @@ import ActiveMembers from '@/components/ActiveMembers.vue'
 import NewtaskTaskinProgress from '@/components/NewtaskTaskinProgress.vue'
 import Overviewcard from '@/components/overviewcard.vue'
 import TotalProjectActiveTask from '@/components/TotalProjectActiveTask.vue'
+// import FilterIcon from '@/components/filtericon.vue'
 
 const showFilterModal = ref(false)
-const openFilterModal = () => {
-  showFilterModal.value = true
-}
-const closeFilterModal = () => {
-  showFilterModal.value = false
-}
 
-const customers = ref([])
+const toggleFilter = () => {
+  showFilterModal.value = !showFilterModal.value
+}
+// const openFilterModal = () => {
+//   showFilterModal.value = true
+// }
+// const closeFilterModal = () => {
+//   showFilterModal.value = false
+// }
+
+// const customers = ref([])
 
 /* ---------------- MONTH DROPDOWN ---------------- */
 const monthStore = useMonthDropdownStore()
 const { open, selected, selectedLabel, months, dropdownWrapper } = storeToRefs(monthStore)
 const { toggle, select } = monthStore
 
-onMounted(() => monthStore.init())
 onBeforeUnmount(() => monthStore.destroy())
 
 /* ---------------- TASKS & NEW TASKS ---------------- */
@@ -67,13 +71,13 @@ const submitTaskUpdate = () => {
 
 /* ---------------- VIEW TOGGLES ---------------- */
 const isTeamLoading = ref(false)
-const showAllTasks = ref(false)
+// const showAllTasks = ref(false)
 const showAllNewTasks = ref(false)
 
 const visibleNewTasks = computed(() => {
   if (!selectedCategory.value) return []
 
-  return showAllNewTasks.value ? newTasks.value : newTasks.value.slice('')
+  return showAllNewTasks.value ? newTasks.value : newTasks.value.slice(0, 5)
 })
 const completeTask = (task, index) => {
   launchConfetti()
@@ -120,6 +124,8 @@ const chartOptions = ref({
   yaxis: { show: false }
 })
 
+const teamComments = computed(() => selectedTeam.value?.comments || [])
+
 const authStore = useAuthStore()
 
 const loading = ref(true)
@@ -127,12 +133,27 @@ const error = ref(null)
 const dashboardData = ref(null)
 const selectedCategory = ref(null)
 
+const onTeamLoaded = (data) => {
+  const team = dashboardData.value.teams.find((t) => t.id === selectedCategory.value)
+
+  if (!team) return
+
+  team.projects = data.projects || []
+  team.stats = data.stats || {}
+
+  tasks.value = mapTasks([team])
+  newTasks.value = mapNewTasks(tasks.value)
+}
+
 /* ---------------- MAPPING HELPERS (Updated for real data) ---------------- */
 const mapCustomers = (teams) =>
   teams.flatMap((team) =>
     (team.members || []).map((member) => ({
-      name: `${member.first_name} ${member.last_name}`,
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${member.first_name}`
+      name: `${member.user?.first_name || ''} ${member.user?.last_name || ''}`,
+      avatar:
+        member.user?.avatar_url ||
+        `https://api.dicebear.com/7.x/initials/svg?seed=${member.user?.first_name || 'user'}`,
+      role: member.role
     }))
   )
 
@@ -141,14 +162,17 @@ const mapTasks = (teams) =>
     (team.projects || []).flatMap((project) =>
       (project.tasks || []).map((task) => ({
         title: task.title,
-        description: task.status,
+        description: task.description || task.status,
         avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=task',
+        project_id: project.id,
+        project_name: project.name,
         ...task
       }))
     )
   )
 
-const mapNewTasks = (allTasks) => allTasks.filter((t) => ['todo', 'in_progress'].includes(t.status))
+const mapNewTasks = (allTasks) =>
+  allTasks.filter((task) => ['todo', 'in_progress'].includes(task.status))
 
 /* ---------------- COMPUTED ---------------- */
 const selectedTeam = computed(() =>
@@ -158,9 +182,7 @@ const selectedTeam = computed(() =>
 const filteredTasks = computed(() => {
   if (!selectedCategory.value) return []
 
-  const team = dashboardData.value?.teams?.find(
-    (t) => t.id === selectedCategory.value
-  )
+  const team = dashboardData.value?.teams?.find((t) => t.id === selectedCategory.value)
 
   if (!team) return []
 
@@ -178,19 +200,27 @@ const filteredTasks = computed(() => {
 const projects = computed(() => selectedTeam.value?.projects || [])
 const totalProjects = computed(() => projects.value.length)
 
-const activeTasks = computed(() =>
-  projects.value
-    .flatMap((p) => p.tasks || [])
-    .filter((t) => ['todo', 'in_progress'].includes(t.status))
+// const activeTasks = computed(() =>
+//   projects.value
+//     .flatMap((p) => p.tasks || [])
+//     .filter((t) => ['todo', 'in_progress'].includes(t.status))
+// )
+
+const activeTasksCount = computed(
+  () =>
+    projects.value
+      .flatMap((p) => p.tasks || [])
+      .filter((t) => ['todo', 'in_progress'].includes(t.status)).length
 )
 
-const activeTasksCount = computed(() => activeTasks.value.length)
+const customers = computed(() => {
+  const team = dashboardData.value?.teams?.find(
+    t => t.id === selectedCategory.value
+  )
 
-const categoryOptions = computed(() =>
-  (dashboardData.value?.teams || []).map((team) => ({ title: team.name, value: team.id }))
-)
+  return team ? mapCustomers([team]) : []
+})
 
-/* ---------------- WATCH: Load projects & stats when team changes ---------------- */
 /* ---------------- WATCH: Load projects & stats when team changes ---------------- */
 watch(selectedCategory, async (teamId) => {
   if (!teamId) {
@@ -211,15 +241,24 @@ watch(selectedCategory, async (teamId) => {
     const userId = authStore.user?.id ?? authStore.session?.user?.id
     if (!userId) return
 
-    const res = await ApiService.post('dashboard', {
+    const payload = {
       user_id: userId,
       team_id: teamId,
       include: ['projects', 'stats']
-    })
+    }
+
+    console.log('🚀 TEAM REQUEST:', payload)
+
+    const res = await ApiService.post('dashboard', payload)
+
+    logResponse(`Projects & Stats (${teamId})`, res)
 
     console.log(`📥 Projects/Stats for team ${teamId}:`, res)
 
-    const extra = res?.data?.dashboard || res?.dashboard || res || {}
+    const extra = res?.data || res || {}
+    console.log(extra)
+
+    logResponse(`Team ${teamId} Response`, extra)
 
     if (dashboardData.value?.teams) {
       const teamIndex = dashboardData.value.teams.findIndex((t) => t.id === teamId)
@@ -227,14 +266,22 @@ watch(selectedCategory, async (teamId) => {
       if (teamIndex !== -1) {
         const currentTeam = dashboardData.value.teams[teamIndex]
 
-        currentTeam.projects = extra.projects || currentTeam.projects || []
-        currentTeam.stats = extra.stats || currentTeam.stats || []
+        const updatedTeam = {
+          ...currentTeam,
+          projects: extra.projects || [],
+          stats: extra.stats || {}
+        }
+
+        dashboardData.value.teams.splice(teamIndex, 1, updatedTeam)
+
+        // Show ONLY members of the selected team
+        // customers.value = mapCustomers([teams])
 
         console.log(
           '✅ Successfully updated team:',
-          currentTeam.name,
+          dashboardData.value.teams[teamIndex].name,
           '- Projects:',
-          currentTeam.projects?.length || 0
+          dashboardData.value.teams[teamIndex].projects?.length || 0
         )
       }
     }
@@ -246,18 +293,27 @@ watch(selectedCategory, async (teamId) => {
 
     tasks.value = teamTasks
     newTasks.value = mapNewTasks(teamTasks)
-
-    console.log('📊 Team Tasks Loaded:', teamTasks.length)
-    console.log('📊 Active Tasks:', newTasks.value.length)
-    console.log('📊 Updated Total Projects:', totalProjects.value)
-    console.log('📊 Updated Active Tasks:', activeTasksCount.value)
   } catch (err) {
-    console.error('Failed to load team details:', err)
+    console.error('❌ Failed to load team details:', err?.response?.data || err)
   } finally {
     isTeamLoading.value = false
   }
 })
+
+
+
 /* ---------------- FETCH DASHBOARD ---------------- */
+const logResponse = (title, data) => {
+  console.group(`📦 ${title}`)
+
+  try {
+    console.log(JSON.parse(JSON.stringify(data)))
+  } catch {
+    console.log(data)
+  }
+
+  console.groupEnd()
+}
 const fetchDashboard = async () => {
   loading.value = true
   error.value = null
@@ -268,39 +324,68 @@ const fetchDashboard = async () => {
 
     console.log('🚀 Fetching dashboard for user:', userId)
 
-    const res = await ApiService.post('dashboard', {
+    const payload = {
       user_id: userId,
-      include: ['teams', 'notifications']
-    })
+      include: ['teams']
+    }
 
-    console.log('📥 FULL RAW RESPONSE:', res)
-    console.log('📦 Response Structure:', Object.keys(res?.data || res || {}))
+    console.log('🚀 DASHBOARD REQUEST:', payload)
+
+    const res = await ApiService.post('team-dashboard', payload)
+
+    logResponse('Dashboard Response', res)
 
     // Handle both possible structures
-    let rawData = res?.data?.dashboard || res?.dashboard || res?.data || res || {}
+    const rawData = res?.data || res || {}
 
-    dashboardData.value = rawData
+    // logResponse('Parsed Dashboard Data', rawData)
+
+    dashboardData.value = {
+      teams: rawData.teams || [],
+      stats: rawData.stats || {}
+    }
 
     const teams = rawData.teams || []
+    console.log('👥 Teams:', teams)
+
+    teams.forEach((team) => {
+      console.log(`🏢 Team: ${team.name}`)
+      console.log('👤 Members:', team.members?.length || 0)
+      console.log('💬 Comments:', team.comments?.length || 0)
+    })
     console.log('👥 Teams loaded:', teams.length)
     console.log('📊 Global Stats:', rawData.stats)
 
-    customers.value = mapCustomers(teams)
+    // customers.value = mapCustomers(teams)
 
     const allTasks = mapTasks(teams)
     tasks.value = allTasks
     newTasks.value = mapNewTasks(allTasks)
 
-    console.log('✅ Total Tasks:', allTasks.length)
-    console.log('✅ New/In-progress Tasks:', newTasks.value.length)
+    const allProjects = teams.flatMap((team) => team.projects || [])
+
+    console.group('📊 Dashboard Summary')
+
+    console.log('👥 Active Members:', customers.value)
+    console.log('📁 Projects:', allProjects)
+    console.log('📁 Total Projects:', allProjects.length)
+    console.log('📋 All Tasks:', tasks.value)
+    console.log('🚀 Tasks In Progress:', newTasks.value)
+    console.log(
+      '✅ Active Tasks:',
+      tasks.value.filter((task) => ['todo', 'in_progress'].includes(task.status))
+    )
+
+    console.groupEnd()
 
     // // Auto-select first team
-    // if (teams.length && !selectedCategory.value) {
-    //   selectedCategory.value = teams[0].id
-    //   console.log('🏷️ Auto-selected team:', teams[0].name)
-    // }
+    if (teams.length && !selectedCategory.value) {
+      selectedCategory.value = teams[0].id
+
+      console.log('🏷️ Auto-selected team:', teams[0].name, teams[0].id)
+    }
   } catch (err) {
-    console.error('❌ Dashboard fetch error:', err)
+    console.error('❌ Dashboard fetch error:', err?.response?.data || err)
     error.value = err?.response?.data?.error || err.message || 'Failed to load dashboard'
   } finally {
     loading.value = false
@@ -309,6 +394,8 @@ const fetchDashboard = async () => {
 
 /* ---------------- LIFECYCLE ---------------- */
 onMounted(async () => {
+  monthStore.init()
+
   await authStore.fetchSession()
   await fetchDashboard()
 })
@@ -333,23 +420,23 @@ onMounted(async () => {
 
 <template>
   <main-layout>
-    <div class="min-h-screen p-6 font-['DM_Sans',sans-serif]">
-      <div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
+    <div class="min-h-screen p-3 sm:p-4 md:p-6 font-['DM_Sans',sans-serif]">
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 md:gap-5">
         <!-- LEFT COLUMN - Main Content -->
         <div class="flex flex-col gap-5">
           <!-- overviewcard -->
           <Overviewcard
-            :loading="loading || isTeamLoading"
+            :loading="isTeamLoading"
             :total-projects="totalProjects"
             :active-tasks-count="activeTasksCount"
-            :dashboard-data="dashboardData"
             v-model="selectedCategory"
+            @team-loaded="onTeamLoaded"
           />
           <!-- Active Members -->
           <ActiveMembers
             :customers="customers"
-            :dashboard-data="dashboardData"
-            v-model:selected-category="selectedCategory"
+            v-model="selectedCategory"
+            @team-loaded="onTeamLoaded"
           />
 
           <!-- Task Card -->
@@ -373,7 +460,7 @@ onMounted(async () => {
           />
 
           <!-- COMMENTS -->
-          <dashboard-comment />
+          <DashboardComment :comments="teamComments" />
         </div>
       </div>
     </div>

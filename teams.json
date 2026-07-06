@@ -1,0 +1,117 @@
+{
+  "teams": [
+    {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Product Team",
+      "description": "Core product engineering team",
+      "owner_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "created_at": "2025-01-15T08:30:00.000Z",
+      "members": [
+        {
+          "id": "m1b2c3d4-e5f6-7890-abcd-ef1234567891",
+          "role": "owner",
+          "created_at": "2025-01-15T08:30:00.000Z",
+          "user": {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "email": "windi@teinnovate.com",
+            "first_name": "Windi",
+            "last_name": "Okonkwo",
+            "avatar_url": "https://cdn.example.com/avatars/windi.jpg"
+          }
+        },
+        {
+          "id": "m2c3d4e5-f6a7-8901-bcde-f12345678902",
+          "role": "member",
+          "created_at": "2025-01-20T10:00:00.000Z",
+          "user": {
+            "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+            "email": "amaka@teinnovate.com",
+            "first_name": "Amaka",
+            "last_name": "Eze",
+            "avatar_url": null
+          }
+        }
+      ],
+      "comments": [
+        {
+          "id": "cm1d4e5f6-a7b8-9012-cdef-123456789013",
+          "content": "Updated the API integration for the repayments module.",
+          "created_at": "2026-06-23T14:22:00.000Z",
+          "task_id": "t1e5f6a7-b8c9-0123-defa-234567890123",
+          "user": {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "first_name": "Windi",
+            "last_name": "Okonkwo",
+            "avatar_url": "https://cdn.example.com/avatars/windi.jpg"
+          }
+        },
+        {
+          "id": "cm2e5f6a7-b8c9-0123-defa-234567890124",
+          "content": "Can we move this to review? Tests are passing.",
+          "created_at": "2026-06-22T09:45:00.000Z",
+          "task_id": "t2f6a7b8-c9d0-1234-efab-345678901234",
+          "user": {
+            "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+            "first_name": "Amaka",
+            "last_name": "Eze",
+            "avatar_url": null
+          }
+        }
+      ]
+    }
+  ],
+
+  "projects": [
+    {
+      "id": "p1f6a7b8-c9d0-1234-efab-345678901235",
+      "name": "CredMate Mobile App",
+      "description": "Ionic Vue mobile app for digital lending",
+      "status": "active",
+      "team_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "created_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "created_at": "2025-02-01T09:00:00.000Z",
+      "deleted_at": null
+    },
+    {
+      "id": "p2a7b8c9-d0e1-2345-fabc-456789012346",
+      "name": "Voima Compliance Engine",
+      "description": "Compliance-as-a-service platform backend",
+      "status": "active",
+      "team_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "created_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "created_at": "2025-03-10T11:00:00.000Z",
+      "deleted_at": null
+    }
+  ],
+
+  "stats": {
+    "total_tasks": 34,
+    "completed_tasks": 18,
+    "in_progress_tasks": 10,
+    "overdue_tasks": 3,
+    "todo_tasks": 3,
+    "total_projects": 2,
+    "active_projects": 2,
+    "team_members": 2,
+    "completion_rate": 52.94
+  },
+
+  "notifications": [
+    {
+      "id": "n1b8c9d0-e1f2-3456-abcd-567890123457",
+      "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "title": "Task Assigned",
+      "message": "You have been assigned to 'Implement loan repayment flow'.",
+      "is_read": false,
+      "created_at": "2026-06-24T08:10:00.000Z"
+    },
+    {
+      "id": "n2c9d0e1-f2a3-4567-bcde-678901234568",
+      "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "title": "Comment on Task",
+      "message": "Amaka commented on 'KYC verification screen'.",
+      "is_read": true,
+      "created_at": "2026-06-23T16:55:00.000Z"
+    }
+  ]
+}

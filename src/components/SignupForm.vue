@@ -1,6 +1,9 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { authService } from '@/services/authService.js'
+import GetTeams from '@/components/GetTeams.vue'
+
+const emit = defineEmits(['switch-mode'])
 
 const show = ref(false)
 const authMode = ref('signup') // toggle state
@@ -30,40 +33,41 @@ const submitPage = async () => {
     form.teamName = ''
     form.password = ''
     setTimeout(() => {
-      authMode.value = 'login'   
-    }, 2000)
+      // reset form...
+      emit('switch-mode', 'login') // 👈 tells parent to switch
+    }, 1000)
   } catch (err) {
     console.error('Error:', err)
   } finally {
     loading.value = false
   }
-  //  try {
+    //  try {
 
-  //   // fake API success
-  //   const data = await new Promise((resolve) => {
-  //     setTimeout(() => {
-  //       resolve({
-  //         success: true,
-  //         message: 'Signup successful'
-  //       })
-  //     }, 1000)
-  //   })
+    //   // fake API success
+    //   const data = await new Promise((resolve) => {
+    //     setTimeout(() => {
+    //       resolve({
+    //         success: true,
+    //         message: 'Signup successful'
+    //       })
+    //     }, 1000)
+    //   })
 
-  //   console.log('✅ Success:', data)
+    //   console.log('✅ Success:', data)
 
-  //   form.firstName = ''
-  //   form.lastName = ''
-  //   form.email = ''
-  //   form.teamName = ''
-  //   form.password = ''
+    //   form.firstName = ''
+    //   form.lastName = ''
+    //   form.email = ''
+    //   form.teamName = ''
+    //   form.password = ''
 
-  //   authMode.value = 'login'
-
-  // } catch (err) {
-  //   console.error('Error:', err)
-  // } finally {
-  //   loading.value = false
-  // }
+    //   emit('switch-mode', 'login') // 👈 tells parent to switch
+    //   // await submitPage()
+    // } catch (err) {
+    //   console.error('Error:', err)
+    // } finally {
+    //   loading.value = false
+    // }
 }
 </script>
 
@@ -143,16 +147,6 @@ const submitPage = async () => {
               />
 
               <v-text-field
-                v-model="form.teamName"
-                placeholder="Team Name"
-                prepend-inner-icon="mdi-account-group"
-                variant="outlined"
-                density="comfortable"
-                :rules="[(v) => !!v || 'TeamName is required']"
-                rounded-md
-              />
-
-              <v-text-field
                 v-model="form.email"
                 placeholder="Email"
                 prepend-inner-icon="mdi-email-outline"
@@ -195,6 +189,8 @@ const submitPage = async () => {
                 rounded-md
               />
 
+              <GetTeams />
+
               <!-- <p class="text-xs text-gray-400">Password strength : weak / strong</p> -->
 
               <v-btn
@@ -210,7 +206,7 @@ const submitPage = async () => {
                 Sign Up
               </v-btn>
 
-              <p class="text-sm text-gray-500 mt-4">Already have an account?</p>
+              <p class="text-sm text-gray-500 mt-4"  @click="emit('switch-mode', 'login')">Already have an account?</p>
             </div>
 
             <!-- LOGIN -->
@@ -240,7 +236,7 @@ const submitPage = async () => {
                 Log In
               </v-btn>
 
-              <p class="text-sm text-gray-500 mt-4">Don’t have an account?</p>
+              <p class="text-sm text-gray-500 mt-4" >Don’t have an account?</p>
             </div>
           </div>
         </transition>

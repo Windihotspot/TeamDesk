@@ -76,7 +76,9 @@ const fetchProject = async () => {
 
 //pushes to a new page inside projects 
 const openFullProjects = (project) => {
+  console.log(project)
   router.push(`/projects/${project.id}`)
+
 }
 
 
@@ -182,7 +184,7 @@ const openAddTeams = async () => {
             <div
               v-for="project in projects"
               :key="project.id"
-              @click="openFullProjects"
+              @click="openFullProjects(project)"
               class="flex items-center justify-between bg-gray-100 rounded-sm p-3 mb-5"
             >
               <div class="flex items-center gap-3">
