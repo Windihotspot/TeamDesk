@@ -72,6 +72,7 @@ const fetchTasks = async () => {
   loading.value = true
   try {
     const userId = authStore.user?.id || authStore.session?.user?.id
+    console.log(userId)
 
 
     //we can pass multiuple properties inside a request 

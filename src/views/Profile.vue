@@ -13,40 +13,96 @@ const authStore = useAuthStore()
 const projectStore = useProjectStore()
 // const { profile, loading, error } = useProfile()
 
-const profiles = ref([])
-// const user.id = ref(null)
+const profile = ref({})
+console.log(authStore)
+// const userId = authStore.user.id
+const userId = authStore.user?.id || authStore.session?.user?.id
+console.log(userId)
+const loading = ref(false)
+
+// const fetchProfile = async () => {
+//   // loading.value = true
+
+//   const {
+//     data: { session }
+//   } = await supabase.auth.getSession()
+
+//   if (!session?.user) {
+//     error.value = 'No user logged in'
+//     loading.value = false
+//     return
+//   }
+
+//   try {
+//     const { data, error } = await supabase
+//       .from('profiles')
+//       .select('*')
+//       .eq('user_id', session.user.id)
+//     console.log('profiles:', data)
+
+//     if (!error) {
+//       profiles.value = data
+//     }
+//   } catch (error) {
+//     console.error(error)
+//   }
+// }
+
+// const fetchProfile = async () => {
+//   loading.value = true
+
+//   try {
+//     const {data, error} = await ApiService.get('profile', {
+//       body: { action: 'get', user_id: userId },
+      
+//     })
+//     console.log(data)
+//     console.log('body', body)
+//     profiles.value = data
+//   } catch (error) {
+//     console.log('Error', error)
+//   } finally {
+//     loading.value = false
+//   }
+// }
 
 const fetchProfile = async () => {
-  // loading.value = true
+  loading.value = true
 
-  const {
-    data: { session }
-  } = await supabase.auth.getSession()
+  // const body = {
+  //   action: 'get',
+  //   user_id: userId,
+  // }
 
-  if (!session?.user) {
-    error.value = 'No user logged in'
-    loading.value = false
-    return
-  }
+  // console.log('Request body:', body)
 
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', session.user.id)
-    console.log('profiles:', data)
+    const res = await ApiService.post('profile', {
+    action: 'get',
+    user_id: userId,
+  })
 
-    if (!error) {
-      profiles.value = data
-    }
+    console.log('Response:', res)
+
+    profile.value = res.profile
   } catch (error) {
-    console.error(error)
+    console.log('Error:', error)
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(() => {
-  fetchProfile()
-})
+// onMounted(() => {
+//   fetchProfile()
+// })
+
+watch(
+  () => authStore.user?.id || authStore.session?.user?.id,
+  (userId) => {
+    if (userId) fetchProfile()
+  },
+  { immediate: true } // runs once on mount too
+)
 
 const showEdit = ref(false)
 
@@ -54,12 +110,12 @@ const openEditProfile = () => {
   showEdit.value = true
 }
 
-const profile = ref({
-  first_name: '',
-  last_name: '',
-  email: '',
-  bio: ''
-})
+// const profile = ref({
+//   first_name: '',
+//   last_name: '',
+//   email: '',
+//   bio: ''
+// })
 
 const cameraDialog = ref(false)
 const video = ref(null)
@@ -116,7 +172,7 @@ onBeforeUnmount(() => {
 
 const tasks = ref({})
 
-const loading = ref(true)
+// const loading = ref(true)
 
 const fetchTasks = async () => {
   loading.value = true
@@ -213,8 +269,8 @@ onMounted(() => {
 
           <!-- Profile Info -->
           <div class="flex flex-col justify-center">
-            <div v-if="profiles.length">
-              <div v-for="profile in profiles" :key="profile.id">
+            <div >
+              <div >
                 <h1 class="text-2xl font-semibold text-gray-800">
                   Welcome, {{ profile.first_name }} {{ profile.last_name }}!
                 </h1>
@@ -400,9 +456,7 @@ onMounted(() => {
         <h2 class="text-4xl font-semibold text-gray-600 mb-8">My recent projects</h2>
 
         <!-- Empty state -->
-        <div v-if="isLoading" class="py-10 text-center text-gray-500">
-          No projects available.
-        </div>
+        <div v-if="isLoading" class="py-10 text-center text-gray-500">No projects available.</div>
 
         <!-- Project List -->
         <template v-else>
