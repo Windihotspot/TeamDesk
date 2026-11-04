@@ -14,6 +14,7 @@ import PurchaseOrders from '@/views/PurchaseOrders.vue'
 import SuppliesDeliveries from '@/views/SuppliesDeliveries.vue'
 import SuppliesPayment from '@/views/SuppliesPayment.vue'
 import TeamsPage from '@/views/TeamsPage.vue'
+import InhouseSupply from '@/views/InhouseSupply.vue'
 
 // import LoginForm from '@/views/Auth/LoginForm.vue'
 
@@ -96,6 +97,11 @@ const router = createRouter({
       path: '/teams',
       name: 'teams',
       component: TeamsPage
+    },
+    {
+      path: '/inhouse-supply',
+      name: 'inhouse-supply',
+      component: InhouseSupply
     },
     {
       path: '/projects/:id',

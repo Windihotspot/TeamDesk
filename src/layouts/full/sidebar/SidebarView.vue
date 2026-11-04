@@ -96,6 +96,13 @@ const menuItems = [
     route: '/supplies'
   },
 
+  {
+    nav: 'inhouse-supply',
+    label: 'Inhouse Supply',
+    icon: 'mdi mdi-package-variant-closed',
+    route: '/inhouse-supply'
+  },
+
   // Requests from staff/users
   {
     nav: 'supplies-requests',
