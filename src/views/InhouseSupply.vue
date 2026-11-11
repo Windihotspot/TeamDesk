@@ -11,6 +11,11 @@ interface Supply {
   name: string
   is_read: boolean
   created_at: string
+  created_by_user: {
+    first_name: string | null
+    last_name: string | null
+    email: string
+  } | null
 }
 
 const supplies = ref<Supply[]>([])
@@ -36,15 +41,11 @@ const loadSupplies = async () => {
       throw new Error('Please log in to manage supplies.')
     }
 
-    const response = await ApiService.post<{ data: Supply[] }>(
-      'inhouse-supply',
-      { action: 'list' }
-    )
+    const response = await ApiService.post<{ data: Supply[] }>('inhouse-supply', { action: 'list' })
 
     supplies.value = response.data ?? []
   } catch (err: any) {
-    errorMessage.value =
-      err.response?.data?.error || err.message || 'Failed to load supplies.'
+    errorMessage.value = err.response?.data?.error || err.message || 'Failed to load supplies.'
   } finally {
     loading.value = false
   }
@@ -75,8 +76,7 @@ const saveSupply = async () => {
 
     await loadSupplies()
   } catch (err: any) {
-    errorMessage.value =
-      err.response?.data?.error || err.message || 'Failed to save supply.'
+    errorMessage.value = err.response?.data?.error || err.message || 'Failed to save supply.'
   } finally {
     saving.value = false
   }
@@ -90,7 +90,7 @@ const editSupply = (supply: Supply) => {
 
 // DELETE SUPPLY
 const deleteSupply = async (id: string) => {
-//   if (!confirm('Are you sure you want to delete this supply?')) return
+  //   if (!confirm('Are you sure you want to delete this supply?')) return
 
   errorMessage.value = ''
 
@@ -102,8 +102,7 @@ const deleteSupply = async (id: string) => {
 
     await loadSupplies()
   } catch (err: any) {
-    errorMessage.value =
-      err.response?.data?.error || err.message || 'Failed to delete supply.'
+    errorMessage.value = err.response?.data?.error || err.message || 'Failed to delete supply.'
   }
 }
 
@@ -119,8 +118,7 @@ const markAsRead = async (id: string) => {
 
     await loadSupplies()
   } catch (err: any) {
-    errorMessage.value =
-      err.response?.data?.error || err.message || 'Failed to update supply.'
+    errorMessage.value = err.response?.data?.error || err.message || 'Failed to update supply.'
   }
 }
 
@@ -136,22 +134,14 @@ onMounted(loadSupplies)
 <template>
   <MainLayout>
     <div class="space-y-6">
-
       <!-- Header -->
       <div>
-        <h1 class="text-2xl font-semibold text-gray-900">
-          In-house Supplies
-        </h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Manage your in-house supply entries.
-        </p>
+        <h1 class="text-2xl font-semibold text-gray-900">In-house Supplies</h1>
+        <p class="text-sm text-gray-500 mt-1">Manage your in-house supply entries.</p>
       </div>
 
       <!-- Add / Edit Supply -->
-      <form
-        @submit.prevent="saveSupply"
-        class="flex flex-col sm:flex-row gap-3"
-      >
+      <form @submit.prevent="saveSupply" class="flex flex-col sm:flex-row gap-3">
         <input
           v-model="supplyName"
           type="text"
@@ -188,20 +178,13 @@ onMounted(loadSupplies)
 
       <!-- Supply List -->
       <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-
         <div class="px-5 py-4 border-b border-gray-200 flex justify-between">
-          <h2 class="font-semibold text-gray-800">
-            Supply Entries
-          </h2>
+          <h2 class="font-semibold text-gray-800">Supply Entries</h2>
 
-          <span class="text-sm text-gray-500">
-            {{ supplies.length }} entries
-          </span>
+          <span class="text-sm text-gray-500"> {{ supplies.length }} entries </span>
         </div>
 
-        <div v-if="loading" class="p-6 text-center text-gray-500">
-          Loading supplies...
-        </div>
+        <div v-if="loading" class="p-6 text-center text-gray-500">Loading supplies...</div>
 
         <div v-else-if="!supplies.length" class="p-6 text-center text-gray-500">
           No supplies added yet.
@@ -218,10 +201,22 @@ onMounted(loadSupplies)
                 {{ supply.name }}
               </p>
 
+              <p class="text-xs text-gray-500 mt-1">
+                Added by:
+                <span class="font-medium text-gray-700">
+                  {{
+                    supply.created_by_user
+                      ? `${supply.created_by_user.first_name ?? ''} ${supply.created_by_user.last_name ?? ''}`.trim() ||
+                        supply.created_by_user.email
+                      : 'Unknown user'
+                  }}
+                </span>
+              </p>
+
               <span
-                :class="supply.is_read
-                  ? 'text-green-600 bg-green-50'
-                  : 'text-orange-600 bg-orange-50'"
+                :class="
+                  supply.is_read ? 'text-green-600 bg-green-50' : 'text-orange-600 bg-orange-50'
+                "
                 class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium"
               >
                 {{ supply.is_read ? 'Read' : 'Unread' }}
@@ -229,7 +224,6 @@ onMounted(loadSupplies)
             </div>
 
             <div class="flex flex-wrap gap-2">
-
               <button
                 v-if="!supply.is_read"
                 @click="markAsRead(supply.id)"
@@ -251,11 +245,9 @@ onMounted(loadSupplies)
               >
                 Delete
               </button>
-
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </MainLayout>
